@@ -8,8 +8,8 @@ import { SidebarContext } from 'contexts/SidebarContext';
 import React, { useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import routes from 'routes.js';
-import ViewOrder from 'views/admin/viewDirectOrder'
-
+import ViewOrder from 'views/admin/viewDirectOrder';
+import ViewServiceProvider from 'views/admin/viewServiceProviderDetails';
 
 // Custom Chakra theme
 export default function Dashboard(props) {
@@ -100,7 +100,10 @@ export default function Dashboard(props) {
       if (route.collapse) {
         return getRoutes(route.items);
       } else {
-        return <Route path='/viewOrder/:orderId' element={<ViewOrder />} />
+        return (
+          (<Route path="/viewOrder/:orderId" element={<ViewOrder />} />),
+          (<Route path="/details/:service_provider_id" element={<ViewServiceProvider />} />)
+        );
       }
     });
   };

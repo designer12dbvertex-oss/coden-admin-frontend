@@ -380,7 +380,8 @@ export default function ComplexTable() {
           <Button
             size="sm"
             colorScheme="blue"
-            onClick={() => handleViewDetails(info.row.original.userDetails)}
+            // onClick={() => handleViewDetails(info.row.original.userDetails)}
+						onClick={() => navigate(`/admin/details/${info.row.original.id}`)}
           >
             View Details
           </Button>
