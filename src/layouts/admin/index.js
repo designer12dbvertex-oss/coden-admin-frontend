@@ -10,7 +10,9 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import routes from 'routes.js';
 import ViewOrder from 'views/admin/viewDirectOrder';
 import ViewServiceProvider from 'views/admin/viewServiceProviderDetails';
-
+import ViewBiddingOrder from 'views/admin/viewBiddingOrder';
+import ViewEmergencyOrder from 'views/admin/viewEmergencyOrder';
+import ViewCreateServiceProvider from 'views/admin/createServiceProvider';
 // Custom Chakra theme
 export default function Dashboard(props) {
   const { ...rest } = props;
@@ -90,23 +92,39 @@ export default function Dashboard(props) {
     }
     return activeNavbar;
   };
-  const getRoutes = (routes) => {
-    return routes.map((route, key) => {
-      if (route.layout === '/admin') {
-        return (
-          <Route path={`${route.path}`} element={route.component} key={key} />
-        );
-      }
-      if (route.collapse) {
-        return getRoutes(route.items);
-      } else {
-        return (
-          (<Route path="/viewOrder/:orderId" element={<ViewOrder />} />),
-          (<Route path="/details/:service_provider_id" element={<ViewServiceProvider />} />)
-        );
-      }
-    });
-  };
+ const getRoutes = (routes) => {
+  let allRoutes = [];
+
+  routes.forEach((route, key) => {
+    if (route.layout === '/admin') {
+      allRoutes.push(
+        <Route path={`${route.path}`} element={route.component} key={key} />
+      );
+    }
+    if (route.collapse) {
+      allRoutes = allRoutes.concat(getRoutes(route.items));
+    }
+  });
+
+  // Add custom routes outside the loop
+  allRoutes.push(
+    <Route path="/viewOrder/:orderId" element={<ViewOrder />} key="viewOrder" />
+  );
+  allRoutes.push(
+    <Route path="/details/:service_provider_id" element={<ViewServiceProvider />} key="viewServiceProvider" />
+  );
+  allRoutes.push(
+    <Route path="/biddingOrder/:orderId" element={<ViewBiddingOrder />} key="viewBiddingOrder" />
+  );
+	allRoutes.push(
+    <Route path="/emergencyOrder/:orderId" element={<ViewEmergencyOrder />} key="viewEmergencyOrder" />
+  );
+	allRoutes.push(
+    <Route path="/createServiceProvider" element={<ViewCreateServiceProvider />} key="viewCreateServiceProvider" />
+  );
+
+  return allRoutes;
+};
   document.documentElement.dir = 'ltr';
   const { onOpen } = useDisclosure();
   document.documentElement.dir = 'ltr';

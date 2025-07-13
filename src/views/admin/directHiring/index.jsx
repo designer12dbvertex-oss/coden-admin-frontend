@@ -149,6 +149,12 @@ export default function OrdersTable() {
           return { bg: 'yellow.100', color: 'yellow.800' };
         case 'rejected':
           return { bg: 'red.100', color: 'red.800' };
+        case 'completed':
+          return { bg: 'green.100', color: 'green.800' };
+        case 'cancelled':
+          return { bg: 'red.100', color: 'red.800' };
+        case 'cancelledDispute':
+          return { bg: 'red.100', color: 'red.800' };
         default:
           return { bg: 'gray.100', color: 'gray.800' };
       }

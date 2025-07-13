@@ -31,6 +31,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'; // Move this to App.js or index.js if possible
+import defaultProfilePic from 'assets/img/profile/profile.webp'; // Adjust the path as necessary
 
 const columnHelper = createColumnHelper();
 
@@ -49,13 +50,14 @@ const useFetchUsers = (baseUrl, token, navigate) => {
         const response = await axios.get(`${baseUrl}api/admin/getAllUsers`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+				console.log('Fetched users:', response.data.users); // Debug log
         if (!response.data?.users) {
           throw new Error('Invalid API response: No users found');
         }
         setData(
           response.data.users.map((user) => ({
             id: user._id,
-            profile_pic: user.profile_pic ? `${baseUrl}${user.profile_pic}` : 'N/A',
+            profile_pic: user.profile_pic ? `${baseUrl}${user.profile_pic}` : defaultProfilePic,
             full_name: user.full_name || 'N/A',
             location: user.location || 'N/A',
             mobile: user.phone || 'N/A',
@@ -216,7 +218,7 @@ export default function ComplexTable() {
                 alt="Profile"
                 loading="lazy"
                 style={{ width: '50px', height: '50px', borderRadius: '50%' }}
-                onError={(e) => (e.target.src = '/assets/img/profile/Project3.png')}
+                onError={(e) => (e.target.src = defaultProfilePic)}
               />
             ) : (
               <Text color={textColor} fontSize="sm" fontWeight="700">

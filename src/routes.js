@@ -10,6 +10,8 @@ import {
 	MdPersonAddAlt1,
 	MdCategory,
 	MdAttachMoney,
+	MdEmail,
+	MdPhone,
 } from 'react-icons/md';
 
 // Admin Imports
@@ -27,6 +29,8 @@ import DirectHiring from 'views/admin/directHiring';
 import Emergency from 'views/admin/emergencyHiring';
 import WorkCategory from 'views/admin/workCategory';
 import PlatformFee from 'views/admin/platformfee';
+import ContactUs from 'views/admin/CallContact';
+import EmailUs from 'views/admin/EmailContact';
 // import OnlineOrders from 'views/admin/onlineOrders';
 
 // Auth Imports
@@ -89,6 +93,20 @@ const routes = [
     icon: <Icon as={MdEmergency} width="20px" height="20px" color="inherit" />,
     path: '/emergency-hiring',
     component: <Emergency />,
+  },
+	 {
+    name: 'Contact Us',
+    layout: '/admin',
+    icon: <Icon as={MdPhone} width="20px" height="20px" color="inherit" />,
+    path: '/contact-us',
+    component: <ContactUs />,
+  },
+	 {
+    name: 'Email Us',
+    layout: '/admin',
+    icon: <Icon as={MdEmail } width="20px" height="20px" color="inherit" />,
+    path: '/email-us',
+    component: <EmailUs />,
   },
   {
     name: 'About Us',

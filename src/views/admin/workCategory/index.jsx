@@ -46,14 +46,22 @@ const columnHelper = createColumnHelper();
 
 export default function OrdersTable() {
   const [sorting, setSorting] = React.useState([]);
-  const [data, setData] = React.useState([]);
+  const [allData, setAllData] = React.useState([]); // Store full dataset
+  const [data, setData] = React.useState([]); // Store current page data
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [totalPages, setTotalPages] = React.useState(1);
-  const [newCategory, setNewCategory] = React.useState({ name: '', image: null });
+  const [newCategory, setNewCategory] = React.useState({
+    name: '',
+    image: null,
+  });
   const [editCategory, setEditCategory] = React.useState(null);
-  const [newSubcategory, setNewSubcategory] = React.useState({ name: '', image: null, categoryId: '' });
+  const [newSubcategory, setNewSubcategory] = React.useState({
+    name: '',
+    image: null,
+    categoryId: '',
+  });
   const [editSubcategory, setEditSubcategory] = React.useState(null);
   const [subcategoryCounts, setSubcategoryCounts] = React.useState({});
   const [modalSubcategories, setModalSubcategories] = React.useState([]);
@@ -83,7 +91,7 @@ export default function OrdersTable() {
     try {
       const response = await axios.get(
         `${baseUrl}api/adminSubcategories/${categoryId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (!response.data || !Array.isArray(response.data.data)) {
         throw new Error('Invalid subcategory response format');
@@ -95,7 +103,7 @@ export default function OrdersTable() {
     }
   };
 
-  // Fetch categories and subcategory counts
+  // Fetch all categories
   const fetchCategories = async () => {
     try {
       if (!baseUrl || !token) {
@@ -103,39 +111,70 @@ export default function OrdersTable() {
       }
       setLoading(true);
       const response = await axios.get(
-        `${baseUrl}api/adminWork-category?page=${currentPage}&limit=${itemsPerPage}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${baseUrl}api/adminWork-category`, // Remove page and limit since API returns all data
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       console.log('API Response (Categories):', response.data);
 
       if (!response.data || !Array.isArray(response.data.data)) {
-        throw new Error('Invalid response format: Expected an array of categories');
+        throw new Error(
+          'Invalid response format: Expected an array of categories',
+        );
       }
 
+      // Format all data
       const formattedData = response.data.data.map((item) => ({
         id: item._id || '',
         name: item.name || '',
         image: item.image || '',
       }));
 
-      // Fetch subcategory counts for each category
+      setAllData(formattedData);
+
+      // Calculate total pages based on allData
+      const calculatedTotalPages = Math.max(
+        1,
+        Math.ceil(formattedData.length / itemsPerPage),
+      );
+      setTotalPages(calculatedTotalPages);
+
+      // Set current page data
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const paginatedData = formattedData.slice(
+        startIndex,
+        startIndex + itemsPerPage,
+      );
+      setData(paginatedData);
+
+      // Fetch subcategory counts
       const counts = {};
       for (const category of formattedData) {
         const subcategories = await fetchSubcategories(category.id);
         counts[category.id] = subcategories.length;
       }
-
-      setData(formattedData);
       setSubcategoryCounts(counts);
-      const totalItems = response.data.total || (formattedData.length < itemsPerPage ? currentPage * itemsPerPage : (currentPage * itemsPerPage) + 1);
-      setTotalPages(Math.ceil(totalItems / itemsPerPage));
+
+      console.log('Pagination Info:', {
+        totalItems: formattedData.length,
+        totalPages: calculatedTotalPages,
+        currentPage,
+        itemsDisplayed: paginatedData.length,
+      });
+
+      // Reset currentPage if it exceeds totalPages
+      if (currentPage > calculatedTotalPages) {
+        setCurrentPage(1);
+      }
+
       setLoading(false);
     } catch (err) {
       console.error('Fetch Categories Error:', err);
       if (
         err.response?.data?.message === 'Not authorized, token failed' ||
-        err.response?.data?.message === 'Session expired or logged in on another device' ||
-        err.response?.data?.message === 'Un-Authorized, You are not authorized to access this route.' ||
+        err.response?.data?.message ===
+          'Session expired or logged in on another device' ||
+        err.response?.data?.message ===
+          'Un-Authorized, You are not authorized to access this route.' ||
         err.response?.data?.message === 'Not authorized, token failed'
       ) {
         localStorage.removeItem('token');
@@ -147,9 +186,27 @@ export default function OrdersTable() {
     }
   };
 
+  // Update current page data when currentPage changes
+  React.useEffect(() => {
+    if (allData.length > 0) {
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const paginatedData = allData.slice(
+        startIndex,
+        startIndex + itemsPerPage,
+      );
+      setData(paginatedData);
+      console.log('Current Page Data:', {
+        currentPage,
+        startIndex,
+        itemsDisplayed: paginatedData.length,
+      });
+    }
+  }, [currentPage, allData]);
+
+  // Fetch categories on mount and after mutations
   React.useEffect(() => {
     fetchCategories();
-  }, [navigate, currentPage]);
+  }, [navigate]);
 
   // Fetch subcategories for edit modal
   React.useEffect(() => {
@@ -178,10 +235,10 @@ export default function OrdersTable() {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
-        }
+        },
       );
       console.log('Create Category Response:', response.data);
-      // Refetch categories to ensure UI is up-to-date
+      setCurrentPage(1); // Reset to page 1
       await fetchCategories();
       setNewCategory({ name: '', image: null });
       if (categoryFileInputRef.current) {
@@ -217,10 +274,10 @@ export default function OrdersTable() {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
-        }
+        },
       );
       console.log('Update Category Response:', response.data);
-      // Refetch categories to ensure UI is up-to-date
+      setCurrentPage(1); // Reset to page 1
       await fetchCategories();
       setEditCategory(null);
       onEditClose();
@@ -240,11 +297,10 @@ export default function OrdersTable() {
   // Handle delete category
   const handleDeleteCategory = async () => {
     try {
-      await axios.delete(
-        `${baseUrl}api/work-category/${editCategory.id}`,
-        { headers: { Zoning: `Bearer ${token}` } }
-      );
-      // Refetch categories
+      await axios.delete(`${baseUrl}api/work-category/${editCategory.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCurrentPage(1); // Reset to page 1
       await fetchCategories();
       setEditCategory(null);
       setModalSubcategories([]);
@@ -279,10 +335,9 @@ export default function OrdersTable() {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
-        }
+        },
       );
       console.log('Create Subcategory Response:', response.data);
-      // Refetch subcategories
       const updatedSubcategories = await fetchSubcategories(editCategory.id);
       setModalSubcategories(updatedSubcategories);
       setSubcategoryCounts((prev) => ({
@@ -322,10 +377,9 @@ export default function OrdersTable() {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
-        }
+        },
       );
       console.log('Update Subcategory Response:', response.data);
-      // Refetch subcategories
       const updatedSubcategories = await fetchSubcategories(editCategory.id);
       setModalSubcategories(updatedSubcategories);
       setEditSubcategory(null);
@@ -348,11 +402,9 @@ export default function OrdersTable() {
   // Handle delete subcategory
   const handleDeleteSubcategory = async (subcategoryId) => {
     try {
-      await axios.delete(
-        `${baseUrl}api/subcategories/${subcategoryId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      // Refetch subcategories
+      await axios.delete(`${baseUrl}api/subcategories/${subcategoryId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const updatedSubcategories = await fetchSubcategories(editCategory.id);
       setModalSubcategories(updatedSubcategories);
       setSubcategoryCounts((prev) => ({
@@ -381,7 +433,7 @@ export default function OrdersTable() {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
 
-  // Memoize columns to prevent unnecessary re-renders
+  // Memoize columns
   const columns = React.useMemo(
     () => [
       columnHelper.display({
@@ -496,7 +548,7 @@ export default function OrdersTable() {
         ),
       }),
     ],
-    [textColor, borderColor, subcategoryCounts]
+    [textColor, borderColor, subcategoryCounts],
   );
 
   const table = useReactTable({
@@ -613,10 +665,19 @@ export default function OrdersTable() {
         </Table>
       </Box>
       {/* Pagination Controls */}
-      <Flex justifyContent="space-between" alignItems="center" px="25px" mb="20px">
-        <Text>
-          Page {currentPage} of {totalPages}
-        </Text>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        px="25px"
+        mb="20px"
+      >
+        {data.length === 0 ? (
+          <Text>No categories available.</Text>
+        ) : (
+          <Text>
+            Page {currentPage} of {totalPages} ({data.length} items)
+          </Text>
+        )}
         <Flex gap="2">
           <Button
             colorScheme="teal"
@@ -626,11 +687,27 @@ export default function OrdersTable() {
           >
             Previous
           </Button>
+          {totalPages > 1 &&
+            Array.from({ length: totalPages }, (_, i) => i + 1)
+              .slice(
+                Math.max(0, currentPage - 3),
+                Math.min(totalPages, currentPage + 2),
+              )
+              .map((page) => (
+                <Button
+                  key={page}
+                  colorScheme={currentPage === page ? 'teal' : 'gray'}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </Button>
+              ))}
           <Button
             colorScheme="teal"
             size="sm"
             onClick={handleNextPage}
-            isDisabled={currentPage === totalPages}
+            isDisabled={currentPage === totalPages || data.length === 0}
           >
             Next
           </Button>
@@ -639,13 +716,16 @@ export default function OrdersTable() {
       {/* Toast Container */}
       <ToastContainer />
       {/* Add Category Modal */}
-      <Modal isOpen={isAddOpen} onClose={() => {
-        setNewCategory({ name: '', image: null });
-        if (categoryFileInputRef.current) {
-          categoryFileInputRef.current.value = '';
-        }
-        onAddClose();
-      }}>
+      <Modal
+        isOpen={isAddOpen}
+        onClose={() => {
+          setNewCategory({ name: '', image: null });
+          if (categoryFileInputRef.current) {
+            categoryFileInputRef.current.value = '';
+          }
+          onAddClose();
+        }}
+      >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Add New Category</ModalHeader>
@@ -698,15 +778,18 @@ export default function OrdersTable() {
         </ModalContent>
       </Modal>
       {/* Edit Category Modal */}
-      <Modal isOpen={isEditOpen} onClose={() => {
-        setEditCategory(null);
-        setEditSubcategory(null);
-        setModalSubcategories([]);
-        if (subcategoryFileInputRef.current) {
-          subcategoryFileInputRef.current.value = '';
-        }
-        onEditClose();
-      }}>
+      <Modal
+        isOpen={isEditOpen}
+        onClose={() => {
+          setEditCategory(null);
+          setEditSubcategory(null);
+          setModalSubcategories([]);
+          if (subcategoryFileInputRef.current) {
+            subcategoryFileInputRef.current.value = '';
+          }
+          onEditClose();
+        }}
+      >
         <ModalOverlay />
         <ModalContent maxW="600px">
           <ModalHeader>Edit Category: {editCategory?.name}</ModalHeader>
@@ -726,21 +809,25 @@ export default function OrdersTable() {
                 </FormControl>
                 <FormControl mb="4">
                   <FormLabel>Image</FormLabel>
-                  {editCategory.image && typeof editCategory.image === 'string' && (
-                    <Image
-                      src={editCategory.image}
-                      alt="Current Category Image"
-                      boxSize="100px"
-                      objectFit="cover"
-                      borderRadius="md"
-                      mb="2"
-                    />
-                  )}
+                  {editCategory.image &&
+                    typeof editCategory.image === 'string' && (
+                      <Image
+                        src={editCategory.image}
+                        alt="Current Category Image"
+                        boxSize="100px"
+                        objectFit="cover"
+                        borderRadius="md"
+                        mb="2"
+                      />
+                    )}
                   <Input
                     type="file"
                     accept="image/*"
                     onChange={(e) =>
-                      setEditCategory({ ...editCategory, image: e.target.files[0] })
+                      setEditCategory({
+                        ...editCategory,
+                        image: e.target.files[0],
+                      })
                     }
                   />
                 </FormControl>
@@ -752,7 +839,12 @@ export default function OrdersTable() {
                     <Text>No subcategories available.</Text>
                   ) : (
                     modalSubcategories.map((sub) => (
-                      <Flex key={sub._id} justify="space-between" align="center" mb="2">
+                      <Flex
+                        key={sub._id}
+                        justify="space-between"
+                        align="center"
+                        mb="2"
+                      >
                         <Flex align="center" gap="2">
                           <Image
                             src={sub.image}
@@ -789,7 +881,11 @@ export default function OrdersTable() {
                     <FormControl mt="2">
                       <FormLabel>Subcategory Name</FormLabel>
                       <Input
-                        value={editSubcategory ? editSubcategory.name : newSubcategory.name}
+                        value={
+                          editSubcategory
+                            ? editSubcategory.name
+                            : newSubcategory.name
+                        }
                         onChange={(e) => {
                           const name = e.target.value;
                           if (editSubcategory) {
@@ -803,16 +899,18 @@ export default function OrdersTable() {
                     </FormControl>
                     <FormControl mt="2">
                       <FormLabel>Subcategory Image</FormLabel>
-                      {editSubcategory && editSubcategory.image && typeof editSubcategory.image === 'string' && (
-                        <Image
-                          src={editSubcategory.image}
-                          alt="Current Subcategory Image"
-                          boxSize="100px"
-                          objectFit="cover"
-                          borderRadius="md"
-                          mb="2"
-                        />
-                      )}
+                      {editSubcategory &&
+                        editSubcategory.image &&
+                        typeof editSubcategory.image === 'string' && (
+                          <Image
+                            src={editSubcategory.image}
+                            alt="Current Subcategory Image"
+                            boxSize="100px"
+                            objectFit="cover"
+                            borderRadius="md"
+                            mb="2"
+                          />
+                        )}
                       <Input
                         type="file"
                         accept="image/*"
@@ -830,14 +928,20 @@ export default function OrdersTable() {
                     <Button
                       mt="2"
                       colorScheme="blue"
-                      onClick={editSubcategory ? handleEditSubcategory : handleCreateSubcategory}
+                      onClick={
+                        editSubcategory
+                          ? handleEditSubcategory
+                          : handleCreateSubcategory
+                      }
                       isDisabled={
                         editSubcategory
                           ? !editSubcategory.name
                           : !newSubcategory.name || !newSubcategory.image
                       }
                     >
-                      {editSubcategory ? 'Update Subcategory' : 'Add Subcategory'}
+                      {editSubcategory
+                        ? 'Update Subcategory'
+                        : 'Add Subcategory'}
                     </Button>
                     {editSubcategory && (
                       <Button

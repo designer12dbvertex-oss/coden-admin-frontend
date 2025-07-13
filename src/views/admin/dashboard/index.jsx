@@ -19,8 +19,8 @@ import {
   MdMoney,
 } from "react-icons/md";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { FaFileInvoiceDollar } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import { FaExclamationTriangle, FaFileInvoiceDollar, FaGavel } from "react-icons/fa";
 
 export default function UserReports() {
   // Chakra Color Mode
@@ -32,8 +32,9 @@ export default function UserReports() {
     users: 0,
     service_provider: 0,
     restaurants: 0,
-    codCollection: 0,
-    onlineCollection: 0,
+		directOrder: 0,
+		biddingOrder: 0,
+		emergencyOrders: 0,
     newTasks: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -59,22 +60,21 @@ export default function UserReports() {
           service_provider: data.totalSeller ?? 0,
           restaurants: data.totalRestaurants ?? 0,
 					directOrder: data.totalDirectOrder ?? 0,
-					onlineOrders: data.onlineOrders ?? 0,
-          codCollection: data.codCollection ?? 0,
-          onlineCollection: data.onlineCollection ?? 0,
+					biddingOrder: data.totalBiddingOrder ?? 0,
+					emergencyOrders: data.totalEmergencyOrder ?? 0,
           newTasks: data.newTasks ?? 0,
         });
       } catch (err) {
         console.error("API Error:", err.response || err.message);
-				// if (
-        //   err.response?.data?.message === 'Not authorized, token failed' ||
-        //   err.response?.data?.message === 'Session expired or logged in on another device' ||
-        //   err.response?.data?.message ===
-        //     'Un-Authorized, You are not authorized to access this route.' || 'Not authorized, token failed'
-        // ) {
-        //   localStorage.removeItem('token');
-        //   navigate('/');
-        // }
+				if (
+          err.response?.data?.message === 'Not authorized, token failed' ||
+          err.response?.data?.message === 'Session expired or logged in on another device' ||
+          err.response?.data?.message ===
+            'Un-Authorized, You are not authorized to access this route.' || 'Not authorized, token failed'
+        ) {
+          localStorage.removeItem('token');
+          navigate('/');
+        }
         setError("Failed to fetch dashboard data. Please try again later.");
       } finally {
         setLoading(false);
@@ -106,6 +106,7 @@ export default function UserReports() {
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
       <SimpleGrid columns={{ base: 1, md: 2, lg: 3, "2xl": 6 }} gap="20px" mb="20px">
+      <Link to ="/admin/users"> 
         <MiniStatistics
           startContent={
             <IconBox w="56px" h="56px" bg={boxBg}
@@ -115,6 +116,8 @@ export default function UserReports() {
           name="Users"
           value={dashboardData.users}
         />
+				</Link>
+				<Link to ="/admin/service_provider">
         <MiniStatistics
           startContent={
             <IconBox w="56px" h="56px" bg={boxBg}
@@ -124,6 +127,8 @@ export default function UserReports() {
           name="Service Provider"
           value={dashboardData.service_provider.toLocaleString()}
         />
+				</Link>
+				<Link to="/admin/direct-hiring">
 				 <MiniStatistics
           startContent={
             <IconBox w="56px" h="56px" bg={boxBg}
@@ -133,7 +138,30 @@ export default function UserReports() {
           name="Direct Orders"
           value={`${dashboardData.directOrder}`}
         />
+				</Link>
+				<Link to="/admin/biding">
 				 <MiniStatistics
+          startContent={
+            <IconBox w="56px" h="56px" bg={boxBg}
+              icon={<Icon as={FaGavel} w="32px" h="32px" color={brandColor} />}
+            />
+          }
+          name="Bidding Orders"
+          value={`${dashboardData.biddingOrder}`}
+        />
+				</Link>
+				<Link to="/admin/emergency-hiring">
+				 <MiniStatistics
+          startContent={
+            <IconBox w="56px" h="56px" bg={boxBg}
+              icon={<Icon as={FaExclamationTriangle} w="32px" h="32px" color={brandColor} />}
+            />
+          }
+          name="Emergency Orders"
+          value={`${dashboardData.emergencyOrders}`}
+        />
+				</Link>
+				{ /* <MiniStatistics
           startContent={
             <IconBox w="56px" h="56px" bg={boxBg}
               icon={<Icon as={MdAttachMoney} w="32px" h="32px" color={brandColor} />}
@@ -141,7 +169,7 @@ export default function UserReports() {
           }
           name="Online Orders"
           value={`${dashboardData.onlineOrders}`}
-        />
+        /> 
         <MiniStatistics
           startContent={
             <IconBox w="56px" h="56px" bg={boxBg}
@@ -159,7 +187,7 @@ export default function UserReports() {
           }
           name="Online Collection"
           value={`₹${dashboardData.onlineCollection}`}
-        />
+        /> */}
         <MiniStatistics
           startContent={
             <IconBox w="56px" h="56px"
@@ -171,10 +199,11 @@ export default function UserReports() {
           value={dashboardData.newTasks}
         />
       </SimpleGrid>
-
+{			/* Calendar Component 
       <SimpleGrid columns={{ base: 1, md: 1, xl: 2 }} gap="20px" mb="20px">
         <MiniCalendar h="100%" minW="100%" selectRange={false} />
       </SimpleGrid>
+			*/}
     </Box>
   );
 }

@@ -61,12 +61,12 @@ export default function OrdersTable() {
           throw new Error('Missing order ID');
         }
         const response = await axios.get(
-          `${baseUrl}api/direct-order/getDirectOrderWithWorker/${orderId}`,
+          `${baseUrl}api/bidding-order/AdminGetBiddingOrderById/${orderId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
-        console.log('API Response (Order):', response.data);
+        console.log('API Response:', response.data);
         if (!response.data?.data) {
           throw new Error('Invalid response format: Expected data object');
         }
@@ -120,24 +120,13 @@ export default function OrdersTable() {
         default:
           return { bg: 'gray.100', color: 'gray.800' };
       }
-    } else if (type === 'verifyStatus') {
-      switch (status?.toLowerCase()) {
-        case 'verified':
-          return { bg: 'green.100', color: 'green.800' };
-        case 'pending':
-          return { bg: 'yellow.100', color: 'yellow.800' };
-        case 'rejected':
-          return { bg: 'red.100', color: 'red.800' };
-        default:
-          return { bg: 'gray.100', color: 'gray.800' };
-      }
     }
     return { bg: 'gray.100', color: 'gray.800' };
   };
 
   // Handle view worker details click
   const handleViewDetails = () => {
-    setSelectedWorker(data.assignedWorker);
+    setSelectedWorker(data.service_provider_id);
     onDetailsOpen();
   };
 
@@ -213,23 +202,21 @@ export default function OrdersTable() {
                   <Flex align="center" gap="4">
                     <Image
                       src={
-                        data.order?.user_id?.profile_pic
-                          ? `${baseUrl}/${data.order.user_id.profile_pic}`
+                        data.user_id?.profile_pic
+                          ? `${baseUrl}/${data.user_id.profile_pic}`
                           : defaultProfilePic
                       }
-                      Dolores
                       alt="User"
                       boxSize="60px"
                       borderRadius="full"
                       objectFit="cover"
-                      fallbackSrc={defaultProfilePic}
                     />
                     <Box>
                       <Text fontWeight="bold" color={textColor}>
-                        {data.order?.user_id?.full_name || 'Not Assigned'}
+                        {data.user_id?.full_name || 'Not Assigned'}
                       </Text>
                       <Text fontSize="sm" color="gray.600">
-                        Paid - ₹{data.order?.service_payment?.amount || 0}/-
+                        Paid - ₹{data.service_payment?.amount || 0}/-
                       </Text>
                     </Box>
                   </Flex>
@@ -237,42 +224,7 @@ export default function OrdersTable() {
               </ChakraCard>
 
               {/* Service Provider Section */}
-              <ChakraCard
-                p="15px"
-                borderRadius="lg"
-                border="1px solid"
-                borderColor={borderColor}
-                bg={cardBg}
-              >
-                <Flex align="center" justify="space-between">
-                  <Flex align="center" gap="4">
-                    <Image
-                      src={
-                        data.order?.service_provider_id?.profile_pic
-                          ? `${baseUrl}/${data.order.service_provider_id.profile_pic}`
-                          : defaultProfilePic
-                      }
-                      alt="Service Provider"
-                      boxSize="60px"
-                      borderRadius="full"
-                      objectFit="cover"
-                      fallbackSrc={defaultProfilePic}
-                    />
-                    <Box>
-                      <Text fontWeight="bold" color={textColor}>
-                        {data.order?.service_provider_id?.full_name ||
-                          'Not Assigned'}
-                      </Text>
-                      <Text fontSize="sm" color="gray.600">
-                        Receive - ₹{data.order?.service_payment?.amount || 0}/-
-                      </Text>
-                    </Box>
-                  </Flex>
-                </Flex>
-              </ChakraCard>
-
-              {/* Worker Section */}
-              {data.assignedWorker && (
+              {data.service_provider_id && (
                 <ChakraCard
                   p="15px"
                   borderRadius="lg"
@@ -284,22 +236,21 @@ export default function OrdersTable() {
                     <Flex align="center" gap="4">
                       <Image
                         src={
-                          data.assignedWorker.image
-                            ? `${baseUrl}/${data.assignedWorker.image}`
+                          data.service_provider_id?.profile_pic
+                            ? `${baseUrl}/${data.service_provider_id.profile_pic}`
                             : defaultProfilePic
                         }
-                        alt="Worker"
+                        alt="Service Provider"
                         boxSize="60px"
                         borderRadius="full"
                         objectFit="cover"
-                        fallbackSrc="https://via.placeholder.com/60"
                       />
                       <Box>
                         <Text fontWeight="bold" color={textColor}>
-                          {data.assignedWorker.name || 'Not Assigned'}
+                          {data.service_provider_id?.full_name || 'Not Assigned'}
                         </Text>
                         <Text fontSize="sm" color="gray.600">
-                          AMOUNT - ₹{data.order?.service_payment?.amount || 0}/-
+                          Receive - ₹{data.service_payment?.amount || 0}/-
                         </Text>
                       </Box>
                     </Flex>
@@ -313,9 +264,6 @@ export default function OrdersTable() {
                       </Button>
                     </HStack>
                   </Flex>
-                  <Text mt="2" color={textColor} fontWeight="bold">
-                    Accepted by worker
-                  </Text>
                 </ChakraCard>
               )}
 
@@ -335,69 +283,52 @@ export default function OrdersTable() {
                     <Text fontWeight="semibold" color={textColor}>
                       Project ID:
                     </Text>
-                    <Text color={textColor}>
-                      {data.order?.project_id || 'N/A'}
-                    </Text>
+                    <Text color={textColor}>{data.project_id || 'N/A'}</Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Title:
                     </Text>
-                    <Text color={textColor}>{data.order?.title || 'N/A'}</Text>
+                    <Text color={textColor}>{data.title || 'N/A'}</Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Description:
                     </Text>
-                    <Text color={textColor}>
-                      {data.order?.description || 'N/A'}
-                    </Text>
+                    <Text color={textColor}>{data.description || 'N/A'}</Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Address:
                     </Text>
-                    <Text color={textColor}>
-                      {data.order?.address || 'N/A'}
-                    </Text>
+                    <Text color={textColor}>{data.address || 'N/A'}</Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Deadline:
                     </Text>
                     <Text color={textColor}>
-                      {data.order?.deadline
-                        ? new Date(data.order.deadline).toLocaleDateString()
+                      {data.deadline
+                        ? new Date(data.deadline).toLocaleDateString()
                         : 'N/A'}
                     </Text>
                   </Flex>
-                  <Flex align="start" gap="4" flexWrap="wrap">
+                  <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Image URL:
                     </Text>
-                    {data.order?.image_url?.length > 0 ? (
-                      data.order.image_url.map((url, index) => {
-                        const imageUrl = url.startsWith('http')
-                          ? url
-                          : `${baseUrl}/${url.startsWith('/') ? url.slice(1) : url}`;
-                        console.log(`Image ${index + 1} URL:`, imageUrl);
-                        return (
-                          <Image
-                            key={index}
-                            src={imageUrl}
-                            alt={`Order Image ${index + 1}`}
-                            boxSize="100px"
-                            objectFit="cover"
-                            fallbackSrc={defaultProfilePic}
-                            onError={(e) => {
-                              console.error(
-                                `Failed to load image: ${imageUrl}`,
-                              );
-                              e.target.src = defaultProfilePic;
-                            }}
-                          />
-                        );
-                      })
+                    {data.image_url ? (
+                      <Image
+                        src={data.image_url}
+                        alt="Order Image"
+                        boxSize="100px"
+                        objectFit="cover"
+                        fallbackSrc={defaultProfilePic}
+                        onError={(e) => {
+                          console.error(`Failed to load image: ${data.image_url}`);
+                          e.target.src = defaultProfilePic;
+                        }}
+                      />
                     ) : (
                       <Image
                         src={defaultProfilePic}
@@ -411,40 +342,38 @@ export default function OrdersTable() {
                     <Text fontWeight="semibold" color={textColor}>
                       Platform Fee:
                     </Text>
-                    <Text color={textColor}>
-                      ₹{data.order?.platform_fee || 0}
-                    </Text>
+                    <Text color={textColor}>₹{data.platform_fee || 0}</Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       User Status:
                     </Text>
                     <Text
-                      bg={getStatusStyles(data.order?.user_status, 'userStatus').bg}
-                      color={getStatusStyles(data.order?.user_status, 'userStatus').color}
+                      bg={getStatusStyles(data.user_status, 'userStatus').bg}
+                      color={getStatusStyles(data.user_status, 'userStatus').color}
                       px="2"
                       py="1"
                       borderRadius="md"
                     >
-                      {data.order?.user_status === 'cancelledDispute'
+                      {data.user_status === 'cancelledDispute'
                         ? 'User raised a dispute'
-                        : data.order?.user_status || 'N/A'}
+                        : data.user_status || 'N/A'}
                     </Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
-                      Hire Status:
+                      Service Provider Status:
                     </Text>
                     <Text
-                      bg={getStatusStyles(data.order?.hire_status, 'hireStatus').bg}
-                      color={getStatusStyles(data.order?.hire_status, 'hireStatus').color}
+                      bg={getStatusStyles(data.hire_status, 'hireStatus').bg}
+                      color={getStatusStyles(data.hire_status, 'hireStatus').color}
                       px="2"
                       py="1"
                       borderRadius="md"
                     >
-                      {data.order?.hire_status === 'cancelledDispute'
+                      {data.hire_status === 'cancelledDispute'
                         ? 'Service provider raised a dispute'
-                        : data.order?.hire_status || 'N/A'}
+                        : data.hire_status || 'N/A'}
                     </Text>
                   </Flex>
                 </VStack>
@@ -461,9 +390,9 @@ export default function OrdersTable() {
                 <Text fontWeight="bold" fontSize="lg" color={textColor}>
                   Payment History
                 </Text>
-                {data.order?.service_payment?.payment_history?.length > 0 ? (
+                {data.service_payment?.payment_history?.length > 0 ? (
                   <VStack spacing={2} align="stretch" mt="2">
-                    {data.order.service_payment.payment_history.map(
+                    {data.service_payment.payment_history.map(
                       (payment, index) => (
                         <Flex
                           key={index}
@@ -529,7 +458,7 @@ export default function OrdersTable() {
               color={textColor}
               textAlign="center"
             >
-              Worker Details
+              Service Provider Details
             </ModalHeader>
             <ModalCloseButton
               size="lg"
@@ -547,11 +476,11 @@ export default function OrdersTable() {
                   <Flex align="center" gap="4">
                     <Image
                       src={
-                        selectedWorker.image
-                          ? `${baseUrl}/${selectedWorker.image}`
+                        selectedWorker.profile_pic
+                          ? `${baseUrl}/${selectedWorker.profile_pic}`
                           : defaultProfilePic
                       }
-                      alt="Worker"
+                      alt="Service Provider"
                       boxSize="100px"
                       borderRadius="full"
                       objectFit="cover"
@@ -559,10 +488,10 @@ export default function OrdersTable() {
                     />
                     <Box>
                       <Text fontWeight="bold" fontSize="xl" color={textColor}>
-                        {selectedWorker.name || 'N/A'}
+                        {selectedWorker.full_name || 'N/A'}
                       </Text>
                       <Text color="gray.600">
-                        Worker ID: {selectedWorker._id || 'N/A'}
+                        ID: {selectedWorker._id || 'N/A'}
                       </Text>
                     </Box>
                   </Flex>
@@ -571,46 +500,6 @@ export default function OrdersTable() {
                       Phone:
                     </Text>
                     <Text color={textColor}>{selectedWorker.phone || 'N/A'}</Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Address:
-                    </Text>
-                    <Text color={textColor}>{selectedWorker.address || 'N/A'}</Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Date of Birth:
-                    </Text>
-                    <Text color={textColor}>
-                      {selectedWorker.dob
-                        ? new Date(selectedWorker.dob).toLocaleDateString()
-                        : 'N/A'}
-                    </Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Verification Status:
-                    </Text>
-                    <Text
-                      bg={
-                        getStatusStyles(
-                          selectedWorker.verifyStatus,
-                          'verifyStatus',
-                        ).bg
-                      }
-                      color={
-                        getStatusStyles(
-                          selectedWorker.verifyStatus,
-                          'verifyStatus',
-                        ).color
-                      }
-                      px="2"
-                      py="1"
-                      borderRadius="md"
-                    >
-                      {selectedWorker.verifyStatus || 'N/A'}
-                    </Text>
                   </Flex>
                 </VStack>
               </ChakraCard>
