@@ -45,6 +45,7 @@ import {
 } from '@chakra-ui/icons';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import defaultProfilePic from 'assets/img/profile/profile.webp';
 
 const columnHelper = createColumnHelper();
 
@@ -82,6 +83,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
               ? new Date(user.createdAt).toISOString().split('T')[0]
               : 'N/A',
             referral_code: user.referral_code || 'N/A',
+						createdBy:user.createdBy?.full_name || "Self-Registered",
             verified: user.verified ?? false,
             active: user.active ?? true,
             userDetails: user, // Store full user details for modal
@@ -331,7 +333,7 @@ export default function ComplexTable() {
                 loading="lazy"
                 style={{ width: '50px', height: '50px', borderRadius: '50%' }}
                 onError={(e) =>
-                  (e.target.src = '/assets/img/profile/Project3.png')
+                  (e.target.src = defaultProfilePic)
                 }
               />
             ) : (
@@ -352,6 +354,24 @@ export default function ComplexTable() {
             color="gray.400"
           >
             FULL NAME
+          </Text>
+        ),
+        cell: (info) => (
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {info.getValue()}
+          </Text>
+        ),
+      }),
+			columnHelper.accessor('createdBy', {
+        id: 'createdBy',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            CreatedBy
           </Text>
         ),
         cell: (info) => (

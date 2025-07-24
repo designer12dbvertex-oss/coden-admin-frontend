@@ -14,7 +14,7 @@ export function SidebarBrand() {
   return (
     <Flex align='center' direction='column'>
      <Heading as="h2" fontSize="2xl" color={logoColor} my="32px">
-        Bharat Works
+       The Bharat Works
       </Heading>
       <HSeparator mb='20px' />
     </Flex>

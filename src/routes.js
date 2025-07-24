@@ -31,6 +31,7 @@ import WorkCategory from 'views/admin/workCategory';
 import PlatformFee from 'views/admin/platformfee';
 import ContactUs from 'views/admin/CallContact';
 import EmailUs from 'views/admin/EmailContact';
+import SubAdmins from 'views/admin/allSubadmins';
 // import OnlineOrders from 'views/admin/onlineOrders';
 
 // Auth Imports
@@ -58,6 +59,13 @@ const routes = [
     icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
     path: '/service_provider',
     component: <ServiceProvider />,
+  },
+	{
+    name: 'Sub Admins',
+    layout: '/admin',
+    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
+    path: '/sub_admins',
+    component: <SubAdmins />,
   },
 	{
     name: 'Work Category',

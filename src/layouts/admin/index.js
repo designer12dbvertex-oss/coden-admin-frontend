@@ -13,6 +13,7 @@ import ViewServiceProvider from 'views/admin/viewServiceProviderDetails';
 import ViewBiddingOrder from 'views/admin/viewBiddingOrder';
 import ViewEmergencyOrder from 'views/admin/viewEmergencyOrder';
 import ViewCreateServiceProvider from 'views/admin/createServiceProvider';
+import ViewCreateSubadmin from 'views/admin/createSubadmin';
 // Custom Chakra theme
 export default function Dashboard(props) {
   const { ...rest } = props;
@@ -122,7 +123,9 @@ export default function Dashboard(props) {
 	allRoutes.push(
     <Route path="/createServiceProvider" element={<ViewCreateServiceProvider />} key="viewCreateServiceProvider" />
   );
-
+allRoutes.push(
+    <Route path="/createSubadmin" element={<ViewCreateSubadmin />} key="ViewCreateSubadmin" />
+  );
   return allRoutes;
 };
   document.documentElement.dir = 'ltr';

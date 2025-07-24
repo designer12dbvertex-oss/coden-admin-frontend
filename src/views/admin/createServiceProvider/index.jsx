@@ -138,14 +138,28 @@ export default function OrdersTable() {
   };
 
   const handleSubcategoryChange = (e) => {
-    const selectedOptions = Array.from(e.target.selectedOptions).map(
-      (option) => option.value,
-    );
+    const selectedValue = e.target.value;
+    if (selectedValue && !serviceProviderForm.subcategory_ids.includes(selectedValue)) {
+      setServiceProviderForm((prev) => ({
+        ...prev,
+        subcategory_ids: [...prev.subcategory_ids, selectedValue],
+      }));
+      setErrors((prev) => ({ ...prev, subcategory_ids: '' }));
+    }
+  };
+
+  const removeSubcategory = (id) => {
     setServiceProviderForm((prev) => ({
       ...prev,
-      subcategory_ids: selectedOptions,
+      subcategory_ids: prev.subcategory_ids.filter((subId) => subId !== id),
     }));
-    setErrors((prev) => ({ ...prev, subcategory_ids: '' }));
+  };
+
+  const getSelectedSubcategoryNames = () => {
+    return subcategories
+      .filter((sub) => serviceProviderForm.subcategory_ids.includes(sub._id))
+      .map((sub) => sub.name)
+      .join(', ');
   };
 
   const validateForm = () => {
@@ -191,7 +205,6 @@ export default function OrdersTable() {
           formData.append(key, serviceProviderForm[key]);
         }
       });
-      // ✅ Proper way to send subcategory_ids as array
       serviceProviderForm.subcategory_ids.forEach((id) => {
         formData.append('subcategory_ids', id);
       });
@@ -402,50 +415,50 @@ export default function OrdersTable() {
               </FormLabel>
               <Select
                 name="subcategory_ids"
-                multiple
-                value={serviceProviderForm.subcategory_ids}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions).map(
-                    (option) => option.value,
-                  );
-                  setServiceProviderForm((prev) => ({
-                    ...prev,
-                    subcategory_ids: selected,
-                  }));
-                  setErrors((prev) => ({ ...prev, subcategory_ids: '' }));
-                }}
-                borderRadius="8px"
-                borderColor="gray.300"
-                _focus={{
-                  borderColor: 'blue.500',
-                  boxShadow: '0 0 0 1px blue.500',
-                }}
-                height="100px"
-                overflowY="auto"
-                padding="5px"
+                value=""
+                onChange={handleSubcategoryChange}
+                placeholder="Select subcategory"
               >
-                {subcategories.map((subcategory) => (
-                  <option key={subcategory._id} value={subcategory._id}>
-                    {subcategory.name}
-                  </option>
-                ))}
+                {subcategories
+                  .filter((sub) => !serviceProviderForm.subcategory_ids.includes(sub._id))
+                  .map((subcategory) => (
+                    <option key={subcategory._id} value={subcategory._id}>
+                      {subcategory.name}
+                    </option>
+                  ))}
               </Select>
               {errors.subcategory_ids && (
                 <Text color="red.500" fontSize="sm">
                   {errors.subcategory_ids}
                 </Text>
               )}
-							 {serviceProviderForm.subcategory_ids.length > 0 && (
-              <Text fontSize="sm" mt="2" color="gray.600">
-                Selected:{' '}
-                {subcategories
-                  .filter((sub) =>
-                    serviceProviderForm.subcategory_ids.includes(sub._id),
-                  )
-                  .map((sub) => sub.name)
-                  .join(', ')}
-              </Text>
-            )}
+              {serviceProviderForm.subcategory_ids.length > 0 && (
+                <Flex mt="2" wrap="wrap" gap="2">
+                  {subcategories
+                    .filter((sub) =>
+                      serviceProviderForm.subcategory_ids.includes(sub._id),
+                    )
+                    .map((sub) => (
+                      <Flex
+                        key={sub._id}
+                        align="center"
+                        bg="gray.100"
+                        px="2"
+                        py="1"
+                        borderRadius="md"
+                      >
+                        <Text fontSize="sm">{sub.name}</Text>
+                        <Button
+                          size="xs"
+                          ml="2"
+                          onClick={() => removeSubcategory(sub._id)}
+                        >
+                          ×
+                        </Button>
+                      </Flex>
+                    ))}
+                </Flex>
+              )}
             </FormControl>
           </Flex>
 

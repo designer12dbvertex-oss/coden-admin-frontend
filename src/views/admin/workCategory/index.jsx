@@ -567,6 +567,7 @@ export default function OrdersTable() {
         flexDirection="column"
         w="100%"
         px="0px"
+				mt="100px"
         overflowX={{ sm: 'scroll', lg: 'hidden' }}
       >
         <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
@@ -582,6 +583,7 @@ export default function OrdersTable() {
         flexDirection="column"
         w="100%"
         px="0px"
+				mt="100px"
         overflowX={{ sm: 'scroll', lg: 'hidden' }}
       >
         <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
