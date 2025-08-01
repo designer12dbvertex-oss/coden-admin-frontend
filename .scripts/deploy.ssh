@@ -3,7 +3,7 @@ set -e
 
 echo "Deployment started..."
 
-cd /var/www/next/bharat_app_admin
+cd /var/www/bharat_app_admin
 
 # Fetch remote changes without merging
 git fetch origin live_server
