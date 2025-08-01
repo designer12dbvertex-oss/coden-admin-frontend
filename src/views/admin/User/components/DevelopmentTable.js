@@ -59,7 +59,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
             id: user._id,
             profile_pic: user.profile_pic ? `${baseUrl}${user.profile_pic}` : defaultProfilePic,
             full_name: user.full_name || 'N/A',
-            location: user.location || 'N/A',
+            location: user.location.address || 'N/A',
             mobile: user.phone || 'N/A',
             createdAt: user.createdAt
               ? new Date(user.createdAt).toISOString().split('T')[0]
