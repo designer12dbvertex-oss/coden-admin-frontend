@@ -21,7 +21,7 @@ echo "New changes found! Pulling..."
 git pull origin live_server
 
 echo "Installing Dependencies..."
-npm install --yes
+npm install --force
 
 echo "Creating Production Build..."
 npm run build
