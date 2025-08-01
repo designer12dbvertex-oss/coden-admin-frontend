@@ -214,7 +214,7 @@ function SignIn() {
 							isLoading={isLoading}
 							isDisabled={isLoading || !emailOrMobile || !password}
 						>
-							Sign In
+							Login In
 						</Button>
 					</FormControl>
 				</Flex>
