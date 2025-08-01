@@ -115,7 +115,7 @@ function SignIn() {
 			>
 				<Box me="auto">
 					<Heading color={textColor} fontSize="36px" mb="10px">
-						Sign In
+						LogIn
 					</Heading>
 					<Text
 						mb="36px"
