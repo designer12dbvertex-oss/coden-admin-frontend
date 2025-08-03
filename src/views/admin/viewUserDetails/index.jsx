@@ -58,7 +58,7 @@ export default function ServiceProviderDetails() {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const navigate = useNavigate();
-  const { service_provider_id } = useParams();
+  const { user_id } = useParams();
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
 
@@ -68,11 +68,11 @@ export default function ServiceProviderDetails() {
       try {
         if (!baseUrl) throw new Error('Missing base URL');
         if (!token) throw new Error('Missing authentication token');
-        if (!service_provider_id)
+        if (!user_id)
           throw new Error('Missing service_provider_id');
 
         const response = await axios.get(
-          `${baseUrl}api/admin/getServiceProvider/${service_provider_id}`,
+          `${baseUrl}api/admin/getUser/${user_id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -105,7 +105,7 @@ export default function ServiceProviderDetails() {
     };
 
     fetchOrders();
-  }, [navigate, service_provider_id]);
+  }, [navigate, user_id]);
 
   const getStatusStyles = (status, type) => {
     if (type === 'verifyStatus') {
@@ -139,55 +139,119 @@ export default function ServiceProviderDetails() {
   };
 
   // Update verification status for Service Provider
-  const toggleUserVerified = async (userId, verified) => {
-    setToggleLoading(true);
-    try {
-      const response = await axios.patch(
-        `${baseUrl}api/admin/updateUserverified`,
-        { userId, verified: !verified },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      if (response.data.success) {
-        setData((prevData) => ({
+  // const toggleUserVerified = async (userId, verified) => {
+  //   setToggleLoading(true);
+  //   try {
+  //     const response = await axios.patch(
+  //       `${baseUrl}api/admin/updateUserverified`,
+  //       { userId, verified: !verified },
+  //       { headers: { Authorization: `Bearer ${token}` } },
+  //     );
+  //     if (response.data.success) {
+  //       setData((prevData) => ({
+  //         ...prevData,
+  //         user: { ...prevData.user, verified: !verified },
+  //       }));
+  //       toast.success(
+  //         'Service Provider verification status updated successfully!',
+  //         {
+  //           position: 'top-right',
+  //           autoClose: 3000,
+  //           hideProgressBar: false,
+  //           closeOnClick: true,
+  //           pauseOnHover: true,
+  //           draggable: true,
+  //         },
+  //       );
+  //     } else {
+  //       throw new Error('Failed to update user verification status');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error toggling user verification:', error);
+  //     setError(
+  //       error.response?.data?.message ||
+  //         'Failed to update user verification status',
+  //     );
+  //     toast.error(
+  //       error.response?.data?.message ||
+  //         'Failed to update user verification status',
+  //       {
+  //         position: 'top-right',
+  //         autoClose: 3000,
+  //         hideProgressBar: false,
+  //         closeOnClick: true,
+  //         pauseOnHover: true,
+  //         draggable: true,
+  //       },
+  //     );
+  //   } finally {
+  //     setToggleLoading(false);
+  //   }
+  // };
+
+	const toggleUserVerified = async (userId, verified) => {
+  // Don't proceed if already verified
+  if (verified) {
+    toast.info("User is already verified.", {
+      position: 'top-right',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+    return;
+  }
+
+  setToggleLoading(true);
+
+  try {
+    const response = await axios.post(
+      `${baseUrl}api/admin/approveServiceProvider`,
+      { userId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.data.success) {
+      // Update local state
+   setData((prevData) => ({
           ...prevData,
           user: { ...prevData.user, verified: !verified },
         }));
-        toast.success(
-          'Service Provider verification status updated successfully!',
-          {
-            position: 'top-right',
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-          },
-        );
-      } else {
-        throw new Error('Failed to update user verification status');
-      }
-    } catch (error) {
-      console.error('Error toggling user verification:', error);
-      setError(
-        error.response?.data?.message ||
-          'Failed to update user verification status',
-      );
-      toast.error(
-        error.response?.data?.message ||
-          'Failed to update user verification status',
-        {
-          position: 'top-right',
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        },
-      );
-    } finally {
-      setToggleLoading(false);
+
+      toast.success('User verified successfully!', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } else {
+      throw new Error('Failed to update verification status');
     }
-  };
+  } catch (error) {
+    console.error('Error verifying service provider:', error);
+    const message =
+      error.response?.data?.message ||
+      'Failed to update verification status';
+    setError(message);
+    toast.error(message, {
+      position: 'top-right',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  } finally {
+    setToggleLoading(false);
+  }
+};
 
   // Update verification status for Worker
   const handleWorkerVerifyStatusUpdate = async (worker) => {
@@ -282,7 +346,7 @@ export default function ServiceProviderDetails() {
             fontWeight="700"
             lineHeight="100%"
           >
-            Service Provider Details
+            User Details
           </Text>
           <Text color={textColor} fontSize="16px">
             Total Workers: {data.workers?.length || 0}
@@ -687,7 +751,7 @@ export default function ServiceProviderDetails() {
         color={textColor}
         textAlign="center"
       >
-        Service Provider Details
+        User Details
       </ModalHeader>
       <ModalCloseButton
         size="lg"
@@ -704,7 +768,7 @@ export default function ServiceProviderDetails() {
                     ? `${baseUrl}/${selectedProvider.profile_pic}`
                     : defaultProfilePic
                 }
-                alt="Service Provider"
+                alt="User"
                 boxSize="100px"
                 borderRadius="full"
                 objectFit="cover"

@@ -32,6 +32,8 @@ import PlatformFee from 'views/admin/platformfee';
 import ContactUs from 'views/admin/CallContact';
 import EmailUs from 'views/admin/EmailContact';
 import SubAdmins from 'views/admin/allSubadmins';
+import Both from 'views/admin/both';
+import RequestUser from 'views/admin/RequestUser';
 // import OnlineOrders from 'views/admin/onlineOrders';
 
 // Auth Imports
@@ -59,6 +61,20 @@ const routes = [
     icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
     path: '/service_provider',
     component: <ServiceProvider />,
+  },
+	{
+    name: 'Both',
+    layout: '/admin',
+    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
+    path: '/both',
+    component: <Both />,
+  },
+	{
+    name: 'Requested User',
+    layout: '/admin',
+    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
+    path: '/requests',
+    component: <RequestUser />,
   },
 	{
     name: 'Sub Admins',

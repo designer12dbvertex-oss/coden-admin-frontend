@@ -14,6 +14,7 @@ import ViewBiddingOrder from 'views/admin/viewBiddingOrder';
 import ViewEmergencyOrder from 'views/admin/viewEmergencyOrder';
 import ViewCreateServiceProvider from 'views/admin/createServiceProvider';
 import ViewCreateSubadmin from 'views/admin/createSubadmin';
+import ViewUser from "views/admin/viewUserDetails";
 // Custom Chakra theme
 export default function Dashboard(props) {
   const { ...rest } = props;
@@ -113,6 +114,9 @@ export default function Dashboard(props) {
   );
   allRoutes.push(
     <Route path="/details/:service_provider_id" element={<ViewServiceProvider />} key="viewServiceProvider" />
+  );
+	allRoutes.push(
+    <Route path="/UserDetails/:user_id" element={<ViewUser />} key="viewUser" />
   );
   allRoutes.push(
     <Route path="/biddingOrder/:orderId" element={<ViewBiddingOrder />} key="viewBiddingOrder" />
