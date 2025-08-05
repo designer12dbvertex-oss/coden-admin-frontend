@@ -28,10 +28,15 @@ import Card from 'components/card/Card';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from '@chakra-ui/icons';
 import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css'; // Move this to App.js or index.js if possible
-import defaultProfilePic from 'assets/img/profile/profile.webp'; // Adjust the path as necessary
+import 'react-toastify/dist/ReactToastify.css';
+import defaultProfilePic from 'assets/img/profile/profile.webp';
 
 const columnHelper = createColumnHelper();
 
@@ -50,15 +55,24 @@ const useFetchUsers = (baseUrl, token, navigate) => {
         const response = await axios.get(`${baseUrl}api/admin/getAllUsers`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-				console.log('Fetched users:', response.data.users); // Debug log
+        console.log('Fetched users:', response.data.users);
         if (!response.data?.users) {
           throw new Error('Invalid API response: No users found');
         }
         setData(
           response.data.users.map((user) => ({
             id: user._id,
-            profile_pic: user.profile_pic ? `${baseUrl}${user.profile_pic}` : defaultProfilePic,
-            full_name: user.full_name || 'N/A',
+            profile_pic: user.profile_pic
+              ? `${baseUrl}${user.profile_pic}`
+              : defaultProfilePic,
+            // Capitalize only first letter of each word in full_name
+            full_name: user.full_name
+              ? user.full_name
+                  .toLowerCase()
+                  .split(' ')
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ')
+              : 'N/A',
             location: user.location.address || 'N/A',
             mobile: user.phone || 'N/A',
             createdAt: user.createdAt
@@ -66,16 +80,18 @@ const useFetchUsers = (baseUrl, token, navigate) => {
               : 'N/A',
             referral_code: user.referral_code || 'N/A',
             active: user.active ?? true,
-          }))
+          })),
         );
       } catch (error) {
         console.error('Error fetching data:', error);
         const errorMessage =
-          error.response?.data?.message || error.message || 'Failed to load data';
-        if (errorMessage.includes('Session expired')) {
-          localStorage.removeItem('token');
-          navigate('/');
-        } else if (errorMessage.includes('Un-Authorized')) {
+          error.response?.data?.message ||
+          error.message ||
+          'Failed to load data';
+        if (
+          errorMessage.includes('Session expired') ||
+          errorMessage.includes('Un-Authorized')
+        ) {
           localStorage.removeItem('token');
           navigate('/');
         } else {
@@ -91,22 +107,28 @@ const useFetchUsers = (baseUrl, token, navigate) => {
   return { data, loading, error, setData, setError };
 };
 
-// Function to toggle user status
-const toggleUserStatus = async (baseUrl, token, userId, active, setData, setError) => {
+// Function to toggle user status (unchanged)
+const toggleUserStatus = async (
+  baseUrl,
+  token,
+  userId,
+  active,
+  setData,
+  setError,
+) => {
   try {
     const response = await axios.patch(
       `${baseUrl}api/admin/updateUserStatus`,
       { userId, active: !active },
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` } },
     );
-    console.log('Toggle response:', response.data); // Debug log
+    console.log('Toggle response:', response.data);
     if (response.data.success) {
       setData((prevData) =>
         prevData.map((user) =>
-          user.id === userId ? { ...user, active: !active } : user
-        )
+          user.id === userId ? { ...user, active: !active } : user,
+        ),
       );
-      // Display success toast
       toast.success('User status updated successfully!', {
         position: 'top-right',
         autoClose: 3000,
@@ -122,15 +144,17 @@ const toggleUserStatus = async (baseUrl, token, userId, active, setData, setErro
   } catch (error) {
     console.error('Error toggling user status:', error);
     setError(error.response?.data?.message || 'Failed to update user status');
-    // Display error toast
-    toast.error(error.response?.data?.message || 'Failed to update user status', {
-      position: 'top-right',
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
+    toast.error(
+      error.response?.data?.message || 'Failed to update user status',
+      {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      },
+    );
     return false;
   }
 };
@@ -139,6 +163,7 @@ export default function ComplexTable() {
   const [sorting, setSorting] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [toggleLoading, setToggleLoading] = useState({});
+  const [expandedLocations, setExpandedLocations] = useState({}); // State for tracking expanded locations
   const itemsPerPage = 10;
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
@@ -146,13 +171,23 @@ export default function ComplexTable() {
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
 
-  const { data, loading, error, setData, setError } = useFetchUsers(baseUrl, token, navigate);
+  const { data, loading, error, setData, setError } = useFetchUsers(
+    baseUrl,
+    token,
+    navigate,
+  );
 
-  // Memoized toggle handler
+  // Toggle handler for read more/less
+  const handleToggleLocation = useCallback((userId) => {
+    setExpandedLocations((prev) => ({
+      ...prev,
+      [userId]: !prev[userId],
+    }));
+  }, []);
+
   const handleToggle = useCallback(
     async (userId, currentActive) => {
       if (toggleLoading[userId]) return;
-
       setToggleLoading((prev) => ({ ...prev, [userId]: true }));
       const success = await toggleUserStatus(
         baseUrl,
@@ -160,22 +195,24 @@ export default function ComplexTable() {
         userId,
         currentActive,
         setData,
-        setError
+        setError,
       );
       setToggleLoading((prev) => ({ ...prev, [userId]: false }));
       return success;
     },
-    [baseUrl, token, setData, setError, toggleLoading]
+    [baseUrl, token, setData, setError, toggleLoading],
   );
 
-  // Pagination logic
+  // Pagination logic (unchanged)
   const totalItems = data.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedData = useMemo(() => data.slice(startIndex, endIndex), [data, startIndex, endIndex]);
+  const paginatedData = useMemo(
+    () => data.slice(startIndex, endIndex),
+    [data, startIndex, endIndex],
+  );
 
-  // Handle page navigation with validation
   const goToPage = useCallback(
     (page) => {
       const newPage = Math.min(Math.max(1, page), totalPages);
@@ -184,10 +221,9 @@ export default function ComplexTable() {
         setCurrentPage(newPage);
       }
     },
-    [currentPage, totalPages]
+    [currentPage, totalPages],
   );
 
-  // Reset page to 1 when data changes significantly
   useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) {
       console.log(`Resetting page to 1 due to totalPages: ${totalPages}`);
@@ -258,11 +294,34 @@ export default function ComplexTable() {
             LOCATION
           </Text>
         ),
-        cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
-        ),
+        cell: (info) => {
+          const location = info.getValue();
+          const userId = info.row.original.id;
+          const isExpanded = expandedLocations[userId];
+          const isLongText = location.length > 30; // Adjust threshold as needed
+          const shortText = isLongText
+            ? `${location.slice(0, 30)}...`
+            : location;
+
+          return (
+            <Flex align="center">
+              <Text color={textColor} fontSize="sm" fontWeight="700">
+                {isExpanded || !isLongText ? location : shortText}
+              </Text>
+              {isLongText && (
+                <Button
+                  size="xs"
+                  variant="link"
+                  colorScheme='teal'
+                  ml={2}
+                  onClick={() => handleToggleLocation(userId)}
+                >
+                  {isExpanded ? 'Read Less' : 'Read More'}
+                </Button>
+              )}
+            </Flex>
+          );
+        },
       }),
       columnHelper.accessor('mobile', {
         id: 'mobile',
@@ -340,13 +399,22 @@ export default function ComplexTable() {
         ),
       }),
     ],
-    [textColor, handleToggle, toggleLoading]
+    [
+      textColor,
+      handleToggle,
+      toggleLoading,
+      expandedLocations,
+      handleToggleLocation,
+    ],
   );
 
   const table = useReactTable({
     data: paginatedData,
     columns,
-    state: { sorting, pagination: { pageIndex: currentPage - 1, pageSize: itemsPerPage } },
+    state: {
+      sorting,
+      pagination: { pageIndex: currentPage - 1, pageSize: itemsPerPage },
+    },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -385,7 +453,7 @@ export default function ComplexTable() {
           fontWeight="700"
           lineHeight="100%"
         >
-          Users Table
+          Users List
         </Text>
       </Flex>
       <Box>
@@ -417,7 +485,7 @@ export default function ComplexTable() {
                     >
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext()
+                        header.getContext(),
                       )}
                       {header.column.getIsSorted() ? (
                         header.column.getIsSorted() === 'asc' ? (
@@ -450,10 +518,15 @@ export default function ComplexTable() {
           </Tbody>
         </Table>
       </Box>
-      {/* Pagination Controls */}
-      <Flex justifyContent="space-between" alignItems="center" px="25px" py="10px">
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        px="25px"
+        py="10px"
+      >
         <Text fontSize="sm" color={textColor}>
-          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} users
+          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
+          {totalItems} users
         </Text>
         <HStack>
           <Button
@@ -484,7 +557,6 @@ export default function ComplexTable() {
           </Button>
         </HStack>
       </Flex>
-      {/* Add ToastContainer to render toasts */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -492,7 +564,7 @@ export default function ComplexTable() {
         closeOnClick
         pauseOnHover
         draggable
-        theme={useColorModeValue('light', 'dark')} // Integrate with Chakra's color mode
+        theme={useColorModeValue('light', 'dark')}
       />
     </Card>
   );

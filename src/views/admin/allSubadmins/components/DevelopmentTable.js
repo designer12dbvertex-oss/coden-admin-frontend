@@ -69,7 +69,13 @@ const useFetchSubadmins = (baseUrl, token, navigate) => {
           response.data.data.map((subadmin) => ({
             id: subadmin._id,
             profile_pic: subadmin.profile_pic || defaultProfilePic,
-            full_name: subadmin.full_name || 'N/A',
+            full_name: subadmin.full_name
+              ? subadmin.full_name
+                  .toLowerCase()
+                  .split(' ')
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ')
+              : 'N/A',
             email: subadmin.email || 'N/A',
             phone: subadmin.phone || 'N/A',
             role: subadmin.role || 'N/A',
@@ -411,7 +417,7 @@ export default function SubadminTable() {
         cell: (info) => (
           <Button
             size="sm"
-            colorScheme="blue"
+            colorScheme="teal"
             leftIcon={<EditIcon />}
             onClick={() => handleEditClick(info.row.original)}
           >
@@ -465,7 +471,7 @@ export default function SubadminTable() {
           fontWeight="700"
           lineHeight="100%"
         >
-          Subadmins Table
+          Subadmins List
         </Text>
         <Button
           colorScheme="teal"
@@ -633,10 +639,10 @@ export default function SubadminTable() {
             </FormControl>
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="blue" mr={3} onClick={handleSave}>
+            <Button colorScheme="teal" mr={3} onClick={handleSave}>
               Save
             </Button>
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="light" onClick={onClose}>
               Cancel
             </Button>
           </ModalFooter>

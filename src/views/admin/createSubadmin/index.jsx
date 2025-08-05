@@ -244,7 +244,7 @@ export default function CreateSubadmin() {
             )}
           </FormControl>
 
-          <Button colorScheme="blue" onClick={createSubadmin}>
+          <Button colorScheme="teal" onClick={createSubadmin}>
             Create Subadmin
           </Button>
         </Flex>

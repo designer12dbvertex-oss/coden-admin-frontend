@@ -38,6 +38,7 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Swal from 'sweetalert2';
 
 // Custom components
 import Card from 'components/card/Card';
@@ -57,14 +58,12 @@ export default function OrdersTable() {
     image: null,
   });
   const [editCategory, setEditCategory] = React.useState(null);
-  const [newSubcategory, setNewSubcategory] = React.useState({
-    name: '',
-    image: null,
-    categoryId: '',
-  });
   const [editSubcategory, setEditSubcategory] = React.useState(null);
   const [subcategoryCounts, setSubcategoryCounts] = React.useState({});
   const [modalSubcategories, setModalSubcategories] = React.useState([]);
+  const [viewSubcategories, setViewSubcategories] = React.useState([]); // For View Details modal
+  const [selectedCategoryName, setSelectedCategoryName] = React.useState(''); // For View Details modal header
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState(''); // For View Details modal
   const categoryFileInputRef = React.useRef(null);
   const subcategoryFileInputRef = React.useRef(null);
   const itemsPerPage = 10;
@@ -79,6 +78,12 @@ export default function OrdersTable() {
     onOpen: onEditOpen,
     onClose: onEditClose,
   } = useDisclosure();
+  const {
+    isOpen: isViewOpen,
+    onOpen: onViewOpen,
+    onClose: onViewClose,
+  } = useDisclosure(); // New disclosure for View Details modal
+
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const navigate = useNavigate();
@@ -111,7 +116,7 @@ export default function OrdersTable() {
       }
       setLoading(true);
       const response = await axios.get(
-        `${baseUrl}api/adminWork-category`, // Remove page and limit since API returns all data
+        `${baseUrl}api/adminWork-category`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       console.log('API Response (Categories):', response.data);
@@ -122,7 +127,6 @@ export default function OrdersTable() {
         );
       }
 
-      // Format all data
       const formattedData = response.data.data.map((item) => ({
         id: item._id || '',
         name: item.name || '',
@@ -131,14 +135,12 @@ export default function OrdersTable() {
 
       setAllData(formattedData);
 
-      // Calculate total pages based on allData
       const calculatedTotalPages = Math.max(
         1,
         Math.ceil(formattedData.length / itemsPerPage),
       );
       setTotalPages(calculatedTotalPages);
 
-      // Set current page data
       const startIndex = (currentPage - 1) * itemsPerPage;
       const paginatedData = formattedData.slice(
         startIndex,
@@ -146,7 +148,6 @@ export default function OrdersTable() {
       );
       setData(paginatedData);
 
-      // Fetch subcategory counts
       const counts = {};
       for (const category of formattedData) {
         const subcategories = await fetchSubcategories(category.id);
@@ -161,7 +162,6 @@ export default function OrdersTable() {
         itemsDisplayed: paginatedData.length,
       });
 
-      // Reset currentPage if it exceeds totalPages
       if (currentPage > calculatedTotalPages) {
         setCurrentPage(1);
       }
@@ -238,7 +238,7 @@ export default function OrdersTable() {
         },
       );
       console.log('Create Category Response:', response.data);
-      setCurrentPage(1); // Reset to page 1
+      setCurrentPage(1);
       await fetchCategories();
       setNewCategory({ name: '', image: null });
       if (categoryFileInputRef.current) {
@@ -277,7 +277,7 @@ export default function OrdersTable() {
         },
       );
       console.log('Update Category Response:', response.data);
-      setCurrentPage(1); // Reset to page 1
+      setCurrentPage(1);
       await fetchCategories();
       setEditCategory(null);
       onEditClose();
@@ -288,73 +288,6 @@ export default function OrdersTable() {
     } catch (err) {
       console.error('Update Category Error:', err);
       toast.error('Failed to update category', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
-    }
-  };
-
-  // Handle delete category
-  const handleDeleteCategory = async () => {
-    try {
-      await axios.delete(`${baseUrl}api/work-category/${editCategory.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setCurrentPage(1); // Reset to page 1
-      await fetchCategories();
-      setEditCategory(null);
-      setModalSubcategories([]);
-      onEditClose();
-      toast.success('Category deleted successfully!', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
-    } catch (err) {
-      console.error('Delete Category Error:', err);
-      toast.error('Failed to delete category', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
-    }
-  };
-
-  // Handle create subcategory
-  const handleCreateSubcategory = async () => {
-    try {
-      const formData = new FormData();
-      formData.append('name', newSubcategory.name);
-      formData.append('category_id', editCategory.id);
-      if (newSubcategory.image) {
-        formData.append('image', newSubcategory.image);
-      }
-      const response = await axios.post(
-        `${baseUrl}api/sub-category`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        },
-      );
-      console.log('Create Subcategory Response:', response.data);
-      const updatedSubcategories = await fetchSubcategories(editCategory.id);
-      setModalSubcategories(updatedSubcategories);
-      setSubcategoryCounts((prev) => ({
-        ...prev,
-        [editCategory.id]: updatedSubcategories.length,
-      }));
-      setNewSubcategory({ name: '', image: null, categoryId: '' });
-      if (subcategoryFileInputRef.current) {
-        subcategoryFileInputRef.current.value = '';
-      }
-      toast.success('Subcategory created successfully!', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
-    } catch (err) {
-      console.error('Create Subcategory Error:', err);
-      toast.error('Failed to create subcategory', {
         position: 'top-right',
         autoClose: 3000,
       });
@@ -380,8 +313,12 @@ export default function OrdersTable() {
         },
       );
       console.log('Update Subcategory Response:', response.data);
-      const updatedSubcategories = await fetchSubcategories(editCategory.id);
-      setModalSubcategories(updatedSubcategories);
+      const updatedSubcategories = await fetchSubcategories(selectedCategoryId);
+      setViewSubcategories(updatedSubcategories);
+      setSubcategoryCounts((prev) => ({
+        ...prev,
+        [selectedCategoryId]: updatedSubcategories.length,
+      }));
       setEditSubcategory(null);
       if (subcategoryFileInputRef.current) {
         subcategoryFileInputRef.current.value = '';
@@ -401,27 +338,56 @@ export default function OrdersTable() {
 
   // Handle delete subcategory
   const handleDeleteSubcategory = async (subcategoryId) => {
-    try {
-      await axios.delete(`${baseUrl}api/subcategories/${subcategoryId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const updatedSubcategories = await fetchSubcategories(editCategory.id);
-      setModalSubcategories(updatedSubcategories);
-      setSubcategoryCounts((prev) => ({
-        ...prev,
-        [editCategory.id]: updatedSubcategories.length,
-      }));
-      toast.success('Subcategory deleted successfully!', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
-    } catch (err) {
-      console.error('Delete Subcategory Error:', err);
-      toast.error('Failed to delete subcategory', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+    // Close the modal before showing the alert
+    onViewClose();
+
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'No, cancel',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${baseUrl}api/subcategories/${subcategoryId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const updatedSubcategories = await fetchSubcategories(selectedCategoryId);
+        setViewSubcategories(updatedSubcategories);
+        setSubcategoryCounts((prev) => ({
+          ...prev,
+          [selectedCategoryId]: updatedSubcategories.length,
+        }));
+        toast.success('Subcategory deleted successfully!', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+      } catch (err) {
+        console.error('Delete Subcategory Error:', err);
+        toast.error('Failed to delete subcategory', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        Swal.fire('Error!', 'Failed to delete subcategory.', 'error');
+      }
     }
+
+    // Reopen the modal after the alert is handled (confirmed or cancelled)
+    onViewOpen();
+  };
+
+  // Handle view details
+  const handleViewDetails = async (categoryId, categoryName) => {
+    const subcategories = await fetchSubcategories(categoryId);
+    setViewSubcategories(subcategories);
+    setSelectedCategoryName(categoryName);
+    setSelectedCategoryId(categoryId);
+    onViewOpen();
   };
 
   // Pagination handlers
@@ -544,6 +510,13 @@ export default function OrdersTable() {
             >
               Edit
             </Button>
+            <Button
+              colorScheme="purple"
+              size="sm"
+              onClick={() => handleViewDetails(row.original.id, row.original.name)}
+            >
+              View Details
+            </Button>
           </Flex>
         ),
       }),
@@ -567,7 +540,7 @@ export default function OrdersTable() {
         flexDirection="column"
         w="100%"
         px="0px"
-				mt="100px"
+        mt="100px"
         overflowX={{ sm: 'scroll', lg: 'hidden' }}
       >
         <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
@@ -583,7 +556,7 @@ export default function OrdersTable() {
         flexDirection="column"
         w="100%"
         px="0px"
-				mt="100px"
+        mt="100px"
         overflowX={{ sm: 'scroll', lg: 'hidden' }}
       >
         <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
@@ -610,9 +583,9 @@ export default function OrdersTable() {
         >
           All Work Categories
         </Text>
-        <Button colorScheme="teal" size="sm" onClick={onAddOpen}>
-          Add New Category
-        </Button>
+        {/* <Button colorScheme="teal" size="sm" onClick={onAddOpen}>
+           Add New Category
+         </Button> */}
       </Flex>
       <Box>
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">
@@ -833,135 +806,6 @@ export default function OrdersTable() {
                     }
                   />
                 </FormControl>
-                <Box mb="4">
-                  <Text fontWeight="bold" fontSize="lg" mb="2">
-                    Subcategories
-                  </Text>
-                  {modalSubcategories.length === 0 ? (
-                    <Text>No subcategories available.</Text>
-                  ) : (
-                    modalSubcategories.map((sub) => (
-                      <Flex
-                        key={sub._id}
-                        justify="space-between"
-                        align="center"
-                        mb="2"
-                      >
-                        <Flex align="center" gap="2">
-                          <Image
-                            src={sub.image}
-                            alt="Subcategory Image"
-                            boxSize="50px"
-                            objectFit="cover"
-                            borderRadius="md"
-                          />
-                          <Text>{sub.name}</Text>
-                        </Flex>
-                        <Flex gap="2">
-                          <Button
-                            size="sm"
-                            colorScheme="teal"
-                            onClick={() => setEditSubcategory({ ...sub })}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            colorScheme="red"
-                            onClick={() => handleDeleteSubcategory(sub._id)}
-                          >
-                            Delete
-                          </Button>
-                        </Flex>
-                      </Flex>
-                    ))
-                  )}
-                  <Box mt="4">
-                    <Text fontWeight="bold" mb="2">
-                      {editSubcategory ? 'Edit Subcategory' : 'Add Subcategory'}
-                    </Text>
-                    <FormControl mt="2">
-                      <FormLabel>Subcategory Name</FormLabel>
-                      <Input
-                        value={
-                          editSubcategory
-                            ? editSubcategory.name
-                            : newSubcategory.name
-                        }
-                        onChange={(e) => {
-                          const name = e.target.value;
-                          if (editSubcategory) {
-                            setEditSubcategory({ ...editSubcategory, name });
-                          } else {
-                            setNewSubcategory({ ...newSubcategory, name });
-                          }
-                        }}
-                        placeholder="Enter subcategory name"
-                      />
-                    </FormControl>
-                    <FormControl mt="2">
-                      <FormLabel>Subcategory Image</FormLabel>
-                      {editSubcategory &&
-                        editSubcategory.image &&
-                        typeof editSubcategory.image === 'string' && (
-                          <Image
-                            src={editSubcategory.image}
-                            alt="Current Subcategory Image"
-                            boxSize="100px"
-                            objectFit="cover"
-                            borderRadius="md"
-                            mb="2"
-                          />
-                        )}
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        ref={subcategoryFileInputRef}
-                        onChange={(e) => {
-                          const image = e.target.files[0];
-                          if (editSubcategory) {
-                            setEditSubcategory({ ...editSubcategory, image });
-                          } else {
-                            setNewSubcategory({ ...newSubcategory, image });
-                          }
-                        }}
-                      />
-                    </FormControl>
-                    <Button
-                      mt="2"
-                      colorScheme="blue"
-                      onClick={
-                        editSubcategory
-                          ? handleEditSubcategory
-                          : handleCreateSubcategory
-                      }
-                      isDisabled={
-                        editSubcategory
-                          ? !editSubcategory.name
-                          : !newSubcategory.name || !newSubcategory.image
-                      }
-                    >
-                      {editSubcategory
-                        ? 'Update Subcategory'
-                        : 'Add Subcategory'}
-                    </Button>
-                    {editSubcategory && (
-                      <Button
-                        mt="2"
-                        ml="2"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditSubcategory(null);
-                          if (subcategoryFileInputRef.current) {
-                            subcategoryFileInputRef.current.value = '';
-                          }
-                        }}
-                      >
-                        Cancel Edit
-                      </Button>
-                    )}
-                  </Box>
-                </Box>
               </Box>
             )}
           </ModalBody>
@@ -973,9 +817,6 @@ export default function OrdersTable() {
               isDisabled={!editCategory?.name}
             >
               Save
-            </Button>
-            <Button colorScheme="red" mr={3} onClick={handleDeleteCategory}>
-              Delete
             </Button>
             <Button
               variant="ghost"
@@ -990,6 +831,144 @@ export default function OrdersTable() {
               }}
             >
               Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      {/* View Details Modal */}
+      <Modal
+        isOpen={isViewOpen}
+        onClose={() => {
+          setViewSubcategories([]);
+          setSelectedCategoryName('');
+          setSelectedCategoryId('');
+          setEditSubcategory(null);
+          if (subcategoryFileInputRef.current) {
+            subcategoryFileInputRef.current.value = '';
+          }
+          onViewClose();
+        }}
+      >
+        <ModalOverlay style={{ zIndex: 1200 }} />
+        <ModalContent maxW="600px">
+          <ModalHeader>Subcategories for {selectedCategoryName}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {viewSubcategories.length === 0 ? (
+              <Text>No subcategories available.</Text>
+            ) : (
+              viewSubcategories.map((sub) => (
+                <Flex
+                  key={sub._id}
+                  justify="space-between"
+                  align="center"
+                  mb="2"
+                >
+                  <Flex align="center" gap="2">
+                    <Image
+                      src={sub.image}
+                      alt="Subcategory Image"
+                      boxSize="50px"
+                      objectFit="cover"
+                      borderRadius="md"
+                    />
+                    <Text>{sub.name}</Text>
+                  </Flex>
+                  <Flex gap="2">
+                    <Button
+                      size="sm"
+                      colorScheme="teal"
+                      onClick={() => setEditSubcategory({ ...sub })}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      colorScheme="red"
+                      onClick={() => handleDeleteSubcategory(sub._id)}
+                    >
+                      Delete
+                    </Button>
+                  </Flex>
+                </Flex>
+              ))
+            )}
+            {editSubcategory && (
+              <Box mt="4">
+                <Text fontWeight="bold" mb="2">
+                  Edit Subcategory
+                </Text>
+                <FormControl mt="2">
+                  <FormLabel>Subcategory Name</FormLabel>
+                  <Input
+                    value={editSubcategory.name}
+                    onChange={(e) =>
+                      setEditSubcategory({ ...editSubcategory, name: e.target.value })
+                    }
+                    placeholder="Enter subcategory name"
+                  />
+                </FormControl>
+                <FormControl mt="2">
+                  <FormLabel>Subcategory Image</FormLabel>
+                  {editSubcategory.image &&
+                    typeof editSubcategory.image === 'string' && (
+                      <Image
+                        src={editSubcategory.image}
+                        alt="Current Subcategory Image"
+                        boxSize="100px"
+                        objectFit="cover"
+                        borderRadius="md"
+                        mb="2"
+                      />
+                    )}
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    ref={subcategoryFileInputRef}
+                    onChange={(e) =>
+                      setEditSubcategory({ ...editSubcategory, image: e.target.files[0] })
+                    }
+                  />
+                </FormControl>
+                <Button
+                  mt="2"
+                  colorScheme="blue"
+                  onClick={handleEditSubcategory}
+                  isDisabled={!editSubcategory.name}
+                >
+                  Update Subcategory
+                </Button>
+                <Button
+                  mt="2"
+                  ml="2"
+                  variant="ghost"
+                  onClick={() => {
+                    setEditSubcategory(null);
+                    if (subcategoryFileInputRef.current) {
+                      subcategoryFileInputRef.current.value = '';
+                    }
+                  }}
+                >
+                  Cancel Edit
+                </Button>
+              </Box>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setViewSubcategories([]);
+                setSelectedCategoryName('');
+                setSelectedCategoryId('');
+                setEditSubcategory(null);
+                if (subcategoryFileInputRef.current) {
+                  subcategoryFileInputRef.current.value = '';
+                }
+                onViewClose();
+              }}
+            >
+              Close
             </Button>
           </ModalFooter>
         </ModalContent>

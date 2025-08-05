@@ -16,6 +16,7 @@ import {
   Button,
   FormControl,
   FormLabel,
+  FormErrorMessage,
   Select,
   useToast,
 } from '@chakra-ui/react';
@@ -39,6 +40,7 @@ export default function OrdersTable() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [updateForm, setUpdateForm] = React.useState({ type: '', fee: '' });
+  const [formErrors, setFormErrors] = React.useState({ type: '', fee: '' }); // New state for field-specific errors
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const navigate = useNavigate();
@@ -64,7 +66,12 @@ export default function OrdersTable() {
       }
 
       const formattedData = response.data.data.map((item) => ({
-        hiring_type: item.type || 'Unknown',
+        hiring_type: item.type? item.type
+                  .toLowerCase()
+                  .split(' ')
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ')
+              : 'UNKNOWN',
         fee: item.fee || 0,
       }));
 
@@ -89,12 +96,33 @@ export default function OrdersTable() {
 
   // Update platform fee
   const updatePlatformFee = async () => {
+    // Reset errors
+    setFormErrors({ type: '', fee: '' });
+
+    // Validate inputs
+    let hasError = false;
+    const newErrors = { type: '', fee: '' };
+
+    if (!updateForm.type) {
+      newErrors.type = 'Hiring type is required';
+      hasError = true;
+    }
+    if (!updateForm.fee) {
+      newErrors.fee = 'Fee is required';
+      hasError = true;
+    } else if (!/^\d{1,4}$/.test(updateForm.fee)) {
+      newErrors.fee = 'Fee must be a number up to 4 digits';
+      hasError = true;
+    }
+
+    if (hasError) {
+      setFormErrors(newErrors);
+      return;
+    }
+
     try {
       if (!baseUrl || !token) {
         throw new Error('Missing base URL or authentication token');
-      }
-      if (!updateForm.type || !updateForm.fee) {
-        throw new Error('Please provide both hiring type and fee');
       }
 
       const response = await axios.post(
@@ -109,7 +137,6 @@ export default function OrdersTable() {
       );
 
       console.log('Update Platform Fee Response:', response.data);
-      // Show success toast
       toast({
         title: 'Success',
         description: 'Platform fee updated successfully!',
@@ -118,13 +145,10 @@ export default function OrdersTable() {
         isClosable: true,
         position: 'top-right',
       });
-      // Refresh the table data after successful update
       await fetchPlatformFees();
-      // Clear the form
       setUpdateForm({ type: '', fee: '' });
     } catch (err) {
       console.error('Update Platform Fee Error:', err);
-      // Show error toast
       toast({
         title: 'Error',
         description: err.message || 'Failed to update platform fee',
@@ -140,7 +164,16 @@ export default function OrdersTable() {
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUpdateForm((prev) => ({ ...prev, [name]: value }));
+    if (name === 'fee') {
+      // Allow only numbers and limit to 4 digits
+      if (value === '' || (/^\d{0,4}$/.test(value) && parseInt(value, 10) <= 9999)) {
+        setUpdateForm((prev) => ({ ...prev, [name]: value }));
+      }
+    } else {
+      setUpdateForm((prev) => ({ ...prev, [name]: value }));
+    }
+    // Clear error for the field when user starts typing
+    setFormErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   React.useEffect(() => {
@@ -229,7 +262,7 @@ export default function OrdersTable() {
         overflowX={{ sm: 'scroll', lg: 'hidden' }}
         borderRadius="20px"
         boxShadow="lg"
-				style={{marginTop : "80px"}}
+        style={{ marginTop: '80px' }}
       >
         <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
           Error: {error}
@@ -247,7 +280,7 @@ export default function OrdersTable() {
       overflowX={{ sm: 'scroll', lg: 'hidden' }}
       borderRadius="20px"
       boxShadow="lg"
-			style={{marginTop : "80px"}}
+      style={{ marginTop: '80px' }}
     >
       <Flex px="0px" mb="20px" justifyContent="space-between" align="center">
         <Text
@@ -261,7 +294,7 @@ export default function OrdersTable() {
       </Flex>
       <Box mb="30px">
         <Flex direction="column" gap="4">
-          <FormControl>
+          <FormControl isInvalid={!!formErrors.type}>
             <FormLabel fontSize="sm" fontWeight="500" color={textColor}>
               Hiring Type
             </FormLabel>
@@ -274,36 +307,39 @@ export default function OrdersTable() {
               borderColor="gray.300"
               _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
             >
-              <option value="emergency">emergency</option>
-              <option value="bidding">bidding</option>
-              <option value="direct">direct</option>
+              <option value="emergency">Emergency</option>
+              <option value="bidding">Bidding</option>
+              <option value="direct">Direct</option>
             </Select>
+            {formErrors.type && <FormErrorMessage>{formErrors.type}</FormErrorMessage>}
           </FormControl>
-          <FormControl>
+          <FormControl isInvalid={!!formErrors.fee}>
             <FormLabel fontSize="sm" fontWeight="500" color={textColor}>
               Fee (₹)
             </FormLabel>
             <Input
               name="fee"
-              type="number"
+              type="text" // Changed to text to handle input restriction better
               value={updateForm.fee}
               onChange={handleInputChange}
               placeholder="e.g., 250"
               borderRadius="8px"
               borderColor="gray.300"
               _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+              maxLength={4} // Restrict input length
             />
+            {formErrors.fee && <FormErrorMessage>{formErrors.fee}</FormErrorMessage>}
           </FormControl>
           <Button
-            colorScheme="blue"
+            colorScheme="teal"
             onClick={updatePlatformFee}
             borderRadius="12px"
             fontSize="sm"
             fontWeight="600"
             textTransform="uppercase"
-            bg="blue.600"
-            _hover={{ bg: 'blue.700' }}
-            _active={{ bg: 'blue.800' }}
+            bg="teal.600"
+            _hover={{ bg: 'teal.700' }}
+            _active={{ bg: 'teal.800' }}
           >
             Update Platform Fee
           </Button>

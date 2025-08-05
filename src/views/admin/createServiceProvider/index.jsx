@@ -462,7 +462,7 @@ export default function OrdersTable() {
             </FormControl>
           </Flex>
 
-          <Button colorScheme="blue" onClick={createServiceProvider}>
+          <Button colorScheme="teal" onClick={createServiceProvider}>
             Create Service Provider
           </Button>
         </Flex>

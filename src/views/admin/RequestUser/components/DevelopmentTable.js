@@ -76,7 +76,13 @@ const useFetchUsers = (baseUrl, token, navigate) => {
             profile_pic: user.profile_pic
               ? `${baseUrl}${user.profile_pic}`
               : 'N/A',
-            full_name: user.full_name || 'N/A',
+            full_name: user.full_name
+              ? user.full_name
+                  .toLowerCase()
+                  .split(' ')
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ')
+              : 'N/A',
             location: user.location.address || 'N/A',
             mobile: user.phone || 'N/A',
             createdAt: user.createdAt
@@ -86,7 +92,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
             createdBy: user.createdBy?.full_name || 'Self-Registered',
             verified: user.verified ?? false,
             active: user.active ?? true,
-            userDetails: user, // Store full user details for modal
+            userDetails: user,
           })),
         );
       } catch (error) {
@@ -175,17 +181,17 @@ const toggleUserVerified = async (
   setError,
 ) => {
   try {
-		if (verified) {
-				toast.info("User is already verified.", {
-					position: 'top-right',
-					autoClose: 3000,
-					hideProgressBar: false,
-					closeOnClick: true,
-					pauseOnHover: true,
-					draggable: true,
-				});
-				return;
-			}
+    if (verified) {
+      toast.info('User is already verified.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
     const response = await axios.post(
       `${baseUrl}api/admin/approveServiceProvider`,
       { userId },
@@ -199,7 +205,6 @@ const toggleUserVerified = async (
             : user,
         ),
       );
-
       toast.success('User verification status updated successfully!', {
         position: 'top-right',
         autoClose: 3000,
@@ -239,6 +244,7 @@ export default function ComplexTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [toggleLoading, setToggleLoading] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
+  const [expandedLocations, setExpandedLocations] = useState({});
   const { isOpen, onOpen, onClose } = useDisclosure();
   const itemsPerPage = 10;
   const textColor = useColorModeValue('secondaryGray.900', 'white');
@@ -252,6 +258,14 @@ export default function ComplexTable() {
     token,
     navigate,
   );
+
+  // Toggle handler for read more/less
+  const handleToggleLocation = useCallback((userId) => {
+    setExpandedLocations((prev) => ({
+      ...prev,
+      [userId]: !prev[userId],
+    }));
+  }, []);
 
   // Memoized toggle handlers
   const handleToggleStatus = useCallback(
@@ -404,11 +418,33 @@ export default function ComplexTable() {
             LOCATION
           </Text>
         ),
-        cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
-        ),
+        cell: (info) => {
+          const location = info.getValue();
+          const userId = info.row.original.id;
+          const isExpanded = expandedLocations[userId];
+          const isLongText = location.length > 30;
+          const shortText = isLongText ? `${location.slice(0, 30)}...` : location;
+
+          return (
+            <Flex align="center" alignItems="center" whiteSpace="normal" maxWidth="200px">
+              <Text color={textColor} fontSize="sm" fontWeight="700" mr={2} noOfLines={isExpanded ? undefined : 1}>
+                {isExpanded || !isLongText ? location : shortText}
+              </Text>
+              {isLongText && (
+                <Button
+                  size="xs"
+                  variant="link"
+                  color={textColor}
+                  ml={2}
+                  alignSelf="center"
+                  onClick={() => handleToggleLocation(userId)}
+                >
+                  {isExpanded ? 'Read Less' : 'Read More'}
+                </Button>
+              )}
+            </Flex>
+          );
+        },
       }),
       columnHelper.accessor('mobile', {
         id: 'mobile',
@@ -525,8 +561,7 @@ export default function ComplexTable() {
         cell: (info) => (
           <Button
             size="sm"
-            colorScheme="blue"
-            // onClick={() => handleViewDetails(info.row.original.userDetails)}
+            colorScheme="teal"
             onClick={() =>
               navigate(`/admin/UserDetails/${info.row.original.id}`)
             }
@@ -542,6 +577,8 @@ export default function ComplexTable() {
       handleToggleVerified,
       toggleLoading,
       handleViewDetails,
+      expandedLocations,
+      handleToggleLocation,
     ],
   );
 
@@ -590,14 +627,8 @@ export default function ComplexTable() {
           fontWeight="700"
           lineHeight="100%"
         >
-          Users Table
+         Requested Users For ServiceProvider List
         </Text>
-        <Button
-          colorScheme="teal"
-          onClick={() => navigate('/admin/createServiceProvider')}
-        >
-          Create Service Provider
-        </Button>
       </Flex>
       <Box>
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">
@@ -652,6 +683,8 @@ export default function ComplexTable() {
                     fontSize={{ sm: '14px' }}
                     minW={{ sm: '150px', md: '200px', lg: 'auto' }}
                     borderColor="transparent"
+                    whiteSpace="normal"
+                    overflow="hidden"
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </Td>
@@ -764,7 +797,6 @@ export default function ComplexTable() {
                   <strong>Updated At:</strong>{' '}
                   {new Date(selectedUser.updatedAt).toLocaleString()}
                 </Text>
-
                 {selectedUser.hiswork && selectedUser.hiswork.length > 0 && (
                   <>
                     <Text fontWeight="bold">Work Samples:</Text>
@@ -784,7 +816,6 @@ export default function ComplexTable() {
                     </HStack>
                   </>
                 )}
-
                 {selectedUser.rateAndReviews &&
                   selectedUser.rateAndReviews.length > 0 && (
                     <>
