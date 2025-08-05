@@ -134,19 +134,13 @@ export default function OrdersTable() {
       }));
 
       setAllData(formattedData);
-
       const calculatedTotalPages = Math.max(
         1,
         Math.ceil(formattedData.length / itemsPerPage),
       );
       setTotalPages(calculatedTotalPages);
-
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const paginatedData = formattedData.slice(
-        startIndex,
-        startIndex + itemsPerPage,
-      );
-      setData(paginatedData);
+      setCurrentPage(1); // Reset to page 1 on new fetch
+      setData(formattedData.slice(0, itemsPerPage));
 
       const counts = {};
       for (const category of formattedData) {
@@ -155,16 +149,14 @@ export default function OrdersTable() {
       }
       setSubcategoryCounts(counts);
 
-      console.log('Pagination Info:', {
-        totalItems: formattedData.length,
+      console.log('Fetched Data:', {
+        allDataLength: formattedData.length,
         totalPages: calculatedTotalPages,
-        currentPage,
-        itemsDisplayed: paginatedData.length,
+        firstPageData: formattedData.slice(0, itemsPerPage),
+        lastPageData: formattedData.slice(
+          (calculatedTotalPages - 1) * itemsPerPage,
+        ),
       });
-
-      if (currentPage > calculatedTotalPages) {
-        setCurrentPage(1);
-      }
 
       setLoading(false);
     } catch (err) {
@@ -186,20 +178,34 @@ export default function OrdersTable() {
     }
   };
 
-  // Update current page data when currentPage changes
+  // Update current page data when currentPage or allData changes
   React.useEffect(() => {
     if (allData.length > 0) {
+      const calculatedTotalPages = Math.max(
+        1,
+        Math.ceil(allData.length / itemsPerPage),
+      );
+      if (currentPage > calculatedTotalPages) {
+        setCurrentPage(calculatedTotalPages);
+      }
       const startIndex = (currentPage - 1) * itemsPerPage;
       const paginatedData = allData.slice(
         startIndex,
         startIndex + itemsPerPage,
       );
       setData(paginatedData);
+      setTotalPages(calculatedTotalPages);
       console.log('Current Page Data:', {
         currentPage,
         startIndex,
         itemsDisplayed: paginatedData.length,
+        totalItems: allData.length,
+        totalPages: calculatedTotalPages,
       });
+    } else {
+      setData([]);
+      setTotalPages(1);
+      setCurrentPage(1);
     }
   }, [currentPage, allData]);
 
@@ -238,7 +244,6 @@ export default function OrdersTable() {
         },
       );
       console.log('Create Category Response:', response.data);
-      setCurrentPage(1);
       await fetchCategories();
       setNewCategory({ name: '', image: null });
       if (categoryFileInputRef.current) {
@@ -277,7 +282,6 @@ export default function OrdersTable() {
         },
       );
       console.log('Update Category Response:', response.data);
-      setCurrentPage(1);
       await fetchCategories();
       setEditCategory(null);
       onEditClose();
@@ -377,7 +381,7 @@ export default function OrdersTable() {
       }
     }
 
-    // Reopen the modal after the alert is handled (confirmed or cancelled)
+    // Reopen the modal after the alert is handled
     onViewOpen();
   };
 
@@ -583,9 +587,9 @@ export default function OrdersTable() {
         >
           All Work Categories
         </Text>
-        {/* <Button colorScheme="teal" size="sm" onClick={onAddOpen}>
-           Add New Category
-         </Button> */}
+        <Button colorScheme="teal" size="sm" onClick={onAddOpen}>
+          Add New Category
+        </Button>
       </Flex>
       <Box>
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">
@@ -650,7 +654,8 @@ export default function OrdersTable() {
           <Text>No categories available.</Text>
         ) : (
           <Text>
-            Page {currentPage} of {totalPages} ({data.length} items)
+            Page {currentPage} of {totalPages} ({allData.length} total items,{' '}
+            {data.length} displayed)
           </Text>
         )}
         <Flex gap="2">
@@ -682,7 +687,7 @@ export default function OrdersTable() {
             colorScheme="teal"
             size="sm"
             onClick={handleNextPage}
-            isDisabled={currentPage === totalPages || data.length === 0}
+            isDisabled={currentPage >= totalPages || allData.length === 0}
           >
             Next
           </Button>
@@ -903,7 +908,10 @@ export default function OrdersTable() {
                   <Input
                     value={editSubcategory.name}
                     onChange={(e) =>
-                      setEditSubcategory({ ...editSubcategory, name: e.target.value })
+                      setEditSubcategory({
+                        ...editSubcategory,
+                        name: e.target.value,
+                      })
                     }
                     placeholder="Enter subcategory name"
                   />
@@ -926,7 +934,10 @@ export default function OrdersTable() {
                     accept="image/*"
                     ref={subcategoryFileInputRef}
                     onChange={(e) =>
-                      setEditSubcategory({ ...editSubcategory, image: e.target.files[0] })
+                      setEditSubcategory({
+                        ...editSubcategory,
+                        image: e.target.files[0],
+                      })
                     }
                   />
                 </FormControl>
