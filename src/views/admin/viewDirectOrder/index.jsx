@@ -379,7 +379,9 @@ export default function OrdersTable() {
                       data.order.image_url.map((url, index) => {
                         const imageUrl = url.startsWith('http')
                           ? url
-                          : `${baseUrl}/${url.startsWith('/') ? url.slice(1) : url}`;
+                          : `${baseUrl}/${
+                              url.startsWith('/') ? url.slice(1) : url
+                            }`;
                         console.log(`Image ${index + 1} URL:`, imageUrl);
                         return (
                           <Image
@@ -415,7 +417,7 @@ export default function OrdersTable() {
                       ₹{data.order?.platform_fee || 0}
                     </Text>
                   </Flex>
-                  <Flex align="start" gap="4">
+                  {/*<Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       User Status:
                     </Text>
@@ -430,21 +432,34 @@ export default function OrdersTable() {
                         ? 'User raised a dispute'
                         : data.order?.user_status || 'N/A'}
                     </Text>
-                  </Flex>
+                  </Flex> */}
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Hire Status:
                     </Text>
                     <Text
-                      bg={getStatusStyles(data.order?.hire_status, 'hireStatus').bg}
-                      color={getStatusStyles(data.order?.hire_status, 'hireStatus').color}
+                      bg={
+                        getStatusStyles(data.order?.hire_status, 'hireStatus')
+                          .bg
+                      }
+                      color={
+                        getStatusStyles(data.order?.hire_status, 'hireStatus')
+                          .color
+                      }
                       px="2"
                       py="1"
                       borderRadius="md"
                     >
                       {data.order?.hire_status === 'cancelledDispute'
                         ? 'Service provider raised a dispute'
-                        : data.order?.hire_status || 'N/A'}
+                        : data.order?.hire_status
+                            .toLowerCase()
+                            .split(' ')
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() + word.slice(1),
+                            )
+                            .join(' ')}
                     </Text>
                   </Flex>
                 </VStack>
@@ -570,13 +585,17 @@ export default function OrdersTable() {
                     <Text fontWeight="semibold" color={textColor}>
                       Phone:
                     </Text>
-                    <Text color={textColor}>{selectedWorker.phone || 'N/A'}</Text>
+                    <Text color={textColor}>
+                      {selectedWorker.phone || 'N/A'}
+                    </Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Address:
                     </Text>
-                    <Text color={textColor}>{selectedWorker.address || 'N/A'}</Text>
+                    <Text color={textColor}>
+                      {selectedWorker.address || 'N/A'}
+                    </Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>

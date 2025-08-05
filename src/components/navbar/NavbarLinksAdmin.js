@@ -167,7 +167,7 @@ export default function HeaderLinks(props) {
       </Flex>
       <SidebarResponsive routes={routes} />
       <Menu>
-        <MenuButton p="0px">
+        {/*<MenuButton p="0px">
           <Icon
             mt="6px"
             as={MdNotificationsNone}
@@ -176,7 +176,7 @@ export default function HeaderLinks(props) {
             h="18px"
             me="10px"
           />
-        </MenuButton>
+        </MenuButton>*/}
         <MenuList
           boxShadow={shadow}
           p="20px"

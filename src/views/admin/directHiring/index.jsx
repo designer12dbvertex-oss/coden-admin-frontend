@@ -96,7 +96,12 @@ export default function OrdersTable() {
           paidAmount: item.service_payment?.amount || 0,
           remainingAmount: item.remaining_amount?.amount || 0,
           paymentStatus: item.payment_status || 'Unknown',
-          hireStatus: item.hire_status || 'Unknown',
+          hireStatus:
+            item.hire_status
+              .toLowerCase()
+              .split(' ')
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ') || 'Unknown',
           createdAt: item.createdAt
             ? new Date(item.createdAt).toLocaleDateString()
             : '',
@@ -184,6 +189,26 @@ export default function OrdersTable() {
           color="gray.400"
         >
           PROJECT ID
+        </Text>
+      ),
+      cell: (info) => (
+        <Flex align="center">
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {info.getValue()}
+          </Text>
+        </Flex>
+      ),
+    }),
+    columnHelper.accessor('title', {
+      id: 'title',
+      header: () => (
+        <Text
+          justifyContent="space-between"
+          align="center"
+          fontSize={{ sm: '10px', lg: '12px' }}
+          color="gray.400"
+        >
+          TITLE
         </Text>
       ),
       cell: (info) => (
@@ -397,7 +422,9 @@ export default function OrdersTable() {
                       colSpan={header.colSpan}
                       pe="10px"
                       borderColor={borderColor}
-                      cursor={header.column.getCanSort() ? 'pointer' : 'default'}
+                      cursor={
+                        header.column.getCanSort() ? 'pointer' : 'default'
+                      }
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       <Flex
@@ -491,7 +518,7 @@ export default function OrdersTable() {
               color={textColor}
               textAlign="center"
             >
-              Order Details
+              Direct Order Details
             </ModalHeader>
             <ModalCloseButton
               size="lg"
@@ -506,7 +533,10 @@ export default function OrdersTable() {
                 bg={useColorModeValue('gray.50', 'gray.700')}
               >
                 <VStack spacing={4} align="stretch">
-                  <Grid templateColumns={{ base: '1fr', md: '150px 1fr' }} gap={4}>
+                  <Grid
+                    templateColumns={{ base: '1fr', md: '150px 1fr' }}
+                    gap={4}
+                  >
                     <GridItem>
                       <Text fontWeight="semibold" color={textColor}>
                         Order ID:
@@ -522,7 +552,9 @@ export default function OrdersTable() {
                       </Text>
                     </GridItem>
                     <GridItem>
-                      <Text color={textColor}>{selectedOrder.customerName}</Text>
+                      <Text color={textColor}>
+                        {selectedOrder.customerName}
+                      </Text>
                     </GridItem>
 
                     <GridItem>
@@ -531,7 +563,9 @@ export default function OrdersTable() {
                       </Text>
                     </GridItem>
                     <GridItem>
-                      <Text color={textColor}>{selectedOrder.serviceProvider}</Text>
+                      <Text color={textColor}>
+                        {selectedOrder.serviceProvider}
+                      </Text>
                     </GridItem>
 
                     <GridItem>
@@ -591,14 +625,24 @@ export default function OrdersTable() {
                     <GridItem>
                       <Flex
                         align="center"
-                        bg={getStatusStyles(selectedOrder.paymentStatus, 'paymentStatus').bg}
+                        bg={
+                          getStatusStyles(
+                            selectedOrder.paymentStatus,
+                            'paymentStatus',
+                          ).bg
+                        }
                         px={2}
                         py={1}
                         borderRadius="md"
                       >
                         <Text
                           fontSize="sm"
-                          color={getStatusStyles(selectedOrder.paymentStatus, 'paymentStatus').color}
+                          color={
+                            getStatusStyles(
+                              selectedOrder.paymentStatus,
+                              'paymentStatus',
+                            ).color
+                          }
                         >
                           {selectedOrder.paymentStatus}
                         </Text>
@@ -613,14 +657,24 @@ export default function OrdersTable() {
                     <GridItem>
                       <Flex
                         align="center"
-                        bg={getStatusStyles(selectedOrder.hireStatus, 'hireStatus').bg}
+                        bg={
+                          getStatusStyles(
+                            selectedOrder.hireStatus,
+                            'hireStatus',
+                          ).bg
+                        }
                         px={2}
                         py={1}
                         borderRadius="md"
                       >
                         <Text
                           fontSize="sm"
-                          color={getStatusStyles(selectedOrder.hireStatus, 'hireStatus').color}
+                          color={
+                            getStatusStyles(
+                              selectedOrder.hireStatus,
+                              'hireStatus',
+                            ).color
+                          }
                         >
                           {selectedOrder.hireStatus}
                         </Text>
@@ -663,8 +717,8 @@ export default function OrdersTable() {
                         >
                           <Text color={textColor}>
                             <strong>Payment {index + 1}:</strong> ₹
-                            {payment.amount.toLocaleString()} - {payment.description} (
-                            {payment.status}) on{' '}
+                            {payment.amount.toLocaleString()} -{' '}
+                            {payment.description} ({payment.status}) on{' '}
                             {new Date(payment.date).toLocaleDateString()}
                           </Text>
                         </ChakraCard>
