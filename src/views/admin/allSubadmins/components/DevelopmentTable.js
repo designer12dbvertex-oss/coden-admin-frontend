@@ -366,24 +366,24 @@ export default function SubadminTable() {
           </Text>
         ),
       }),
-      columnHelper.accessor('role', {
-        id: 'role',
-        header: () => (
-          <Text
-            justifyContent="space-between"
-            align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
-          >
-            ROLE
-          </Text>
-        ),
-        cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
-        ),
-      }),
+      // columnHelper.accessor('role', {
+      //   id: 'role',
+      //   header: () => (
+      //     <Text
+      //       justifyContent="space-between"
+      //       align="center"
+      //       fontSize={{ sm: '10px', lg: '12px' }}
+      //       color="gray.400"
+      //     >
+      //       ROLE
+      //     </Text>
+      //   ),
+      //   cell: (info) => (
+      //     <Text color={textColor} fontSize="sm" fontWeight="700">
+      //       {info.getValue()}
+      //     </Text>
+      //   ),
+      // }),
       columnHelper.accessor('createdAt', {
         id: 'createdAt',
         header: () => (
