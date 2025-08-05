@@ -20,7 +20,7 @@ import {
 } from "react-icons/md";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
-import { FaExclamationTriangle, FaFileInvoiceDollar, FaGavel } from "react-icons/fa";
+import { FaExclamationTriangle, FaFileInvoiceDollar, FaGavel, FaMoneyBillWave } from "react-icons/fa";
 
 export default function UserReports() {
   // Chakra Color Mode
@@ -31,7 +31,10 @@ export default function UserReports() {
   const [dashboardData, setDashboardData] = useState({
     users: 0,
     service_provider: 0,
-    restaurants: 0,
+    both: 0,
+		requested:0,
+		subadmins:0,
+		directPaymentRequest:0,
 		directOrder: 0,
 		biddingOrder: 0,
 		emergencyOrders: 0,
@@ -58,7 +61,10 @@ export default function UserReports() {
         setDashboardData({
           users: data.totalUsers ?? 0,
           service_provider: data.totalSeller ?? 0,
-          restaurants: data.totalRestaurants ?? 0,
+          both: data.totalBoth ?? 0,
+					requested: data.totalRequested ?? 0,
+					subadmins: data.totalSubadmins ?? 0,
+					directPaymentRequest: data.totalDirectOrderPaymentRequest ?? 0,
 					directOrder: data.totalDirectOrder ?? 0,
 					biddingOrder: data.totalBiddingOrder ?? 0,
 					emergencyOrders: data.totalEmergencyOrder ?? 0,
@@ -126,6 +132,50 @@ export default function UserReports() {
           }
           name="Service Provider"
           value={dashboardData.service_provider.toLocaleString()}
+        />
+				</Link>
+					<Link to ="/admin/both">
+        <MiniStatistics
+          startContent={
+            <IconBox w="56px" h="56px" bg={boxBg}
+              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
+            />
+          }
+          name="Both"
+          value={dashboardData.both.toLocaleString()}
+        />
+				</Link> 
+				<Link to ="/admin/requests">
+        <MiniStatistics
+          startContent={
+            <IconBox w="56px" h="56px" bg={boxBg}
+              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
+            />
+          }
+          name="Total Request"
+          value={dashboardData.requested.toLocaleString()}
+        />
+				</Link>
+				<Link to ="/admin/sub_admins">
+        <MiniStatistics
+          startContent={
+            <IconBox w="56px" h="56px" bg={boxBg}
+              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
+            />
+          }
+          name="SubAdmins"
+          value={dashboardData.subadmins.toLocaleString()}
+        />
+				</Link>
+				<Link to ="/admin/sub_admins">
+        <MiniStatistics
+          startContent={
+            <IconBox w="56px" h="56px" bg={boxBg}
+              icon={<Icon as={FaMoneyBillWave } w="32px" h="32px" color={brandColor} />}
+            />
+          }
+          name="Direct Order Payment Request"
+          value={dashboardData.directPaymentRequest.toLocaleString()}
         />
 				</Link>
 				<Link to="/admin/direct-hiring">

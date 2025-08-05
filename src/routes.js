@@ -34,11 +34,12 @@ import EmailUs from 'views/admin/EmailContact';
 import SubAdmins from 'views/admin/allSubadmins';
 import Both from 'views/admin/both';
 import RequestUser from 'views/admin/RequestUser';
+import DirectPaymentRequest from 'views/admin/directPaymentRequest'
 // import OnlineOrders from 'views/admin/onlineOrders';
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
-import { FaFileContract, FaGavel,} from 'react-icons/fa';
+import { FaFileContract, FaGavel, FaMoneyBillWave,} from 'react-icons/fa';
 
 const routes = [
   {
@@ -117,6 +118,13 @@ const routes = [
     icon: <Icon as={MdEmergency} width="20px" height="20px" color="inherit" />,
     path: '/emergency-hiring',
     component: <Emergency />,
+  },
+	 {
+    name: 'Direct Payment Request',
+    layout: '/admin',
+    icon: <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />,
+    path: '/direct_payment_request',
+    component: <DirectPaymentRequest />,
   },
 	 {
     name: 'Contact Us',
