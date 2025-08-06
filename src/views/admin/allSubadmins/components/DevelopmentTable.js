@@ -27,6 +27,7 @@ import {
   Input,
   useDisclosure,
   Image,
+  Switch,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -41,8 +42,8 @@ import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState, useMemo } from 'react';
 import { ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon, EditIcon } from '@chakra-ui/icons';
 import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css'; // Toastify styles
-import defaultProfilePic from 'assets/img/profile/profile.webp'; // Adjust the path as necessary
+import 'react-toastify/dist/ReactToastify.css';
+import defaultProfilePic from 'assets/img/profile/profile.webp';
 
 const columnHelper = createColumnHelper();
 
@@ -61,7 +62,7 @@ const useFetchSubadmins = (baseUrl, token, navigate) => {
         const response = await axios.get(`${baseUrl}api/admin/getAllSubadmins`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log('Fetched subadmins:', response.data.data); // Debug log
+        console.log('Fetched subadmins:', response.data.data);
         if (!response.data?.data) {
           throw new Error('Invalid API response: No subadmins found');
         }
@@ -82,6 +83,7 @@ const useFetchSubadmins = (baseUrl, token, navigate) => {
             createdAt: subadmin.createdAt
               ? new Date(subadmin.createdAt).toISOString().split('T')[0]
               : 'N/A',
+            active: subadmin.active !== undefined ? subadmin.active : false,
           }))
         );
       } catch (error) {
@@ -126,7 +128,7 @@ const updateSubadmin = async (baseUrl, token, subadminId, updatedData, profilePi
         },
       }
     );
-    console.log('Update response:', response.data); // Debug log
+    console.log('Update response:', response.data);
     if (response.data.status) {
       setData((prevData) =>
         prevData.map((subadmin) =>
@@ -150,6 +152,52 @@ const updateSubadmin = async (baseUrl, token, subadminId, updatedData, profilePi
   }
 };
 
+// Function to toggle subadmin status
+const toggleSubadminStatus = async (baseUrl, token, subadminId, setData, setError) => {
+  try {
+    const response = await axios.patch(
+      `${baseUrl}api/admin/toggleSubadminStatus/${subadminId}`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    console.log('Toggle response:', response.data);
+    if (response.data.status) {
+      setData((prevData) =>
+        prevData.map((subadmin) =>
+          subadmin.id === subadminId
+            ? { ...subadmin, active: response.data.data.active }
+            : subadmin
+        )
+      );
+      toast.success(response.data.message, {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return true;
+    } else {
+      throw new Error('Failed to toggle subadmin status');
+    }
+  } catch (error) {
+    console.error('Error toggling subadmin status:', error);
+    setError(error.response?.data?.message || 'Failed to toggle subadmin status');
+    toast.error(error.response?.data?.message || 'Failed to toggle subadmin status', {
+      position: 'top-right',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+    return false;
+  }
+};
+
 export default function SubadminTable() {
   const [sorting, setSorting] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -167,6 +215,11 @@ export default function SubadminTable() {
   const navigate = useNavigate();
 
   const { data, loading, error, setData } = useFetchSubadmins(baseUrl, token, navigate);
+
+  // Handle toggle switch change
+  const handleToggleStatus = async (subadminId) => {
+    await toggleSubadminStatus(baseUrl, token, subadminId, setData, setFormError);
+  };
 
   // Handle opening edit modal
   const handleEditClick = (subadmin) => {
@@ -366,24 +419,31 @@ export default function SubadminTable() {
           </Text>
         ),
       }),
-      // columnHelper.accessor('role', {
-      //   id: 'role',
-      //   header: () => (
-      //     <Text
-      //       justifyContent="space-between"
-      //       align="center"
-      //       fontSize={{ sm: '10px', lg: '12px' }}
-      //       color="gray.400"
-      //     >
-      //       ROLE
-      //     </Text>
-      //   ),
-      //   cell: (info) => (
-      //     <Text color={textColor} fontSize="sm" fontWeight="700">
-      //       {info.getValue()}
-      //     </Text>
-      //   ),
-      // }),
+      columnHelper.accessor('active', {
+        id: 'active',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            STATUS
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center">
+            <Switch
+              isChecked={info.getValue()}
+              onChange={() => handleToggleStatus(info.row.original.id)}
+              colorScheme="teal"
+            />
+            <Text color={textColor} fontSize="sm" fontWeight="700" ml={2}>
+              {info.getValue() ? 'Active' : 'Inactive'}
+            </Text>
+          </Flex>
+        ),
+      }),
       columnHelper.accessor('createdAt', {
         id: 'createdAt',
         header: () => (
@@ -542,7 +602,6 @@ export default function SubadminTable() {
           </Tbody>
         </Table>
       </Box>
-      {/* Pagination Controls */}
       <Flex justifyContent="space-between" alignItems="center" px="25px" py="10px">
         <Text fontSize="sm" color={textColor}>
           Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} subadmins
@@ -576,7 +635,6 @@ export default function SubadminTable() {
           </Button>
         </HStack>
       </Flex>
-      {/* Edit Modal */}
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
@@ -648,7 +706,6 @@ export default function SubadminTable() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      {/* Toast Container */}
       <ToastContainer
         position="top-right"
         autoClose={3000}

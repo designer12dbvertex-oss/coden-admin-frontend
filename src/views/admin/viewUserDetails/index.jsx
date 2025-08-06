@@ -41,18 +41,18 @@ export default function ServiceProviderDetails() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [selectedWorker, setSelectedWorker] = React.useState(null);
-  const [selectedProvider, setSelectedProvider] = React.useState(null);
   const [verifyStatus, setVerifyStatus] = React.useState('');
   const [toggleLoading, setToggleLoading] = React.useState(false);
-  const {
-    isOpen: isProviderDetailsOpen,
-    onOpen: onProviderDetailsOpen,
-    onClose: onProviderDetailsClose,
-  } = useDisclosure();
+  const [selectedDocument, setSelectedDocument] = React.useState(null);
   const {
     isOpen: isWorkerDetailsOpen,
     onOpen: onWorkerDetailsOpen,
     onClose: onWorkerDetailsClose,
+  } = useDisclosure();
+  const {
+    isOpen: isDocumentModalOpen,
+    onOpen: onDocumentModalOpen,
+    onClose: onDocumentModalClose,
   } = useDisclosure();
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -68,8 +68,7 @@ export default function ServiceProviderDetails() {
       try {
         if (!baseUrl) throw new Error('Missing base URL');
         if (!token) throw new Error('Missing authentication token');
-        if (!user_id)
-          throw new Error('Missing service_provider_id');
+        if (!user_id) throw new Error('Missing service_provider_id');
 
         const response = await axios.get(
           `${baseUrl}api/admin/getUser/${user_id}`,
@@ -125,105 +124,11 @@ export default function ServiceProviderDetails() {
     return { bg: 'gray.100', color: 'gray.800' };
   };
 
-  // Handle view details click
-  const handleViewDetails = (entity) => {
-    if (entity.hiswork) {
-      setSelectedProvider(entity);
-      setVerifyStatus(entity.verified ? 'approved' : 'rejected');
-      onProviderDetailsOpen();
-    } else {
-      setSelectedWorker(entity);
-      setVerifyStatus(entity.verifyStatus || 'pending');
-      onWorkerDetailsOpen();
-    }
-  };
-
   // Update verification status for Service Provider
-  // const toggleUserVerified = async (userId, verified) => {
-  //   setToggleLoading(true);
-  //   try {
-  //     const response = await axios.patch(
-  //       `${baseUrl}api/admin/updateUserverified`,
-  //       { userId, verified: !verified },
-  //       { headers: { Authorization: `Bearer ${token}` } },
-  //     );
-  //     if (response.data.success) {
-  //       setData((prevData) => ({
-  //         ...prevData,
-  //         user: { ...prevData.user, verified: !verified },
-  //       }));
-  //       toast.success(
-  //         'Service Provider verification status updated successfully!',
-  //         {
-  //           position: 'top-right',
-  //           autoClose: 3000,
-  //           hideProgressBar: false,
-  //           closeOnClick: true,
-  //           pauseOnHover: true,
-  //           draggable: true,
-  //         },
-  //       );
-  //     } else {
-  //       throw new Error('Failed to update user verification status');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error toggling user verification:', error);
-  //     setError(
-  //       error.response?.data?.message ||
-  //         'Failed to update user verification status',
-  //     );
-  //     toast.error(
-  //       error.response?.data?.message ||
-  //         'Failed to update user verification status',
-  //       {
-  //         position: 'top-right',
-  //         autoClose: 3000,
-  //         hideProgressBar: false,
-  //         closeOnClick: true,
-  //         pauseOnHover: true,
-  //         draggable: true,
-  //       },
-  //     );
-  //   } finally {
-  //     setToggleLoading(false);
-  //   }
-  // };
-
-	const toggleUserVerified = async (userId, verified) => {
-  // Don't proceed if already verified
-  if (verified) {
-    toast.info("User is already verified.", {
-      position: 'top-right',
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
-    return;
-  }
-
-  setToggleLoading(true);
-
-  try {
-    const response = await axios.post(
-      `${baseUrl}api/admin/approveServiceProvider`,
-      { userId },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (response.data.success) {
-      // Update local state
-   setData((prevData) => ({
-          ...prevData,
-          user: { ...prevData.user, verified: !verified },
-        }));
-
-      toast.success('User verified successfully!', {
+  const toggleUserVerified = async (userId, verified) => {
+    // Don't proceed if already verified
+    if (verified) {
+      toast.info('User is already verified.', {
         position: 'top-right',
         autoClose: 3000,
         hideProgressBar: false,
@@ -231,28 +136,65 @@ export default function ServiceProviderDetails() {
         pauseOnHover: true,
         draggable: true,
       });
-    } else {
-      throw new Error('Failed to update verification status');
+      return;
     }
-  } catch (error) {
-    console.error('Error verifying service provider:', error);
-    const message =
-      error.response?.data?.message ||
-      'Failed to update verification status';
-    setError(message);
-    toast.error(message, {
-      position: 'top-right',
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
-  } finally {
-    setToggleLoading(false);
-  }
-};
 
+    setToggleLoading(true);
+
+    try {
+      const response = await axios.post(
+        `${baseUrl}api/admin/approveServiceProvider`,
+        { userId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.data.success) {
+        // Update local state
+        setData((prevData) => ({
+          ...prevData,
+          user: { ...prevData.user, verified: !verified },
+        }));
+
+        toast.success('User verified successfully!', {
+          position: 'top-right',
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      } else {
+        throw new Error('Failed to update verification status');
+      }
+    } catch (error) {
+      console.error('Error verifying service provider:', error);
+      const message =
+        error.response?.data?.message || 'Failed to update verification status';
+      setError(message);
+      toast.error(message, {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } finally {
+      setToggleLoading(false);
+    }
+  };
+  const capitalizeFirstLetter = (str) => {
+    if (!str) return 'N/A';
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
   // Update verification status for Worker
   const handleWorkerVerifyStatusUpdate = async (worker) => {
     try {
@@ -288,14 +230,10 @@ export default function ServiceProviderDetails() {
     }
   };
 
-  // Handle provider verification status update
-  const handleProviderVerifyStatusUpdate = async (provider) => {
-    try {
-      await toggleUserVerified(provider._id, provider.verified);
-      onProviderDetailsClose();
-    } catch (err) {
-      console.error('Update Provider Verification Status Error:', err);
-    }
+  // Handle document click
+  const handleDocumentClick = (documentUrl) => {
+    setSelectedDocument(documentUrl);
+    onDocumentModalOpen();
   };
 
   if (loading) {
@@ -391,176 +329,240 @@ export default function ServiceProviderDetails() {
                       </Text>
                     </Box>
                   </Flex>
-                  <HStack spacing="2">
-                    <Button
-                      colorScheme="teal"
-                      size="sm"
-                      onClick={() => handleViewDetails(data.user)}
-                    >
-                      View Details
-                    </Button>
-                  </HStack>
                 </Flex>
               </ChakraCard>
 
-              {/* Service Provider Details Section */}
-              <ChakraCard
-                p="15px"
-                borderRadius="lg"
-                border="1px solid"
-                borderColor={borderColor}
-                bg={cardBg}
-              >
-                <VStack spacing={4} align="stretch">
-                  <Text fontWeight="bold" fontSize="lg" color={textColor}>
-                    Service Provider Information
-                  </Text>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Provider Name:
+              {/* Service Provider Information and Documents */}
+              <Flex gap="4">
+                {/* Service Provider Information */}
+                <ChakraCard
+                  p="15px"
+                  borderRadius="lg"
+                  border="1px solid"
+                  borderColor={borderColor}
+                  bg={cardBg}
+                  flex="2"
+                >
+                  <VStack spacing={4} align="stretch">
+                    <Text fontWeight="bold" fontSize="lg" color={textColor}>
+                      Service Provider Information
                     </Text>
-                    <Text color={textColor}>
-                      {data.user?.full_name || 'N/A'}
-                    </Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Phone:
-                    </Text>
-                    <Text color={textColor}>{data.user?.phone || 'N/A'}</Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Location:
-                    </Text>
-                    <Text color={textColor}>
-                      {data.user?.location.address || 'N/A'}
-                    </Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Current Location:
-                    </Text>
-                    <Text color={textColor}>
-                      {data.user?.current_location || 'N/A'}
-                    </Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Address:
-                    </Text>
-                    <Text color={textColor}>
-                      {data.user?.full_address ||
-                        [
-                          data.user?.colony_name,
-                          data.user?.gali_number,
-                          data.user?.landmark,
-                        ]
-                          .filter(Boolean)
-                          .join(', ') ||
-                        'N/A'}
-                    </Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Skill:
-                    </Text>
-                    <Text color={textColor}>{data.user?.skill || 'N/A'}</Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Subcategories:
-                    </Text>
-                    <Text color={textColor}>
-                      {data.user?.subcategory_ids
-                        ?.map((sub) => sub.name)
-                        .join(', ') || 'N/A'}
-                    </Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Referral Code:
-                    </Text>
-                    <Text color={textColor}>
-                      {data.user?.referral_code || 'N/A'}
-                    </Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Profile Complete:
-                    </Text>
-                    <Text color={textColor}>
-                      {data.user?.isProfileComplete ? 'Yes' : 'No'}
-                    </Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Active:
-                    </Text>
-                    <Text color={textColor}>
-                      {data.user?.active ? 'Yes' : 'No'}
-                    </Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Created At:
-                    </Text>
-                    <Text color={textColor}>
-                      {data.user?.createdAt
-                        ? new Date(data.user.createdAt).toLocaleDateString()
-                        : 'N/A'}
-                    </Text>
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Document:
-                    </Text>
-                    {data.user?.documents ? (
-                      <Button
-                        as="a"
-                        href={`${baseUrl}/${data.user.documents}`}
-                        target="_blank"
-                        size="sm"
-                        colorScheme="blue"
-                      >
-                        View Document
-                      </Button>
-                    ) : (
-                      <Text color={textColor}>N/A</Text>
-                    )}
-                  </Flex>
-                  <Flex align="start" gap="4">
-                    <Text fontWeight="semibold" color={textColor}>
-                      Verification Status:
-                    </Text>
-                    <HStack>
-                      <Switch
-                        isChecked={data.user?.verified}
-                        onChange={() =>
-                          toggleUserVerified(data.user._id, data.user.verified)
-                        }
-                        colorScheme="teal"
-                        isDisabled={toggleLoading}
-                      />
-                      <Text
-                        bg={
-                          getStatusStyles(data.user?.verified, 'verifyStatus')
-                            .bg
-                        }
-                        color={
-                          getStatusStyles(data.user?.verified, 'verifyStatus')
-                            .color
-                        }
-                        px="2"
-                        py="1"
-                        borderRadius="md"
-                      >
-                        {data.user?.verified ? 'Approved' : 'Rejected'}
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Provider Name:
                       </Text>
-                    </HStack>
-                  </Flex>
-                </VStack>
-              </ChakraCard>
+                      <Text color={textColor}>
+                        {data.user?.full_name || 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Phone:
+                      </Text>
+                      <Text color={textColor}>{data.user?.phone || 'N/A'}</Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Location:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.location.address || 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Current Location:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.current_location || 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Address:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.full_address ||
+                          [
+                            data.user?.colony_name,
+                            data.user?.gali_number,
+                            data.user?.landmark,
+                          ]
+                            .filter(Boolean)
+                            .join(', ') ||
+                          'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Skill:
+                      </Text>
+                      <Text color={textColor}>{data.user?.skill || 'N/A'}</Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Subcategories:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.subcategory_ids
+                          ?.map((sub) => sub.name)
+                          .join(', ') || 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Referral Code:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.referral_code || 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Profile Complete:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.isProfileComplete ? 'Yes' : 'No'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Active:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.active ? 'Yes' : 'No'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Created At:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.createdAt
+                          ? new Date(data.user.createdAt).toLocaleDateString()
+                          : 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Divider />
+                    <Text fontWeight="bold" fontSize="lg" color={textColor}>
+                      Bank Details
+                    </Text>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Account Number:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.bankdetails?.accountNumber || 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Account Holder Name:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.bankdetails?.accountHolderName || 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Bank Name:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.bankdetails?.bankName || 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        IFSC Code:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.bankdetails?.ifscCode || 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        UPI ID:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.bankdetails?.upiId || 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Verification Status:
+                      </Text>
+                      <HStack>
+                        <Switch
+                          isChecked={data.user?.verified}
+                          onChange={() =>
+                            toggleUserVerified(
+                              data.user._id,
+                              data.user.verified,
+                            )
+                          }
+                          colorScheme="teal"
+                          isDisabled={toggleLoading}
+                        />
+                        <Text
+                          bg={
+                            getStatusStyles(data.user?.verified, 'verifyStatus')
+                              .bg
+                          }
+                          color={
+                            getStatusStyles(data.user?.verified, 'verifyStatus')
+                              .color
+                          }
+                          px="2"
+                          py="1"
+                          borderRadius="md"
+                        >
+                          {data.user?.verified ? 'Approved' : 'Rejected'}
+                        </Text>
+                      </HStack>
+                    </Flex>
+                  </VStack>
+                </ChakraCard>
+
+                {/* Documents Section */}
+                <ChakraCard
+                  p="15px"
+                  borderRadius="lg"
+                  border="1px solid"
+                  borderColor={borderColor}
+                  bg={cardBg}
+                  flex="1"
+                >
+                  <VStack spacing={4} align="stretch">
+                    <Text fontWeight="bold" fontSize="lg" color={textColor}>
+                      Documents
+                    </Text>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Document:
+                      </Text>
+                      {data.user?.documents ? (
+                        <Image
+                          src={`${baseUrl}/${data.user.documents}`}
+                          alt="Document"
+                          boxSize="100px"
+                          objectFit="cover"
+                          borderRadius="md"
+                          cursor="pointer"
+                          onClick={() =>
+                            handleDocumentClick(
+                              `${baseUrl}/${data.user.documents}`,
+                            )
+                          }
+                          _hover={{ transform: 'scale(1.05)', boxShadow: 'md' }}
+                          transition="all 0.2s ease-in-out"
+                        />
+                      ) : (
+                        <Text color={textColor}>N/A</Text>
+                      )}
+                    </Flex>
+                  </VStack>
+                </ChakraCard>
+              </Flex>
 
               {/* Workers Section */}
               <ChakraCard
@@ -628,7 +630,11 @@ export default function ServiceProviderDetails() {
                           <Button
                             colorScheme="teal"
                             size="sm"
-                            onClick={() => handleViewDetails(worker)}
+                            onClick={() => {
+                              setSelectedWorker(worker);
+                              setVerifyStatus(worker.verifyStatus || 'pending');
+                              onWorkerDetailsOpen();
+                            }}
                           >
                             View Details
                           </Button>
@@ -735,187 +741,59 @@ export default function ServiceProviderDetails() {
         </Box>
       </Card>
 
-      {/* Service Provider Details Modal */}
-     {/* Service Provider Details Modal */}
-{selectedProvider && (
-  <Modal
-    isOpen={isProviderDetailsOpen}
-    onClose={onProviderDetailsClose}
-    size="xl"
-  >
-    <ModalOverlay />
-    <ModalContent borderRadius="xl" boxShadow="2xl" p={4} bg={cardBg}>
-      <ModalHeader
-        fontSize="2xl"
-        fontWeight="bold"
-        color={textColor}
-        textAlign="center"
-      >
-        User Details
-      </ModalHeader>
-      <ModalCloseButton
-        size="lg"
-        _hover={{ bg: 'gray.100', transform: 'scale(1.1)' }}
-        transition="all 0.2s ease-in-out"
-      />
-      <ModalBody>
-        <ChakraCard p="4" boxShadow="md" borderRadius="lg">
-          <VStack spacing={4} align="stretch">
-            <Flex align="center" gap="4">
-              <Image
-                src={
-                  selectedProvider.profile_pic
-                    ? `${baseUrl}/${selectedProvider.profile_pic}`
-                    : defaultProfilePic
-                }
-                alt="User"
-                boxSize="100px"
-                borderRadius="full"
-                objectFit="cover"
-              />
-              <Box>
-                <Text fontWeight="bold" fontSize="xl" color={textColor}>
-                  Name: {selectedProvider.full_name || 'N/A'}
-                </Text>
-              </Box>
-            </Flex>
-            <Flex align="start" gap="4">
-              <Text fontWeight="semibold" color={textColor}>
-                Phone:
-              </Text>
-              <Text color={textColor}>
-                {selectedProvider.phone || 'N/A'}
-              </Text>
-            </Flex>
-            <Flex align="start" gap="4">
-              <Text fontWeight="semibold" color={textColor}>
-                Address:
-              </Text>
-              <Text color={textColor}>
-                {selectedProvider.full_address ||
-                  [
-                    selectedProvider.colony_name,
-                    selectedProvider.gali_number,
-                    selectedProvider.landmark,
-                  ]
-                    .filter(Boolean)
-                    .join(', ') ||
-                  'N/A'}
-              </Text>
-            </Flex>
-            <Flex align="start" gap="4">
-              <Text fontWeight="semibold" color={textColor}>
-                Category:
-              </Text>
-              <Text color={textColor}>
-                {selectedProvider.category_id?.name || 'N/A'}
-              </Text>
-            </Flex>
-            <Flex align="start" gap="4">
-              <Text fontWeight="semibold" color={textColor}>
-                Skill:
-              </Text>
-              <Text color={textColor}>
-                {selectedProvider.skill || 'N/A'}
-              </Text>
-            </Flex>
-            <Flex align="start" gap="4">
-              <Text fontWeight="semibold" color={textColor}>
-                Work Samples:
-              </Text>
-              <HStack spacing="2">
-                {selectedProvider.hiswork?.length > 0 ? (
-                  selectedProvider.hiswork.map((work, index) => (
-                    <Image
-                      key={index}
-                      src={`${work}`}
-                      alt={`Work Sample ${index + 1}`}
-                      boxSize="50px"
-                      objectFit="cover"
-                    />
-                  ))
-                ) : (
-                  <Text color={textColor}>No work samples</Text>
-                )}
-              </HStack>
-            </Flex>
-            {/* Bank Details Section */}
-            <Divider />
-            <Text fontWeight="bold" fontSize="lg" color={textColor}>
-              Bank Details
-            </Text>
-            <Flex align="start" gap="4">
-              <Text fontWeight="semibold" color={textColor}>
-                Account Number:
-              </Text>
-              <Text color={textColor}>
-                {selectedProvider.bankdetails?.accountNumber || 'N/A'}
-              </Text>
-            </Flex>
-            <Flex align="start" gap="4">
-              <Text fontWeight="semibold" color={textColor}>
-                Account Holder Name:
-              </Text>
-              <Text color={textColor}>
-                {selectedProvider.bankdetails?.accountHolderName || 'N/A'}
-              </Text>
-            </Flex>
-            <Flex align="start" gap="4">
-              <Text fontWeight="semibold" color={textColor}>
-                Bank Name:
-              </Text>
-              <Text color={textColor}>
-                {selectedProvider.bankdetails?.bankName || 'N/A'}
-              </Text>
-            </Flex>
-            <Flex align="start" gap="4">
-              <Text fontWeight="semibold" color={textColor}>
-                IFSC Code:
-              </Text>
-              <Text color={textColor}>
-                {selectedProvider.bankdetails?.ifscCode || 'N/A'}
-              </Text>
-            </Flex>
-            <Flex align="start" gap="4">
-              <Text fontWeight="semibold" color={textColor}>
-                UPI ID:
-              </Text>
-              <Text color={textColor}>
-                {selectedProvider.bankdetails?.upiId || 'N/A'}
-              </Text>
-            </Flex>
-          </VStack>
-        </ChakraCard>
-      </ModalBody>
-      <ModalFooter>
-        <Button
-          colorScheme="teal"
-          mr={3}
-          onClick={() => handleProviderVerifyStatusUpdate(selectedProvider)}
-          _hover={{ bg: 'teal.600', transform: 'scale(1.05)' }}
-          transition="all 0.2s ease-in-out"
-          isDisabled={toggleLoading}
+      {/* Document Modal */}
+      {selectedDocument && (
+        <Modal
+          isOpen={isDocumentModalOpen}
+          onClose={onDocumentModalClose}
+          size="xl"
         >
-          Save
-        </Button>
-        <Button
-          colorScheme="gray"
-          onClick={onProviderDetailsClose}
-          _hover={{ bg: 'gray.300', transform: 'scale(1.05)' }}
-          transition="all 0.2s ease-in-out"
-        >
-          Close
-        </Button>
-      </ModalFooter>
-    </ModalContent>
-  </Modal>
-)}
+          <ModalOverlay />
+          <ModalContent borderRadius="xl" boxShadow="2xl" p={4} bg={cardBg}>
+            <ModalHeader
+              fontSize="2xl"
+              fontWeight="bold"
+              color={textColor}
+              textAlign="center"
+            >
+              Document Preview
+            </ModalHeader>
+            <ModalCloseButton
+              size="lg"
+              _hover={{ bg: 'gray.100', transform: 'scale(1.1)' }}
+              transition="all 0.2s ease-in-out"
+            />
+            <ModalBody>
+              <ChakraCard p="4" boxShadow="md" borderRadius="lg">
+                <Image
+                  src={selectedDocument}
+                  alt="Document Preview"
+                  maxH="70vh"
+                  maxW="100%"
+                  objectFit="contain"
+                  borderRadius="md"
+                />
+              </ChakraCard>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                colorScheme="gray"
+                onClick={onDocumentModalClose}
+                _hover={{ bg: 'gray.300', transform: 'scale(1.05)' }}
+                transition="all 0.2s ease-in-out"
+              >
+                Close
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      )}
 
       {/* Worker Details Modal */}
       {selectedWorker && (
         <Modal
-          isOpen={isWorkerDetailsOpen}
-          onClose={onWorkerDetailsClose}
+          isOpen={!!selectedWorker}
+          onClose={() => setSelectedWorker(null)}
           size="xl"
         >
           <ModalOverlay />
@@ -941,7 +819,7 @@ export default function ServiceProviderDetails() {
                       src={
                         selectedWorker.image
                           ? `${baseUrl}/${selectedWorker.image}`
-                          : 'https://via.placeholder.com/100'
+                          : defaultProfilePic
                       }
                       alt="Worker"
                       boxSize="100px"
@@ -950,7 +828,8 @@ export default function ServiceProviderDetails() {
                     />
                     <Box>
                       <Text fontWeight="bold" fontSize="xl" color={textColor}>
-                        Name: {selectedWorker.name || 'N/A'}
+                        Name:{' '}
+                        {capitalizeFirstLetter(selectedWorker.name || 'N/A')}
                       </Text>
                     </Box>
                   </Flex>
@@ -986,6 +865,46 @@ export default function ServiceProviderDetails() {
                     </Text>
                     <Text color={textColor}>
                       {selectedWorker.aadharNumber || 'N/A'}
+                    </Text>
+                  </Flex>
+                  <Flex align="start" gap="4">
+                    <Text fontWeight="semibold" color={textColor}>
+                      Aadhar Card:
+                    </Text>
+                    {selectedWorker.aadharImage ? (
+                      <Image
+                        src={`${baseUrl}/${selectedWorker.aadharImage}`}
+                        alt="Aadhar Card"
+                        boxSize="100px"
+                        objectFit="cover"
+                        borderRadius="md"
+                        cursor="pointer"
+                        onClick={() =>
+                          handleDocumentClick(
+                            `${baseUrl}/${selectedWorker.aadharImage}`,
+                          )
+                        }
+                        onError={(e) => (e.target.src = defaultProfilePic)}
+                      />
+                    ) : (
+                      <Text color={textColor}>No Aadhar card available</Text>
+                    )}
+                  </Flex>
+                  <Flex align="start" gap="4">
+                    <Text fontWeight="semibold" color={textColor}>
+                      createdAt:
+                    </Text>
+                    <Text color={textColor}>
+                      {selectedWorker?.createdAt
+                        ? new Date(selectedWorker.createdAt).toLocaleDateString(
+                            'en-IN',
+                            {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                            },
+                          )
+                        : 'N/A'}
                     </Text>
                   </Flex>
                   <Flex align="start" gap="4">
@@ -1029,7 +948,7 @@ export default function ServiceProviderDetails() {
               </Button>
               <Button
                 colorScheme="gray"
-                onClick={onWorkerDetailsClose}
+                onClick={() => setSelectedWorker(null)}
                 _hover={{ bg: 'gray.300', transform: 'scale(1.05)' }}
                 transition="all 0.2s ease-in-out"
               >

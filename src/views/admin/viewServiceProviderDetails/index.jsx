@@ -303,7 +303,9 @@ export default function ServiceProviderDetails() {
                     />
                     <Box>
                       <Text fontWeight="bold" color={textColor}>
-                        {capitalizeFirstLetter(data.user?.full_name || 'Not Assigned')}
+                        {capitalizeFirstLetter(
+                          data.user?.full_name || 'Not Assigned',
+                        )}
                       </Text>
                       <Text fontSize="sm" color="gray.600">
                         {data.user?.category_id?.name || 'N/A'}
@@ -431,7 +433,10 @@ export default function ServiceProviderDetails() {
                         <Switch
                           isChecked={data.user?.verified}
                           onChange={() =>
-                            toggleUserVerified(data.user._id, data.user.verified)
+                            toggleUserVerified(
+                              data.user._id,
+                              data.user.verified,
+                            )
                           }
                           colorScheme="teal"
                           isDisabled={toggleLoading}
@@ -449,7 +454,9 @@ export default function ServiceProviderDetails() {
                           py="1"
                           borderRadius="md"
                         >
-                          {capitalizeFirstLetter(data.user?.verified ? 'approved' : 'rejected')}
+                          {capitalizeFirstLetter(
+                            data.user?.verified ? 'approved' : 'rejected',
+                          )}
                         </Text>
                       </HStack>
                     </Flex>
@@ -477,7 +484,11 @@ export default function ServiceProviderDetails() {
                         objectFit="cover"
                         borderRadius="md"
                         cursor="pointer"
-                        onClick={() => handleDocumentClick(`${baseUrl}/${data.user.documents}`)}
+                        onClick={() =>
+                          handleDocumentClick(
+                            `${baseUrl}/${data.user.documents}`,
+                          )
+                        }
                         onError={(e) => (e.target.src = defaultProfilePic)}
                       />
                     </Flex>
@@ -606,7 +617,9 @@ export default function ServiceProviderDetails() {
                             py="1"
                             borderRadius="md"
                           >
-                            {capitalizeFirstLetter(worker.verifyStatus || 'Pending')}
+                            {capitalizeFirstLetter(
+                              worker.verifyStatus || 'Pending',
+                            )}
                           </Text>
                           <Button
                             colorScheme="teal"
@@ -722,7 +735,11 @@ export default function ServiceProviderDetails() {
       </Card>
 
       {/* Document Modal */}
-      <Modal isOpen={isDocumentModalOpen} onClose={() => setIsDocumentModalOpen(false)} size="xl">
+      <Modal
+        isOpen={isDocumentModalOpen}
+        onClose={() => setIsDocumentModalOpen(false)}
+        size="xl"
+      >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Document Preview</ModalHeader>
@@ -772,7 +789,7 @@ export default function ServiceProviderDetails() {
                       src={
                         selectedWorker.image
                           ? `${baseUrl}/${selectedWorker.image}`
-                          : 'https://via.placeholder.com/100'
+                          : defaultProfilePic
                       }
                       alt="Worker"
                       boxSize="100px"
@@ -781,7 +798,8 @@ export default function ServiceProviderDetails() {
                     />
                     <Box>
                       <Text fontWeight="bold" fontSize="xl" color={textColor}>
-                        Name: {capitalizeFirstLetter(selectedWorker.name || 'N/A')}
+                        Name:{' '}
+                        {capitalizeFirstLetter(selectedWorker.name || 'N/A')}
                       </Text>
                     </Box>
                   </Flex>
@@ -817,6 +835,46 @@ export default function ServiceProviderDetails() {
                     </Text>
                     <Text color={textColor}>
                       {selectedWorker.aadharNumber || 'N/A'}
+                    </Text>
+                  </Flex>
+                  <Flex align="start" gap="4">
+                    <Text fontWeight="semibold" color={textColor}>
+                      Aadhar Card:
+                    </Text>
+                    {selectedWorker.aadharImage ? (
+                      <Image
+                        src={`${baseUrl}/${selectedWorker.aadharImage}`}
+                        alt="Aadhar Card"
+                        boxSize="100px"
+                        objectFit="cover"
+                        borderRadius="md"
+                        cursor="pointer"
+                        onClick={() =>
+                          handleDocumentClick(
+                            `${baseUrl}/${selectedWorker.aadharImage}`,
+                          )
+                        }
+                        onError={(e) => (e.target.src = defaultProfilePic)}
+                      />
+                    ) : (
+                      <Text color={textColor}>No Aadhar card available</Text>
+                    )}
+                  </Flex>
+                  <Flex align="start" gap="4">
+                    <Text fontWeight="semibold" color={textColor}>
+                      createdAt:
+                    </Text>
+                    <Text color={textColor}>
+                      {selectedWorker?.createdAt
+                        ? new Date(selectedWorker.createdAt).toLocaleDateString(
+                            'en-IN',
+                            {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                            },
+                          )
+                        : 'N/A'}
                     </Text>
                   </Flex>
                   <Flex align="start" gap="4">

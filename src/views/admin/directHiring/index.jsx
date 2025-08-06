@@ -408,7 +408,7 @@ export default function OrdersTable() {
             fontWeight="700"
             lineHeight="100%"
           >
-            Orders Table
+            Direct Hiring
           </Text>
         </Flex>
         <Box>
