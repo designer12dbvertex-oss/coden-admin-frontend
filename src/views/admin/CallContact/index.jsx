@@ -26,6 +26,7 @@ import {
   ModalCloseButton,
   Button,
   Link,
+  HStack,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -35,8 +36,8 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { SearchIcon } from '@chakra-ui/icons';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { SearchIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 
 // Custom components
 import Card from 'components/card/Card';
@@ -51,6 +52,8 @@ export default function ContactInquiriesTable() {
   const [error, setError] = React.useState(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [selectedMessage, setSelectedMessage] = React.useState('');
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
   const textColor = useColorModeValue('gray.800', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.200');
   const bgHover = useColorModeValue('gray.50', 'gray.700');
@@ -79,9 +82,13 @@ export default function ContactInquiriesTable() {
       const formattedData = response.data.data.map((item) => ({
         id: item._id,
         subject: item.subject || 'N/A',
-        mobile_number: item.mobile_number || 'N/A',
+        mobile_number: item.mobile_number || item.user_id?.phone || 'N/A',
         message: item.message || 'N/A',
-        timestamp: new Date(item.timestamp).toLocaleString() || 'N/A',
+        user_name: item.user_id?.full_name || 'N/A',
+        user_id: item.user_id?._id || 'N/A',
+        timestamp: item.timestamp
+          ? new Date(item.timestamp).toLocaleString() || 'N/A'
+          : 'N/A',
       }));
 
       setData(formattedData);
@@ -107,6 +114,7 @@ export default function ContactInquiriesTable() {
   // Handle search filtering
   const handleSearch = (query) => {
     setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page on search
     if (!query) {
       setFilteredData(data);
       return;
@@ -116,10 +124,36 @@ export default function ContactInquiriesTable() {
       (item) =>
         item.subject.toLowerCase().includes(lowerQuery) ||
         item.mobile_number.toLowerCase().includes(lowerQuery) ||
-        item.message.toLowerCase().includes(lowerQuery)
+        item.message.toLowerCase().includes(lowerQuery) ||
+        item.user_name.toLowerCase().includes(lowerQuery)
     );
     setFilteredData(filtered);
   };
+
+  // Pagination logic
+  const totalItems = filteredData.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedData = React.useMemo(
+    () => filteredData.slice(startIndex, endIndex),
+    [filteredData, startIndex, endIndex]
+  );
+
+  // Handle page navigation
+  const goToPage = (page) => {
+    const newPage = Math.min(Math.max(1, page), totalPages);
+    if (newPage !== currentPage) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  // Reset page to 1 when total pages change
+  React.useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
 
   // Handle modal open/close
   const openModal = (message) => {
@@ -156,6 +190,40 @@ export default function ContactInquiriesTable() {
           </Text>
         ),
       }),
+      columnHelper.accessor('user_name', {
+        id: 'user_name',
+        header: () => (
+          <Text
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
+          >
+            User Name
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center">
+            {info.row.original.user_id !== 'N/A' ? (
+              <Link
+                as={RouterLink}
+                to={`/admin/Dispute/UserDetails/${info.row.original.user_id}`}
+                color="blue.500"
+                textDecoration="underline"
+                fontSize="sm"
+                fontWeight="500"
+                _hover={{ textDecoration: 'underline' }}
+              >
+                {info.getValue()}
+              </Link>
+            ) : (
+              <Text color={textColor} fontSize="sm" fontWeight="500">
+                {info.getValue()}
+              </Text>
+            )}
+          </Flex>
+        ),
+      }),
       columnHelper.accessor('mobile_number', {
         id: 'mobile_number',
         header: () => (
@@ -188,7 +256,7 @@ export default function ContactInquiriesTable() {
         ),
         cell: (info) => {
           const message = info.getValue();
-          const previewLength = 30; // Show first 30 characters
+          const previewLength = 30;
           const isLongMessage = message.length > previewLength;
           const preview = isLongMessage ? `${message.slice(0, previewLength)}...` : message;
           return (
@@ -235,7 +303,7 @@ export default function ContactInquiriesTable() {
   );
 
   const table = useReactTable({
-    data: filteredData,
+    data: paginatedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -307,7 +375,7 @@ export default function ContactInquiriesTable() {
               <Icon as={SearchIcon} color="gray.400" />
             </InputLeftElement>
             <Input
-              placeholder="Search by subject, mobile, or message"
+              placeholder="Search by subject, user, mobile, or message"
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               borderRadius="12px"
@@ -372,6 +440,45 @@ export default function ContactInquiriesTable() {
             </Tbody>
           </Table>
         </Box>
+        <Flex
+          justifyContent="space-between"
+          alignItems="center"
+          px="25px"
+          py="10px"
+        >
+          <Text fontSize="sm" color={textColor}>
+            Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
+            {totalItems} inquiries
+          </Text>
+          <HStack>
+            <Button
+              size="sm"
+              onClick={() => goToPage(currentPage - 1)}
+              isDisabled={currentPage === 1}
+              leftIcon={<ChevronLeftIcon />}
+            >
+              Previous
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                size="sm"
+                onClick={() => goToPage(page)}
+                variant={currentPage === page ? 'solid' : 'outline'}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              size="sm"
+              onClick={() => goToPage(currentPage + 1)}
+              isDisabled={currentPage === totalPages}
+              rightIcon={<ChevronRightIcon />}
+            >
+              Next
+            </Button>
+          </HStack>
+        </Flex>
       </Card>
 
       {/* Modal for full message */}

@@ -12,6 +12,7 @@ import {
 	MdAttachMoney,
 	MdEmail,
 	MdPhone,
+	MdReportProblem,
 } from 'react-icons/md';
 
 // Admin Imports
@@ -34,7 +35,8 @@ import EmailUs from 'views/admin/EmailContact';
 import SubAdmins from 'views/admin/allSubadmins';
 import Both from 'views/admin/both';
 import RequestUser from 'views/admin/RequestUser';
-import DirectPaymentRequest from 'views/admin/directPaymentRequest'
+import DirectPaymentRequest from 'views/admin/directPaymentRequest';
+import Dispute from 'views/admin/dispute';
 // import OnlineOrders from 'views/admin/onlineOrders';
 
 // Auth Imports
@@ -125,6 +127,13 @@ const routes = [
     icon: <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />,
     path: '/direct_payment_request',
     component: <DirectPaymentRequest />,
+  },
+	 {
+    name: 'All Dispute',
+    layout: '/admin',
+    icon: <Icon as={MdReportProblem} width="20px" height="20px" color="inherit" />,
+    path: '/dispute',
+    component: <Dispute />,
   },
 	 {
     name: 'Contact Us',

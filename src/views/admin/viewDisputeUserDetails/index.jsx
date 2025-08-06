@@ -71,7 +71,7 @@ export default function ServiceProviderDetails() {
         if (!user_id) throw new Error('Missing service_provider_id');
 
         const response = await axios.get(
-          `${baseUrl}api/admin/getUser/${user_id}`,
+          `${baseUrl}api/admin/getDisputeUser/${user_id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -345,7 +345,7 @@ export default function ServiceProviderDetails() {
                 >
                   <VStack spacing={4} align="stretch">
                     <Text fontWeight="bold" fontSize="lg" color={textColor}>
-                      Service Provider Information
+                     User Information
                     </Text>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>

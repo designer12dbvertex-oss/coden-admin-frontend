@@ -26,6 +26,10 @@ import {
   Grid,
   GridItem,
   Card as ChakraCard,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Icon,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -40,6 +44,7 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { SearchIcon } from '@chakra-ui/icons';
 
 // Custom components
 import Card from 'components/card/Card';
@@ -49,6 +54,8 @@ const columnHelper = createColumnHelper();
 export default function OrdersTable() {
   const [sorting, setSorting] = React.useState([]);
   const [data, setData] = React.useState([]);
+  const [filteredData, setFilteredData] = React.useState([]);
+  const [searchQuery, setSearchQuery] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [selectedOrder, setSelectedOrder] = React.useState(null);
@@ -115,6 +122,7 @@ export default function OrdersTable() {
         }));
 
         setData(formattedData);
+        setFilteredData(formattedData);
         setLoading(false);
       } catch (err) {
         console.error('Fetch Orders Error:', err);
@@ -137,6 +145,31 @@ export default function OrdersTable() {
 
     fetchOrders();
   }, [baseUrl, token, navigate]);
+
+  // Handle search filtering
+  const handleSearch = React.useCallback(
+    (query) => {
+      setSearchQuery(query);
+      setPagination((prev) => ({ ...prev, pageIndex: 0 })); // Reset to first page on search
+      if (!query) {
+        setFilteredData(data);
+        return;
+      }
+      const lowerQuery = query.toLowerCase();
+      const filtered = data.filter(
+        (item) =>
+          item.orderId.toLowerCase().includes(lowerQuery) ||
+          item.title.toLowerCase().includes(lowerQuery) ||
+          item.customerName.toLowerCase().includes(lowerQuery) ||
+          item.serviceProvider.toLowerCase().includes(lowerQuery) ||
+          item.paymentStatus.toLowerCase().includes(lowerQuery) ||
+          item.hireStatus.toLowerCase().includes(lowerQuery) ||
+          item.createdAt.toLowerCase().includes(lowerQuery)
+      );
+      setFilteredData(filtered);
+    },
+    [data],
+  );
 
   // Handle view details click
   const handleViewDetails = (order) => {
@@ -349,7 +382,7 @@ export default function OrdersTable() {
   ];
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     state: { sorting, pagination },
     onSortingChange: setSorting,
@@ -401,15 +434,35 @@ export default function OrdersTable() {
         style={{ marginTop: '100px' }}
         overflowX={{ sm: 'scroll', lg: 'hidden' }}
       >
-        <Flex px="25px" mb="20px" justify="space-between" align="center">
+        <Flex
+          px="25px"
+          mb="20px"
+          justify="space-between"
+          align="center"
+          direction={{ base: 'column', md: 'row' }}
+          gap={{ base: '10px', md: '0' }}
+        >
           <Text
             color={textColor}
-            fontSize="22px"
+            fontSize={{ base: 'xl', md: '22px' }}
             fontWeight="700"
             lineHeight="100%"
           >
             Direct Hiring
           </Text>
+          <InputGroup maxW={{ base: '100%', md: '300px' }}>
+            <InputLeftElement pointerEvents="none">
+              <Icon as={SearchIcon} color="gray.400" />
+            </InputLeftElement>
+            <Input
+              placeholder="Search by ID, title, customer, provider, status, or date"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              borderRadius="12px"
+              bg={useColorModeValue('gray.100', 'gray.700')}
+              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+            />
+          </InputGroup>
         </Flex>
         <Box>
           <Table variant="simple" color="gray.500" mb="24px">
@@ -496,8 +549,9 @@ export default function OrdersTable() {
             </Button>
           </Flex>
           <Text fontSize="sm" color={textColor}>
-            Page {table.getState().pagination.pageIndex + 1} of{' '}
-            {table.getPageCount() || 1}
+            Showing {(table.getState().pagination.pageIndex * table.getState().pagination.pageSize) + 1} to{' '}
+            {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredData.length)} of{' '}
+            {filteredData.length} orders
           </Text>
         </Flex>
       </Card>

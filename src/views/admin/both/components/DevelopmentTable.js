@@ -25,6 +25,10 @@ import {
   useDisclosure,
   Image,
   VStack,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Icon,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -42,6 +46,7 @@ import {
   ArrowDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  SearchIcon,
 } from '@chakra-ui/icons';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -61,12 +66,9 @@ const useFetchUsers = (baseUrl, token, navigate) => {
         if (!baseUrl || !token) {
           throw new Error('Missing API URL or authentication token');
         }
-        const response = await axios.get(
-          `${baseUrl}api/admin/getAllBoth`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+        const response = await axios.get(`${baseUrl}api/admin/getAllBoth`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!response.data?.users) {
           throw new Error('Invalid API response: No users found');
         }
@@ -229,6 +231,8 @@ const toggleUserVerified = async (
 export default function ComplexTable() {
   const [sorting, setSorting] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredData, setFilteredData] = useState([]);
   const [toggleLoading, setToggleLoading] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
   const [expandedLocations, setExpandedLocations] = useState({});
@@ -245,6 +249,34 @@ export default function ComplexTable() {
     token,
     navigate,
   );
+
+  // Handle search filtering
+  const handleSearch = useCallback(
+    (query) => {
+      setSearchQuery(query);
+      setCurrentPage(1); // Reset to first page on search
+      if (!query) {
+        setFilteredData(data);
+        return;
+      }
+      const lowerQuery = query.toLowerCase();
+      const filtered = data.filter(
+        (item) =>
+          item.full_name.toLowerCase().includes(lowerQuery) ||
+          item.location.toLowerCase().includes(lowerQuery) ||
+          item.mobile.toLowerCase().includes(lowerQuery) ||
+          item.referral_code.toLowerCase().includes(lowerQuery) ||
+          item.createdBy.toLowerCase().includes(lowerQuery),
+      );
+      setFilteredData(filtered);
+    },
+    [data],
+  );
+
+  // Initialize filteredData with all data
+  useEffect(() => {
+    setFilteredData(data);
+  }, [data]);
 
   // Toggle handler for read more/less
   const handleToggleLocation = useCallback((userId) => {
@@ -299,13 +331,13 @@ export default function ComplexTable() {
   );
 
   // Pagination logic
-  const totalItems = data.length;
+  const totalItems = filteredData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = useMemo(
-    () => data.slice(startIndex, endIndex),
-    [data, startIndex, endIndex],
+    () => filteredData.slice(startIndex, endIndex),
+    [filteredData, startIndex, endIndex],
   );
 
   const goToPage = useCallback(
@@ -433,7 +465,7 @@ export default function ComplexTable() {
                 <Button
                   size="xs"
                   variant="link"
-                  colorScheme='teal'
+                  colorScheme="teal"
                   ml={2}
                   alignSelf="center"
                   onClick={() => handleToggleLocation(userId)}
@@ -617,15 +649,40 @@ export default function ComplexTable() {
       px="0px"
       overflowX={{ sm: 'scroll', lg: 'hidden' }}
     >
-      <Flex px="25px" mb="8px" justifyContent="space-between" align="center">
+      <Flex
+        px="25px"
+        mb="8px"
+        justifyContent="space-between"
+        align="center"
+        direction={{ base: 'column', md: 'row' }}
+      >
         <Text
           color={textColor}
-          fontSize="22px"
+          fontSize={{ base: 'xl', md: '22px' }}
           fontWeight="700"
           lineHeight="100%"
         >
           Both List
         </Text>
+        <InputGroup
+          maxW={{ base: '100%', md: '300px' }}
+          mt={{ base: '10px', md: '0' }}
+        >
+          <InputLeftElement pointerEvents="none">
+            <Icon as={SearchIcon} color="gray.400" />
+          </InputLeftElement>
+          <Input
+            placeholder="Search by name, location, mobile, referral, or creator"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            borderRadius="12px"
+            bg={useColorModeValue('gray.100', 'gray.700')}
+            _focus={{
+              borderColor: 'blue.500',
+              boxShadow: '0 0 0 1px blue.500',
+            }}
+          />
+        </InputGroup>
       </Flex>
       <Box>
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">
@@ -697,7 +754,7 @@ export default function ComplexTable() {
       >
         <Text fontSize="sm" color={textColor}>
           Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
-          {totalItems} users
+          {totalItems} entries
         </Text>
         <HStack>
           <Button

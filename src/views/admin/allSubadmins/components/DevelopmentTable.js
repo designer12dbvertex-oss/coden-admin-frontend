@@ -28,6 +28,9 @@ import {
   useDisclosure,
   Image,
   Switch,
+  InputGroup,
+  InputLeftElement,
+  Icon,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -39,8 +42,8 @@ import {
 import Card from 'components/card/Card';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import React, { useEffect, useState, useMemo } from 'react';
-import { ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon, EditIcon } from '@chakra-ui/icons';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon, EditIcon, SearchIcon } from '@chakra-ui/icons';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import defaultProfilePic from 'assets/img/profile/profile.webp';
@@ -201,6 +204,8 @@ const toggleSubadminStatus = async (baseUrl, token, subadminId, setData, setErro
 export default function SubadminTable() {
   const [sorting, setSorting] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredData, setFilteredData] = useState([]);
   const [selectedSubadmin, setSelectedSubadmin] = useState(null);
   const [formData, setFormData] = useState({ full_name: '', email: '', phone: '' });
   const [profilePicFile, setProfilePicFile] = useState(null);
@@ -215,6 +220,33 @@ export default function SubadminTable() {
   const navigate = useNavigate();
 
   const { data, loading, error, setData } = useFetchSubadmins(baseUrl, token, navigate);
+
+  // Handle search filtering
+  const handleSearch = useCallback(
+    (query) => {
+      setSearchQuery(query);
+      setCurrentPage(1); // Reset to first page on search
+      if (!query) {
+        setFilteredData(data);
+        return;
+      }
+      const lowerQuery = query.toLowerCase();
+      const filtered = data.filter(
+        (item) =>
+          item.full_name.toLowerCase().includes(lowerQuery) ||
+          item.email.toLowerCase().includes(lowerQuery) ||
+          item.phone.toLowerCase().includes(lowerQuery) ||
+          item.createdAt.toLowerCase().includes(lowerQuery)
+      );
+      setFilteredData(filtered);
+    },
+    [data],
+  );
+
+  // Initialize filteredData with all data
+  useEffect(() => {
+    setFilteredData(data);
+  }, [data]);
 
   // Handle toggle switch change
   const handleToggleStatus = async (subadminId) => {
@@ -307,20 +339,23 @@ export default function SubadminTable() {
   };
 
   // Pagination logic
-  const totalItems = data.length;
+  const totalItems = filteredData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedData = useMemo(() => data.slice(startIndex, endIndex), [data, startIndex, endIndex]);
+  const paginatedData = useMemo(() => filteredData.slice(startIndex, endIndex), [filteredData, startIndex, endIndex]);
 
   // Handle page navigation with validation
-  const goToPage = (page) => {
-    const newPage = Math.min(Math.max(1, page), totalPages);
-    if (newPage !== currentPage) {
-      console.log(`Navigating to page ${newPage}`);
-      setCurrentPage(newPage);
-    }
-  };
+  const goToPage = useCallback(
+    (page) => {
+      const newPage = Math.min(Math.max(1, page), totalPages);
+      if (newPage !== currentPage) {
+        console.log(`Navigating to page ${newPage}`);
+        setCurrentPage(newPage);
+      }
+    },
+    [currentPage, totalPages]
+  );
 
   // Reset page to 1 when data changes significantly
   useEffect(() => {
@@ -486,7 +521,7 @@ export default function SubadminTable() {
         ),
       }),
     ],
-    [textColor]
+    [textColor, handleToggleStatus, handleEditClick]
   );
 
   const table = useReactTable({
@@ -524,21 +559,44 @@ export default function SubadminTable() {
       px="0px"
       overflowX={{ sm: 'scroll', lg: 'hidden' }}
     >
-      <Flex px="25px" mb="8px" justifyContent="space-between" align="center">
+      <Flex
+        px="25px"
+        mb="8px"
+        justifyContent="space-between"
+        align="center"
+        direction={{ base: 'column', md: 'row' }}
+        gap={{ base: '10px', md: '0' }}
+      >
         <Text
           color={textColor}
-          fontSize="22px"
+          fontSize={{ base: 'xl', md: '22px' }}
           fontWeight="700"
           lineHeight="100%"
         >
           Subadmins List
         </Text>
-        <Button
-          colorScheme="teal"
-          onClick={() => navigate('/admin/createSubadmin')}
-        >
-          Create Subadmin
-        </Button>
+				 <InputGroup maxW={{ base: '100%', md: '300px' }}>
+            <InputLeftElement pointerEvents="none">
+              <Icon as={SearchIcon} color="gray.400" />
+            </InputLeftElement>
+            <Input
+              placeholder="Search by name, email, phone, or created date"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              borderRadius="12px"
+              bg={useColorModeValue('gray.100', 'gray.700')}
+              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+            />
+          </InputGroup>
+        <Flex align="center" gap="10px" w={{ base: '100%', md: 'auto' }}>
+          <Button
+            colorScheme="teal"
+            onClick={() => navigate('/admin/createSubadmin')}
+            w={{ base: '100%', md: 'auto' }}
+          >
+            Create Subadmin
+          </Button>
+        </Flex>
       </Flex>
       <Box>
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">

@@ -16,6 +16,10 @@ import {
   Button,
   HStack,
   Switch,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Icon,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -33,6 +37,7 @@ import {
   ArrowDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  SearchIcon,
 } from '@chakra-ui/icons';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -65,7 +70,6 @@ const useFetchUsers = (baseUrl, token, navigate) => {
             profile_pic: user.profile_pic
               ? `${baseUrl}${user.profile_pic}`
               : defaultProfilePic,
-            // Capitalize only first letter of each word in full_name
             full_name: user.full_name
               ? user.full_name
                   .toLowerCase()
@@ -162,8 +166,10 @@ const toggleUserStatus = async (
 export default function ComplexTable() {
   const [sorting, setSorting] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredData, setFilteredData] = useState([]);
   const [toggleLoading, setToggleLoading] = useState({});
-  const [expandedLocations, setExpandedLocations] = useState({}); // State for tracking expanded locations
+  const [expandedLocations, setExpandedLocations] = useState({});
   const itemsPerPage = 10;
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
@@ -176,6 +182,33 @@ export default function ComplexTable() {
     token,
     navigate,
   );
+
+  // Handle search filtering
+  const handleSearch = useCallback(
+    (query) => {
+      setSearchQuery(query);
+      setCurrentPage(1); // Reset to first page on search
+      if (!query) {
+        setFilteredData(data);
+        return;
+      }
+      const lowerQuery = query.toLowerCase();
+      const filtered = data.filter(
+        (item) =>
+          item.full_name.toLowerCase().includes(lowerQuery) ||
+          item.location.toLowerCase().includes(lowerQuery) ||
+          item.mobile.toLowerCase().includes(lowerQuery) ||
+          item.referral_code.toLowerCase().includes(lowerQuery)
+      );
+      setFilteredData(filtered);
+    },
+    [data],
+  );
+
+  // Initialize filteredData with all data
+  useEffect(() => {
+    setFilteredData(data);
+  }, [data]);
 
   // Toggle handler for read more/less
   const handleToggleLocation = useCallback((userId) => {
@@ -203,14 +236,14 @@ export default function ComplexTable() {
     [baseUrl, token, setData, setError, toggleLoading],
   );
 
-  // Pagination logic (unchanged)
-  const totalItems = data.length;
+  // Pagination logic
+  const totalItems = filteredData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = useMemo(
-    () => data.slice(startIndex, endIndex),
-    [data, startIndex, endIndex],
+    () => filteredData.slice(startIndex, endIndex),
+    [filteredData, startIndex, endIndex]
   );
 
   const goToPage = useCallback(
@@ -289,7 +322,7 @@ export default function ComplexTable() {
             justifyContent="space-between"
             align="center"
             fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
+            color="grey.400"
           >
             LOCATION
           </Text>
@@ -298,7 +331,7 @@ export default function ComplexTable() {
           const location = info.getValue();
           const userId = info.row.original.id;
           const isExpanded = expandedLocations[userId];
-          const isLongText = location.length > 30; // Adjust threshold as needed
+          const isLongText = location.length > 30;
           const shortText = isLongText
             ? `${location.slice(0, 30)}...`
             : location;
@@ -312,7 +345,7 @@ export default function ComplexTable() {
                 <Button
                   size="xs"
                   variant="link"
-                  colorScheme='teal'
+                  colorScheme="teal"
                   ml={2}
                   onClick={() => handleToggleLocation(userId)}
                 >
@@ -446,15 +479,34 @@ export default function ComplexTable() {
       px="0px"
       overflowX={{ sm: 'scroll', lg: 'hidden' }}
     >
-      <Flex px="25px" mb="8px" justifyContent="space-between" align="center">
+      <Flex
+        px="25px"
+        mb="8px"
+        justifyContent="space-between"
+        align="center"
+        direction={{ base: 'column', md: 'row' }}
+      >
         <Text
           color={textColor}
-          fontSize="22px"
+          fontSize={{ base: 'xl', md: '22px' }}
           fontWeight="700"
           lineHeight="100%"
         >
           Users List
         </Text>
+        <InputGroup maxW={{ base: '100%', md: '300px' }} mt={{ base: '10px', md: '0' }}>
+          <InputLeftElement pointerEvents="none">
+            <Icon as={SearchIcon} color="gray.400" />
+          </InputLeftElement>
+          <Input
+            placeholder="Search by name, location, mobile, or referral code"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            borderRadius="12px"
+            bg={useColorModeValue('gray.100', 'gray.700')}
+            _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+          />
+        </InputGroup>
       </Flex>
       <Box>
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">
