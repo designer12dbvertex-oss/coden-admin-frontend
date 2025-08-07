@@ -26,6 +26,9 @@ import {
   Grid,
   GridItem,
   Card as ChakraCard,
+  Input,
+  FormControl,
+  Select,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -38,7 +41,7 @@ import {
 import axios from 'axios';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Custom components
@@ -48,10 +51,14 @@ const columnHelper = createColumnHelper();
 
 export default function OrdersTable() {
   const [sorting, setSorting] = React.useState([]);
+  const [allData, setAllData] = React.useState([]);
   const [data, setData] = React.useState([]);
+  const [searchQuery, setSearchQuery] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [selectedOrder, setSelectedOrder] = React.useState(null);
+  const [releaseStatus, setReleaseStatus] = React.useState('');
+  const [selectedPaymentIndex, setSelectedPaymentIndex] = React.useState(null);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
@@ -75,8 +82,9 @@ export default function OrdersTable() {
         if (!baseUrl || !token) {
           throw new Error('Missing base URL or authentication token');
         }
+        setLoading(true);
         const response = await axios.get(
-          `${baseUrl}api/direct-order/getAllDirectOrders`,
+          `${baseUrl}api/admin/getReleaseRequestedDirectOrders`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -92,14 +100,20 @@ export default function OrdersTable() {
           orderId: item.project_id || '',
           customerName: item.user_id?.full_name || 'Unknown',
           serviceProvider: item.service_provider_id?.full_name || 'N/A',
+          serviceProviderId: item.service_provider_id?._id || 'N/A',
           totalAmount: item.service_payment?.total_expected || 0,
           paidAmount: item.service_payment?.amount || 0,
-          remainingAmount: item.remaining_amount?.amount || 0,
-          paymentStatus: item.payment_status || 'Unknown',
-          hireStatus: item.hire_status || 'Unknown',
+          remainingAmount: item.service_payment?.remaining_amount || 0,
+          totalTax: item.service_payment?.total_tax || 0,
+          paymentStatus: item.payment_status
+            ? item.payment_status
+                .split('_')
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')
+            : 'Unknown',
           createdAt: item.createdAt
             ? new Date(item.createdAt).toLocaleDateString()
-            : '',
+            : 'N/A',
           address: item.address || 'N/A',
           title: item.title || 'N/A',
           description: item.description || 'N/A',
@@ -107,8 +121,14 @@ export default function OrdersTable() {
             ? new Date(item.deadline).toLocaleDateString()
             : 'N/A',
           paymentHistory: item.service_payment?.payment_history || [],
+          customerBankDetails: item.user_id?.bankdetails || {},
+          serviceProviderBankDetails:
+            item.service_provider_id?.bankdetails || {},
+          platformFee: item.platform_fee || 0,
+          platformFeePaid: item.platform_fee_paid ? 'Paid' : 'Not Paid',
         }));
 
+        setAllData(formattedData);
         setData(formattedData);
         setLoading(false);
       } catch (err) {
@@ -116,7 +136,7 @@ export default function OrdersTable() {
         if (
           err.response?.data?.message === 'Not authorized, token failed' ||
           err.response?.data?.message ===
-            'Session expired or logged in on another device' ||
+            'Session expired or logged in another device' ||
           err.response?.data?.message ===
             'Un-Authorized, You are not authorized to access this route.' ||
           err.response?.data?.message === 'Not authorized, token failed'
@@ -133,10 +153,76 @@ export default function OrdersTable() {
     fetchOrders();
   }, [baseUrl, token, navigate]);
 
+  // Handle search input change
+  React.useEffect(() => {
+    const filteredData = allData.filter(
+      (order) =>
+        order.orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.customerName.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+    setData(filteredData);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [searchQuery, allData]);
+
   // Handle view details click
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
+    setReleaseStatus(
+      order.paymentHistory.length > 0
+        ? order.paymentHistory[0].release_status
+        : 'pending',
+    );
+    setSelectedPaymentIndex(null);
     onDetailsOpen();
+  };
+
+  // Handle release status change for a specific payment
+  const handleReleaseStatusChange = async (orderId, paymentId, index) => {
+		console.log(paymentId, orderId, index, releaseStatus);
+    try {
+      await axios.post(
+        `${baseUrl}api/direct-order/admin/approve-release/${orderId}/${paymentId}`,
+        { release_status: releaseStatus },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      toast.success('Release status updated successfully!', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+			window.location.reload();
+
+      // Refresh data for the specific payment
+      const updatedData = allData.map((order) => {
+        if (order.id === orderId) {
+          const updatedPaymentHistory = order.paymentHistory.map((payment, i) =>
+            i === index
+              ? { ...payment, release_status: releaseStatus }
+              : payment,
+          );
+          return { ...order, paymentHistory: updatedPaymentHistory };
+        }
+        return order;
+      });
+      setAllData(updatedData);
+      setData(
+        updatedData.filter(
+          (order) =>
+            order.orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            order.customerName
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()),
+        ),
+      );
+      setSelectedPaymentIndex(null);
+    } catch (err) {
+      console.error('Update Release Status Error:', err);
+      toast.error('Failed to update release status', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    }
   };
 
   // Status color mapping
@@ -158,13 +244,16 @@ export default function OrdersTable() {
         default:
           return { bg: 'gray.100', color: 'gray.800' };
       }
-    } else if (type === 'paymentStatus') {
+    } else if (type === 'paymentStatus' || type === 'releaseStatus') {
       switch (status.toLowerCase()) {
         case 'success':
+        case 'released':
           return { bg: 'green.100', color: 'green.800' };
         case 'pending':
+        case 'release_requested':
           return { bg: 'yellow.100', color: 'yellow.800' };
         case 'failed':
+        case 'refunded':
           return { bg: 'red.100', color: 'red.800' };
         default:
           return { bg: 'gray.100', color: 'gray.800' };
@@ -184,6 +273,26 @@ export default function OrdersTable() {
           color="gray.400"
         >
           PROJECT ID
+        </Text>
+      ),
+      cell: (info) => (
+        <Flex align="center">
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {info.getValue()}
+          </Text>
+        </Flex>
+      ),
+    }),
+    columnHelper.accessor('title', {
+      id: 'title',
+      header: () => (
+        <Text
+          justifyContent="space-between"
+          align="center"
+          fontSize={{ sm: '10px', lg: '12px' }}
+          color="gray.400"
+        >
+          TITLE
         </Text>
       ),
       cell: (info) => (
@@ -214,8 +323,8 @@ export default function OrdersTable() {
         </Flex>
       ),
     }),
-    columnHelper.accessor('serviceProvider', {
-      id: 'serviceProvider',
+    columnHelper.accessor('remainingAmount', {
+      id: 'remainingAmount',
       header: () => (
         <Text
           justifyContent="space-between"
@@ -223,27 +332,7 @@ export default function OrdersTable() {
           fontSize={{ sm: '10px', lg: '12px' }}
           color="gray.400"
         >
-          SERVICE PROVIDER
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.accessor('paidAmount', {
-      id: 'paidAmount',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          PAID AMOUNT
+          AMOUNT TO BE PAID
         </Text>
       ),
       cell: (info) => (
@@ -254,8 +343,8 @@ export default function OrdersTable() {
         </Flex>
       ),
     }),
-    columnHelper.accessor('hireStatus', {
-      id: 'hireStatus',
+    columnHelper.accessor('paymentStatus', {
+      id: 'paymentStatus',
       header: () => (
         <Text
           justifyContent="space-between"
@@ -263,11 +352,11 @@ export default function OrdersTable() {
           fontSize={{ sm: '10px', lg: '12px' }}
           color="gray.400"
         >
-          HIRE STATUS
+          PAYMENT STATUS
         </Text>
       ),
       cell: (info) => {
-        const { bg, color } = getStatusStyles(info.getValue(), 'hireStatus');
+        const { bg, color } = getStatusStyles(info.getValue(), 'paymentStatus');
         return (
           <Flex align="center" bg={bg} px={2} py={1} borderRadius="md">
             <Text fontSize="sm" color={color}>
@@ -276,26 +365,6 @@ export default function OrdersTable() {
           </Flex>
         );
       },
-    }),
-    columnHelper.accessor('createdAt', {
-      id: 'createdAt',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          CREATED AT
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
-        </Flex>
-      ),
     }),
     columnHelper.display({
       id: 'actions',
@@ -314,9 +383,16 @@ export default function OrdersTable() {
           <Button
             colorScheme="teal"
             size="sm"
-            onClick={() => navigate(`/admin/viewOrder/${row.original.id}`)}
+            onClick={() => handleViewDetails(row.original)}
           >
             View Details
+          </Button>
+          <Button
+            colorScheme="blue"
+            size="sm"
+            onClick={() => navigate(`/admin/viewOrder/${row.original.id}`)}
+          >
+            View Order
           </Button>
         </Flex>
       ),
@@ -385,6 +461,13 @@ export default function OrdersTable() {
           >
             Orders Table
           </Text>
+          <FormControl w="200px">
+            <Input
+              placeholder="Search by Project ID or Customer"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </FormControl>
         </Flex>
         <Box>
           <Table variant="simple" color="gray.500" mb="24px">
@@ -397,7 +480,9 @@ export default function OrdersTable() {
                       colSpan={header.colSpan}
                       pe="10px"
                       borderColor={borderColor}
-                      cursor={header.column.getCanSort() ? 'pointer' : 'default'}
+                      cursor={
+                        header.column.getCanSort() ? 'pointer' : 'default'
+                      }
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       <Flex
@@ -477,7 +562,7 @@ export default function OrdersTable() {
 
       {/* Details Modal */}
       {selectedOrder && (
-        <Modal isOpen={isDetailsOpen} onClose={onDetailsClose} size="lg">
+        <Modal isOpen={isDetailsOpen} onClose={onDetailsClose} size="2xl">
           <ModalOverlay />
           <ModalContent
             borderRadius="xl"
@@ -491,7 +576,7 @@ export default function OrdersTable() {
               color={textColor}
               textAlign="center"
             >
-              Order Details
+              Payment Details
             </ModalHeader>
             <ModalCloseButton
               size="lg"
@@ -506,143 +591,89 @@ export default function OrdersTable() {
                 bg={useColorModeValue('gray.50', 'gray.700')}
               >
                 <VStack spacing={4} align="stretch">
-                  <Grid templateColumns={{ base: '1fr', md: '150px 1fr' }} gap={4}>
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Order ID:
-                      </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.orderId}</Text>
-                    </GridItem>
+                  <Text fontWeight="bold" fontSize="lg" color={textColor}>
+                    Payment Information
+                  </Text>
 
+                  <Grid templateColumns="1fr 1fr" gap={6}>
                     <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Customer:
+                      <Text fontWeight="bold" fontSize="lg" color={textColor}>
+                        Customer Bank Details
                       </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.customerName}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Service Provider:
-                      </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.serviceProvider}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Title:
-                      </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.title}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Description:
-                      </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.description}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Address:
-                      </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.address}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Total Amount:
-                      </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>
-                        ₹{selectedOrder.totalAmount.toLocaleString()}
-                      </Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Paid Amount:
-                      </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>
-                        ₹{selectedOrder.paidAmount.toLocaleString()}
-                      </Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Payment Status:
-                      </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Flex
-                        align="center"
-                        bg={getStatusStyles(selectedOrder.paymentStatus, 'paymentStatus').bg}
-                        px={2}
-                        py={1}
-                        borderRadius="md"
-                      >
-                        <Text
-                          fontSize="sm"
-                          color={getStatusStyles(selectedOrder.paymentStatus, 'paymentStatus').color}
-                        >
-                          {selectedOrder.paymentStatus}
+                      {selectedOrder.customerBankDetails &&
+                      Object.keys(selectedOrder.customerBankDetails).length >
+                        0 ? (
+                        <VStack spacing={2} align="stretch">
+                          <Text color={textColor}>
+                            <strong>Account Holder:</strong>{' '}
+                            {
+                              selectedOrder.customerBankDetails
+                                .accountHolderName
+                            }
+                          </Text>
+                          <Text color={textColor}>
+                            <strong>Account Number:</strong>{' '}
+                            {selectedOrder.customerBankDetails.accountNumber}
+                          </Text>
+                          <Text color={textColor}>
+                            <strong>Bank Name:</strong>{' '}
+                            {selectedOrder.customerBankDetails.bankName}
+                          </Text>
+                          <Text color={textColor}>
+                            <strong>IFSC Code:</strong>{' '}
+                            {selectedOrder.customerBankDetails.ifscCode}
+                          </Text>
+                          <Text color={textColor}>
+                            <strong>UPI ID:</strong>{' '}
+                            {selectedOrder.customerBankDetails.upiId}
+                          </Text>
+                        </VStack>
+                      ) : (
+                        <Text color={textColor}>
+                          No customer bank details available
                         </Text>
-                      </Flex>
+                      )}
                     </GridItem>
-
                     <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Hire Status:
+                      <Text fontWeight="bold" fontSize="lg" color={textColor}>
+                        Service Provider Bank Details
                       </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Flex
-                        align="center"
-                        bg={getStatusStyles(selectedOrder.hireStatus, 'hireStatus').bg}
-                        px={2}
-                        py={1}
-                        borderRadius="md"
-                      >
-                        <Text
-                          fontSize="sm"
-                          color={getStatusStyles(selectedOrder.hireStatus, 'hireStatus').color}
-                        >
-                          {selectedOrder.hireStatus}
+                      {selectedOrder.serviceProviderBankDetails &&
+                      Object.keys(selectedOrder.serviceProviderBankDetails)
+                        .length > 0 ? (
+                        <VStack spacing={2} align="stretch">
+                          <Text color={textColor}>
+                            <strong>Account Holder:</strong>{' '}
+                            {
+                              selectedOrder.serviceProviderBankDetails
+                                .accountHolderName
+                            }
+                          </Text>
+                          <Text color={textColor}>
+                            <strong>Account Number:</strong>{' '}
+                            {
+                              selectedOrder.serviceProviderBankDetails
+                                .accountNumber
+                            }
+                          </Text>
+                          <Text color={textColor}>
+                            <strong>Bank Name:</strong>{' '}
+                            {selectedOrder.serviceProviderBankDetails.bankName}
+                          </Text>
+                          <Text color={textColor}>
+                            <strong>IFSC Code:</strong>{' '}
+                            {selectedOrder.serviceProviderBankDetails.ifscCode}
+                          </Text>
+                          <Text color={textColor}>
+                            <strong>UPI ID:</strong>{' '}
+                            {selectedOrder.serviceProviderBankDetails.upiId}
+                          </Text>
+                        </VStack>
+                      ) : (
+                        <Text color={textColor}>
+                          No service provider bank details available
                         </Text>
-                      </Flex>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Created At:
-                      </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.createdAt}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>
-                        Deadline:
-                      </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.deadline}</Text>
+                      )}
                     </GridItem>
                   </Grid>
 
@@ -652,7 +683,7 @@ export default function OrdersTable() {
                     Payment History
                   </Text>
                   {selectedOrder.paymentHistory.length > 0 ? (
-                    <VStack spacing={3} align="stretch">
+                    <Flex wrap="wrap" gap={4} justifyContent="space-between">
                       {selectedOrder.paymentHistory.map((payment, index) => (
                         <ChakraCard
                           key={index}
@@ -660,16 +691,91 @@ export default function OrdersTable() {
                           boxShadow="sm"
                           borderRadius="md"
                           bg={useColorModeValue('white', 'gray.600')}
+                          width="48%"
                         >
-                          <Text color={textColor}>
-                            <strong>Payment {index + 1}:</strong> ₹
-                            {payment.amount.toLocaleString()} - {payment.description} (
-                            {payment.status}) on{' '}
-                            {new Date(payment.date).toLocaleDateString()}
-                          </Text>
+                          <VStack align="stretch" spacing={1}>
+                            <Text color={textColor}>
+                              <strong>Payment {index + 1}:</strong> ₹
+                              {payment.amount.toLocaleString()}
+                            </Text>
+                            <Text color={textColor}>
+                              <strong>Tax:</strong> ₹
+                              {payment.tax.toLocaleString()}
+                            </Text>
+                            <Text color={textColor}>
+                              <strong>Payment ID:</strong> {payment.payment_id}
+                            </Text>
+                            <Text color={textColor}>
+                              <strong>Description:</strong>{' '}
+                              {payment.description}
+                            </Text>
+                            <Text color={textColor}>
+                              <strong>Method:</strong>{' '}
+                              {payment.method.toUpperCase()}
+                            </Text>
+                            <Text color={textColor}>
+                              <strong>Status:</strong> {payment.status}
+                            </Text>
+                            <Text color={textColor}>
+                              <strong>Release Status:</strong>{' '}
+                              {payment.release_status}
+                            </Text>
+                            <Text color={textColor}>
+                              <strong>Collected By:</strong>{' '}
+                              {payment.collected_by}
+                            </Text>
+                            <Text color={textColor}>
+                              <strong>Collected At:</strong>{' '}
+                              {new Date(payment.collected_at).toLocaleString()}
+                            </Text>
+                            <FormControl mt={2}>
+                              <Select
+                                value={
+                                  index === selectedPaymentIndex
+                                    ? releaseStatus
+                                    : payment.release_status
+                                }
+                                onChange={(e) => {
+                                  setReleaseStatus(e.target.value);
+                                  setSelectedPaymentIndex(index);
+                                }}
+                                placeholder="Select release status"
+                              >
+                                {[
+                                  'pending',
+                                  'release_requested',
+                                  'released',
+                                  'refunded',
+                                ].map((status) => (
+                                  <option key={status} value={status}>
+                                    {status.charAt(0).toUpperCase() +
+                                      status.slice(1).replace(/_/g, ' ')}
+                                  </option>
+                                ))}
+                              </Select>
+                              <Button
+                                mt={2}
+                                colorScheme="blue"
+                                size="sm"
+                                onClick={() =>
+                                  handleReleaseStatusChange(
+                                    selectedOrder.id,
+                                    payment._id,
+                                    index,
+                                  )
+                                }
+                                isDisabled={
+                                  !releaseStatus ||
+                                  releaseStatus === payment.release_status
+                                }
+                              >
+                                Update Release Status
+                              </Button>
+                            </FormControl>
+                          </VStack>
                         </ChakraCard>
                       ))}
-                    </VStack>
+                    </Flex>
                   ) : (
                     <Text color={textColor}>No payment history available</Text>
                   )}

@@ -37,6 +37,7 @@ import Both from 'views/admin/both';
 import RequestUser from 'views/admin/RequestUser';
 import DirectPaymentRequest from 'views/admin/directPaymentRequest';
 import Dispute from 'views/admin/dispute';
+import AllServiceProvider from 'views/admin/allServiceprovider';
 // import OnlineOrders from 'views/admin/onlineOrders';
 
 // Auth Imports
@@ -71,6 +72,13 @@ const routes = [
     icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
     path: '/both',
     component: <Both />,
+  },
+	{
+    name: 'All Service Provider',
+    layout: '/admin',
+    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
+    path: '/all_service_provider',
+    component: <AllServiceProvider />,
   },
 	{
     name: 'Requested User',
