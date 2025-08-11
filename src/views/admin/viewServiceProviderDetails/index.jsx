@@ -13,14 +13,13 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
-  useDisclosure,
+  ModalFooter,
   VStack,
   Divider,
   Card as ChakraCard,
   Image,
   Select,
   HStack,
-  ModalFooter,
   Switch,
 } from '@chakra-ui/react';
 import axios from 'axios';
@@ -45,6 +44,8 @@ export default function ServiceProviderDetails() {
   const [toggleLoading, setToggleLoading] = React.useState(false);
   const [isDocumentModalOpen, setIsDocumentModalOpen] = React.useState(false);
   const [documentUrl, setDocumentUrl] = React.useState(null);
+  const [isAddressModalOpen, setIsAddressModalOpen] = React.useState(false);
+  const [selectedAddresses, setSelectedAddresses] = React.useState([]);
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
@@ -73,7 +74,15 @@ export default function ServiceProviderDetails() {
           throw new Error('Invalid response format: Expected user object');
         }
 
-        setData(response.data);
+        setData({
+          ...response.data,
+          user: {
+            ...response.data.user,
+            full_address: Array.isArray(response.data.user.full_address)
+              ? response.data.user.full_address
+              : [],
+          },
+        });
         setLoading(false);
       } catch (err) {
         console.error('Fetch Orders Error:', err);
@@ -121,6 +130,17 @@ export default function ServiceProviderDetails() {
     setDocumentUrl(docUrl);
     setIsDocumentModalOpen(true);
   };
+
+  // Handle address modal
+  const openAddressModal = React.useCallback((addresses) => {
+    setSelectedAddresses(addresses);
+    setIsAddressModalOpen(true);
+  }, []);
+
+  const closeAddressModal = React.useCallback(() => {
+    setIsAddressModalOpen(false);
+    setSelectedAddresses([]);
+  }, []);
 
   // Capitalize first letter of name or status
   const capitalizeFirstLetter = (str) => {
@@ -224,7 +244,10 @@ export default function ServiceProviderDetails() {
         w="100%"
         px="0px"
         style={{ marginTop: '100px' }}
-        overflowX={{ sm: 'scroll', lg: 'hidden' }}
+        overflowX={{ sm: 'scroll', lg: 'inherit' }}
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={cardBg}
       >
         <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
           Loading...
@@ -240,7 +263,10 @@ export default function ServiceProviderDetails() {
         w="100%"
         px="0px"
         style={{ marginTop: '100px' }}
-        overflowX={{ sm: 'scroll', lg: 'hidden' }}
+        overflowX={{ sm: 'scroll', lg: 'inherit' }}
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={cardBg}
       >
         <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
           Error: {error}
@@ -257,6 +283,9 @@ export default function ServiceProviderDetails() {
         px="0px"
         style={{ marginTop: '100px' }}
         overflowX={{ sm: 'scroll', lg: 'inherit' }}
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={cardBg}
       >
         <Flex px="25px" mb="20px" justify="space-between" align="center">
           <Text
@@ -316,7 +345,7 @@ export default function ServiceProviderDetails() {
               </ChakraCard>
 
               {/* Service Provider Details and Document Section */}
-              <Flex gap="6" align="flex-start">
+              <Flex gap="6" align="flex-start" direction={{ base: 'column', md: 'row' }}>
                 <ChakraCard
                   p="15px"
                   borderRadius="lg"
@@ -359,21 +388,31 @@ export default function ServiceProviderDetails() {
                         {data.user?.current_location || 'N/A'}
                       </Text>
                     </Flex>
-                    <Flex align="start" gap="4">
+                    <Flex align="start" gap="4" wrap="wrap">
                       <Text fontWeight="semibold" color={textColor}>
                         Address:
                       </Text>
-                      <Text color={textColor}>
-                        {data.user?.full_address ||
-                          [
-                            data.user?.colony_name,
-                            data.user?.gali_number,
-                            data.user?.landmark,
-                          ]
-                            .filter(Boolean)
-                            .join(', ') ||
-                          'N/A'}
-                      </Text>
+                      <Flex align="center" wrap="wrap" gap="2">
+                        <Text
+                          color={textColor}
+                          maxW={{ base: '200px', md: '300px' }}
+                          isTruncated
+                        >
+                          {data.user?.full_address?.length > 0
+                            ? data.user.full_address[0].address
+                            : 'N/A'}
+                        </Text>
+                        {data.user?.full_address?.length > 0 && (
+                          <Button
+                            size="xs"
+                            variant="link"
+                            colorScheme="teal"
+                            onClick={() => openAddressModal(data.user.full_address)}
+                          >
+                            Show More
+                          </Button>
+                        )}
+                      </Flex>
                     </Flex>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
@@ -470,7 +509,7 @@ export default function ServiceProviderDetails() {
                   border="1px solid"
                   borderColor={borderColor}
                   bg={cardBg}
-                  w="200px"
+                  w={{ base: '100%', md: '200px' }}
                 >
                   <Text fontWeight="bold" fontSize="lg" color={textColor}>
                     Document
@@ -583,7 +622,7 @@ export default function ServiceProviderDetails() {
                             src={
                               worker.image
                                 ? `${baseUrl}/${worker.image}`
-                                : 'https://via.placeholder.com/50'
+                                : defaultProfilePic
                             }
                             alt="Worker"
                             boxSize="50px"
@@ -740,10 +779,12 @@ export default function ServiceProviderDetails() {
         onClose={() => setIsDocumentModalOpen(false)}
         size="xl"
       >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Document Preview</ModalHeader>
-          <ModalCloseButton />
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent borderRadius="16px" bg={cardBg} boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)">
+          <ModalHeader fontSize="lg" fontWeight="700" color={textColor}>
+            Document Preview
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
           <ModalBody>
             {documentUrl && (
               <Image
@@ -759,6 +800,73 @@ export default function ServiceProviderDetails() {
         </ModalContent>
       </Modal>
 
+      {/* Address Modal */}
+      <Modal isOpen={isAddressModalOpen} onClose={closeAddressModal} isCentered size="lg">
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '600px' }}
+          borderRadius="16px"
+          bg={cardBg}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            User Addresses
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            {selectedAddresses.length === 0 ? (
+              <Text color={textColor} fontSize="sm">
+                No addresses available.
+              </Text>
+            ) : (
+              selectedAddresses.map((addr, index) => (
+                <Box
+                  key={addr.id}
+                  mb={4}
+                  p={4}
+                  border="1px"
+                  borderColor={borderColor}
+                  borderRadius="8px"
+                >
+                  <Text fontSize="sm" fontWeight="600" color={textColor}>
+                    {index + 1}. {addr.title || 'Address'}
+                  </Text>
+                  <Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Address:</strong> {addr.address || 'N/A'}
+                  </Text>
+                  <Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Landmark:</strong> {addr.landmark || 'N/A'}
+                  </Text>
+                  <Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Latitude:</strong> {addr.latitude || 'N/A'}
+                  </Text>
+                  <Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Longitude:</strong> {addr.longitude || 'N/A'}
+                  </Text>
+                </Box>
+              ))
+            )}
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="teal"
+              onClick={closeAddressModal}
+              borderRadius="12px"
+              size="sm"
+              _hover={{ bg: 'teal.600' }}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Worker Details Modal */}
       {selectedWorker && (
         <Modal
@@ -766,7 +874,7 @@ export default function ServiceProviderDetails() {
           onClose={() => setSelectedWorker(null)}
           size="xl"
         >
-          <ModalOverlay />
+          <ModalOverlay bg="blackAlpha.600" />
           <ModalContent borderRadius="xl" boxShadow="2xl" p={4} bg={cardBg}>
             <ModalHeader
               fontSize="2xl"
@@ -935,6 +1043,7 @@ export default function ServiceProviderDetails() {
         closeOnClick
         pauseOnHover
         draggable
+       
       />
     </>
   );

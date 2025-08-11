@@ -13,15 +13,15 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
-  useDisclosure,
+  ModalFooter,
   VStack,
   Divider,
   Card as ChakraCard,
   Image,
   Select,
   HStack,
-  ModalFooter,
   Switch,
+  useDisclosure,
 } from '@chakra-ui/react';
 import axios from 'axios';
 import * as React from 'react';
@@ -54,6 +54,11 @@ export default function ServiceProviderDetails() {
     onOpen: onDocumentModalOpen,
     onClose: onDocumentModalClose,
   } = useDisclosure();
+  const {
+    isOpen: isAddressModalOpen,
+    onOpen: onAddressModalOpen,
+    onClose: onAddressModalClose,
+  } = useDisclosure();
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
@@ -81,7 +86,15 @@ export default function ServiceProviderDetails() {
           throw new Error('Invalid response format: Expected user object');
         }
 
-        setData(response.data);
+        setData({
+          ...response.data,
+          user: {
+            ...response.data.user,
+            full_address: Array.isArray(response.data.user.full_address)
+              ? response.data.user.full_address
+              : [],
+          },
+        });
         setLoading(false);
       } catch (err) {
         console.error('Fetch Orders Error:', err);
@@ -126,7 +139,6 @@ export default function ServiceProviderDetails() {
 
   // Update verification status for Service Provider
   const toggleUserVerified = async (userId, verified) => {
-    // Don't proceed if already verified
     if (verified) {
       toast.info('User is already verified.', {
         position: 'top-right',
@@ -146,14 +158,11 @@ export default function ServiceProviderDetails() {
         `${baseUrl}api/admin/approveServiceProvider`,
         { userId },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         },
       );
 
       if (response.data.success) {
-        // Update local state
         setData((prevData) => ({
           ...prevData,
           user: { ...prevData.user, verified: !verified },
@@ -187,6 +196,7 @@ export default function ServiceProviderDetails() {
       setToggleLoading(false);
     }
   };
+
   const capitalizeFirstLetter = (str) => {
     if (!str) return 'N/A';
     return str
@@ -195,6 +205,7 @@ export default function ServiceProviderDetails() {
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+
   // Update verification status for Worker
   const handleWorkerVerifyStatusUpdate = async (worker) => {
     try {
@@ -243,7 +254,10 @@ export default function ServiceProviderDetails() {
         w="100%"
         px="0px"
         style={{ marginTop: '100px' }}
-        overflowX={{ sm: 'scroll', lg: 'hidden' }}
+        overflowX={{ sm: 'scroll', lg: 'inherit' }}
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={cardBg}
       >
         <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
           Loading...
@@ -259,7 +273,10 @@ export default function ServiceProviderDetails() {
         w="100%"
         px="0px"
         style={{ marginTop: '100px' }}
-        overflowX={{ sm: 'scroll', lg: 'hidden' }}
+        overflowX={{ sm: 'scroll', lg: 'inherit' }}
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={cardBg}
       >
         <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
           Error: {error}
@@ -276,6 +293,9 @@ export default function ServiceProviderDetails() {
         px="0px"
         style={{ marginTop: '100px' }}
         overflowX={{ sm: 'scroll', lg: 'inherit' }}
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={cardBg}
       >
         <Flex px="25px" mb="20px" justify="space-between" align="center">
           <Text
@@ -333,7 +353,7 @@ export default function ServiceProviderDetails() {
               </ChakraCard>
 
               {/* Service Provider Information and Documents */}
-              <Flex gap="4">
+              <Flex gap="4" direction={{ base: 'column', md: 'row' }}>
                 {/* Service Provider Information */}
                 <ChakraCard
                   p="15px"
@@ -377,21 +397,31 @@ export default function ServiceProviderDetails() {
                         {data.user?.current_location || 'N/A'}
                       </Text>
                     </Flex>
-                    <Flex align="start" gap="4">
+                    <Flex align="start" gap="4" wrap="wrap">
                       <Text fontWeight="semibold" color={textColor}>
                         Address:
                       </Text>
-                      <Text color={textColor}>
-                        {data.user?.full_address ||
-                          [
-                            data.user?.colony_name,
-                            data.user?.gali_number,
-                            data.user?.landmark,
-                          ]
-                            .filter(Boolean)
-                            .join(', ') ||
-                          'N/A'}
-                      </Text>
+                      <Flex align="center" wrap="wrap" gap="2">
+                        <Text
+                          color={textColor}
+                          maxW={{ base: '200px', md: '300px' }}
+                          isTruncated
+                        >
+                          {data.user?.full_address?.length > 0
+                            ? data.user.full_address[0].address
+                            : 'N/A'}
+                        </Text>
+                        {data.user?.full_address?.length > 0 && (
+                          <Button
+                            size="xs"
+                            variant="link"
+                            colorScheme="teal"
+                            onClick={() => onAddressModalOpen()}
+                          >
+                            Show More
+                          </Button>
+                        )}
+                      </Flex>
                     </Flex>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
@@ -748,7 +778,7 @@ export default function ServiceProviderDetails() {
           onClose={onDocumentModalClose}
           size="xl"
         >
-          <ModalOverlay />
+          <ModalOverlay bg="blackAlpha.600" />
           <ModalContent borderRadius="xl" boxShadow="2xl" p={4} bg={cardBg}>
             <ModalHeader
               fontSize="2xl"
@@ -772,6 +802,7 @@ export default function ServiceProviderDetails() {
                   maxW="100%"
                   objectFit="contain"
                   borderRadius="md"
+                  onError={(e) => (e.target.src = defaultProfilePic)}
                 />
               </ChakraCard>
             </ModalBody>
@@ -789,14 +820,89 @@ export default function ServiceProviderDetails() {
         </Modal>
       )}
 
+      {/* Address Modal */}
+      <Modal
+        isOpen={isAddressModalOpen}
+        onClose={onAddressModalClose}
+        isCentered
+        size="lg"
+      >
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '600px' }}
+          borderRadius="16px"
+          bg={cardBg}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            User Addresses
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            {data.user?.full_address?.length === 0 ? (
+              <Text color={textColor} fontSize="sm">
+                No addresses available.
+              </Text>
+            ) : (
+              data.user.full_address.map((addr, index) => (
+                <Box
+                  key={addr.id || index}
+                  mb={4}
+                  p={4}
+                  border="1px"
+                  borderColor={borderColor}
+                  borderRadius="8px"
+                >
+                  <Text fontSize="sm" fontWeight="600" color={textColor}>
+                    {index + 1}. {addr.title || 'Address'}
+                  </Text>
+                  <Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Address:</strong> {addr.address || 'N/A'}
+                  </Text>
+                  <Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Landmark:</strong> {addr.landmark || 'N/A'}
+                  </Text>
+                  <Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Latitude:</strong> {addr.latitude || 'N/A'}
+                  </Text>
+                  <Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Longitude:</strong> {addr.longitude || 'N/A'}
+                  </Text>
+                </Box>
+              ))
+            )}
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="teal"
+              onClick={onAddressModalClose}
+              borderRadius="12px"
+              size="sm"
+              _hover={{ bg: 'teal.600' }}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Worker Details Modal */}
       {selectedWorker && (
         <Modal
-          isOpen={!!selectedWorker}
-          onClose={() => setSelectedWorker(null)}
+          isOpen={isWorkerDetailsOpen}
+          onClose={() => {
+            setSelectedWorker(null);
+            onWorkerDetailsClose();
+          }}
           size="xl"
         >
-          <ModalOverlay />
+          <ModalOverlay bg="blackAlpha.600" />
           <ModalContent borderRadius="xl" boxShadow="2xl" p={4} bg={cardBg}>
             <ModalHeader
               fontSize="2xl"
@@ -828,8 +934,7 @@ export default function ServiceProviderDetails() {
                     />
                     <Box>
                       <Text fontWeight="bold" fontSize="xl" color={textColor}>
-                        Name:{' '}
-                        {capitalizeFirstLetter(selectedWorker.name || 'N/A')}
+                        Name: {selectedWorker.name || 'N/A'}
                       </Text>
                     </Box>
                   </Flex>
@@ -948,7 +1053,10 @@ export default function ServiceProviderDetails() {
               </Button>
               <Button
                 colorScheme="gray"
-                onClick={() => setSelectedWorker(null)}
+                onClick={() => {
+                  setSelectedWorker(null);
+                  onWorkerDetailsClose();
+                }}
                 _hover={{ bg: 'gray.300', transform: 'scale(1.05)' }}
                 transition="all 0.2s ease-in-out"
               >

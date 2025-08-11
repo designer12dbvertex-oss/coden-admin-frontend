@@ -20,6 +20,13 @@ import {
   InputGroup,
   InputLeftElement,
   Icon,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -77,9 +84,9 @@ const useFetchUsers = (baseUrl, token, navigate) => {
                   .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                   .join(' ')
               : 'N/A',
-            location: user.location.address || 'N/A',
+            location: user.location?.address || 'N/A',
             mobile: user.phone || 'N/A',
-            full_address: user.full_address || 'N/A',
+            full_address: Array.isArray(user.full_address) ? user.full_address : [],
             createdAt: user.createdAt
               ? new Date(user.createdAt).toISOString().split('T')[0]
               : 'N/A',
@@ -170,7 +177,8 @@ export default function ComplexTable() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredData, setFilteredData] = useState([]);
   const [toggleLoading, setToggleLoading] = useState({});
-  const [expandedLocations, setExpandedLocations] = useState({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAddresses, setSelectedAddresses] = useState([]);
   const itemsPerPage = 10;
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
@@ -213,14 +221,18 @@ export default function ComplexTable() {
     setFilteredData(data);
   }, [data]);
 
-  // Toggle handler for read more/less
-  const handleToggleLocation = useCallback((userId) => {
-    setExpandedLocations((prev) => ({
-      ...prev,
-      [userId]: !prev[userId],
-    }));
+  // Modal handlers
+  const openModal = useCallback((addresses) => {
+    setSelectedAddresses(addresses);
+    setIsModalOpen(true);
   }, []);
 
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedAddresses([]);
+  }, []);
+
+  // Toggle handler for user status
   const handleToggle = useCallback(
     async (userId, currentActive) => {
       if (toggleLoading[userId]) return;
@@ -367,40 +379,17 @@ export default function ComplexTable() {
             Location
           </Text>
         ),
-        cell: (info) => {
-          const location = info.getValue();
-          const userId = info.row.original.id;
-          const isExpanded = expandedLocations[userId];
-          const isLongText = location.length > 30;
-          const shortText = isLongText
-            ? `${location.slice(0, 30)}...`
-            : location;
-
-          return (
-            <Flex justify="center" align="center" wrap="nowrap">
-              <Text
-                color={textColor}
-                fontSize="sm"
-                fontWeight="600"
-                textAlign="center"
-                whiteSpace={isLongText && !isExpanded ? 'nowrap' : 'normal'}
-              >
-                {isExpanded || !isLongText ? location : shortText}
-              </Text>
-              {isLongText && (
-                <Button
-                  size="xs"
-                  variant="link"
-                  colorScheme="teal"
-                  ml={2}
-                  onClick={() => handleToggleLocation(userId)}
-                >
-                  {isExpanded ? 'Less' : 'More'}
-                </Button>
-              )}
-            </Flex>
-          );
-        },
+        cell: (info) => (
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="600"
+            textAlign="center"
+            whiteSpace="nowrap"
+          >
+            {info.getValue()}
+          </Text>
+        ),
       }),
       columnHelper.accessor('full_address', {
         id: 'full_address',
@@ -417,13 +406,9 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => {
-          const full_address = info.getValue();
-          const userId = info.row.original.id;
-          const isExpanded = expandedLocations[userId];
-          const isLongText = full_address.length > 30;
-          const shortText = isLongText
-            ? `${full_address.slice(0, 30)}...`
-            : full_address;
+          const addresses = info.getValue();
+          const preview = addresses.length > 0 ? addresses[0].address : 'N/A';
+          const isMultiple = addresses.length > 0;
 
           return (
             <Flex justify="center" align="center" wrap="nowrap">
@@ -432,19 +417,21 @@ export default function ComplexTable() {
                 fontSize="sm"
                 fontWeight="600"
                 textAlign="center"
-                whiteSpace={isLongText && !isExpanded ? 'nowrap' : 'normal'}
+                whiteSpace="nowrap"
+                maxW="200px"
+                isTruncated
               >
-                {isExpanded || !isLongText ? full_address : shortText}
+                {preview}
               </Text>
-              {isLongText && (
+              {isMultiple && (
                 <Button
                   size="xs"
                   variant="link"
                   colorScheme="teal"
                   ml={2}
-                  onClick={() => handleToggleLocation(userId)}
+                  onClick={() => openModal(addresses)}
                 >
-                  {isExpanded ? 'Less' : 'More'}
+                  Show More
                 </Button>
               )}
             </Flex>
@@ -554,66 +541,8 @@ export default function ComplexTable() {
           </Flex>
         ),
       }),
-      columnHelper.display({
-        id: 'actions',
-        header: () => (
-          <Text
-            justifyContent="center"
-            align="center"
-            fontSize={{ sm: '12px', lg: '14px' }}
-            fontWeight="bold"
-            color="gray.500"
-            textTransform="uppercase"
-          >
-            Actions
-          </Text>
-        ),
-        cell: (info) => (
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            justify="center"
-            align="center"
-            gap={{ base: 2, md: 3 }}
-          >
-            <Button
-              size="sm"
-              colorScheme="teal"
-              variant="outline"
-              onClick={() => navigate(`/admin/directOrder/${info.row.original.id}`)}
-              _hover={{ bg: 'teal.600', color: 'white' }}
-            >
-              Direct Orders
-            </Button>
-            <Button
-              size="sm"
-              colorScheme="teal"
-              variant="outline"
-              onClick={() => navigate(`/admin/bidding_Order/${info.row.original.id}`)}
-              _hover={{ bg: 'teal.600', color: 'white' }}
-            >
-              Bidding Orders
-            </Button>
-            <Button
-              size="sm"
-              colorScheme="teal"
-              variant="outline"
-              onClick={() => navigate(`/admin/emergency_Order/${info.row.original.id}`)}
-              _hover={{ bg: 'teal.600', color: 'white' }}
-            >
-              Emergency Orders
-            </Button>
-          </Flex>
-        ),
-      }),
     ],
-    [
-      textColor,
-      handleToggle,
-      toggleLoading,
-      expandedLocations,
-      handleToggleLocation,
-      startIndex,
-    ],
+    [textColor, handleToggle, toggleLoading, openModal, startIndex],
   );
 
   const table = useReactTable({
@@ -669,177 +598,246 @@ export default function ComplexTable() {
   }
 
   return (
-    <Card
-      flexDirection="column"
-      w="100%"
-      px={{ base: '15px', md: '25px' }}
-      py="25px"
-      borderRadius="16px"
-      boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
-      bg={useColorModeValue('white', 'gray.800')}
-      overflowX="auto"
-    >
-      <Flex
-        px={{ base: '10px', md: '0' }}
-        mb="20px"
-        justifyContent="space-between"
-        align="center"
-        direction={{ base: 'column', md: 'row' }}
-        gap={{ base: '10px', md: '0' }}
+    <>
+      <Card
+        flexDirection="column"
+        w="100%"
+        px={{ base: '15px', md: '25px' }}
+        py="25px"
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={useColorModeValue('white', 'gray.800')}
+        overflowX="auto"
       >
-        <Text
-          color={textColor}
-          fontSize={{ base: 'xl', md: '2xl' }}
-          fontWeight="700"
-          lineHeight="100%"
+        <Flex
+          px={{ base: '10px', md: '0' }}
+          mb="20px"
+          justifyContent="space-between"
+          align="center"
+          direction={{ base: 'column', md: 'row' }}
+          gap={{ base: '10px', md: '0' }}
         >
-          Users List
-        </Text>
-        <InputGroup maxW={{ base: '100%', md: '300px' }}>
-          <InputLeftElement pointerEvents="none">
-            <Icon as={SearchIcon} color="gray.400" />
-          </InputLeftElement>
-          <Input
-            placeholder="Search by name, location, mobile, or referral code"
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            borderRadius="12px"
-            bg={useColorModeValue('gray.100', 'gray.700')}
-            _focus={{
-              borderColor: 'teal.500',
-              boxShadow: '0 0 0 1px teal.500',
-            }}
-          />
-        </InputGroup>
-      </Flex>
-      <Box overflowX="auto">
-        <Table
-          variant="simple"
-          color="gray.500"
-          mb="24px"
-          mt="12px"
-          minW="1200px"
-        >
-          <Thead bg={headerBg}>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <Tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <Th
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    px={{ base: '8px', md: '16px' }}
-                    py="12px"
-                    borderColor={borderColor}
-                    cursor="pointer"
-                    onClick={header.column.getToggleSortingHandler()}
-                    aria-sort={
-                      header.column.getIsSorted()
-                        ? header.column.getIsSorted() === 'asc'
-                          ? 'ascending'
-                          : 'descending'
-                        : 'none'
-                    }
-                  >
-                    <Flex
-                      justifyContent="center"
-                      align="center"
-                      fontSize={{ sm: '12px', lg: '14px' }}
-                      fontWeight="bold"
-                      color="gray.500"
-                      textTransform="uppercase"
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                      {header.column.getIsSorted() ? (
-                        header.column.getIsSorted() === 'asc' ? (
-                          <ArrowUpIcon ml={2} />
-                        ) : (
-                          <ArrowDownIcon ml={2} />
-                        )
-                      ) : null}
-                    </Flex>
-                  </Th>
-                ))}
-              </Tr>
-            ))}
-          </Thead>
-          <Tbody>
-            {table.getRowModel().rows.map((row) => (
-              <Tr
-                key={row.id}
-                _hover={{
-                  bg: hoverBg,
-                  transition: 'background-color 0.2s ease',
-                }}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <Td
-                    key={cell.id}
-                    fontSize={{ sm: '14px' }}
-                    px={{ base: '8px', md: '16px' }}
-                    py="12px"
-                    borderColor={borderColor}
-                    whiteSpace="nowrap"
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </Td>
-                ))}
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </Box>
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        px={{ base: '10px', md: '25px' }}
-        py="10px"
-        borderTopWidth="1px"
-        borderColor={borderColor}
-      >
-        <Text fontSize="sm" color={textColor}>
-          Showing {totalItems === 0 ? 0 : startIndex + 1} to{' '}
-          {Math.min(endIndex, totalItems)} of {totalItems} users
-        </Text>
-        <HStack spacing={2}>
-          <Button
-            size="sm"
-            colorScheme="teal"
-            variant="outline"
-            onClick={() => goToPage(currentPage - 1)}
-            isDisabled={currentPage === 1}
-            leftIcon={<ChevronLeftIcon />}
-            _hover={{ bg: 'teal.600', color: 'white' }}
+          <Text
+            color={textColor}
+            fontSize={{ base: 'xl', md: '2xl' }}
+            fontWeight="700"
+            lineHeight="100%"
           >
-            Previous
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            Users List
+          </Text>
+          <InputGroup maxW={{ base: '100%', md: '300px' }}>
+            <InputLeftElement pointerEvents="none">
+              <Icon as={SearchIcon} color="gray.400" />
+            </InputLeftElement>
+            <Input
+              placeholder="Search by name, location, mobile, or referral code"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              borderRadius="12px"
+              bg={useColorModeValue('gray.100', 'gray.700')}
+              _focus={{
+                borderColor: 'teal.500',
+                boxShadow: '0 0 0 1px teal.500',
+              }}
+            />
+          </InputGroup>
+        </Flex>
+        <Box overflowX="auto">
+          <Table
+            variant="simple"
+            color="gray.500"
+            mb="24px"
+            mt="12px"
+            minW="1200px"
+          >
+            <Thead bg={headerBg}>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <Tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <Th
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      px={{ base: '8px', md: '16px' }}
+                      py="12px"
+                      borderColor={borderColor}
+                      cursor="pointer"
+                      onClick={header.column.getToggleSortingHandler()}
+                      aria-sort={
+                        header.column.getIsSorted()
+                          ? header.column.getIsSorted() === 'asc'
+                            ? 'ascending'
+                            : 'descending'
+                          : 'none'
+                      }
+                    >
+                      <Flex
+                        justifyContent="center"
+                        align="center"
+                        fontSize={{ sm: '12px', lg: '14px' }}
+                        fontWeight="bold"
+                        color="gray.500"
+                        textTransform="uppercase"
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                        {header.column.getIsSorted() ? (
+                          header.column.getIsSorted() === 'asc' ? (
+                            <ArrowUpIcon ml={2} />
+                          ) : (
+                            <ArrowDownIcon ml={2} />
+                          )
+                        ) : null}
+                      </Flex>
+                    </Th>
+                  ))}
+                </Tr>
+              ))}
+            </Thead>
+            <Tbody>
+              {table.getRowModel().rows.map((row) => (
+                <Tr
+                  key={row.id}
+                  _hover={{
+                    bg: hoverBg,
+                    transition: 'background-color 0.2s ease',
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <Td
+                      key={cell.id}
+                      fontSize={{ sm: '14px' }}
+                      px={{ base: '8px', md: '16px' }}
+                      py="12px"
+                      borderColor={borderColor}
+                      whiteSpace="nowrap"
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </Td>
+                  ))}
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </Box>
+        <Flex
+          justifyContent="space-between"
+          alignItems="center"
+          px={{ base: '10px', md: '25px' }}
+          py="10px"
+          borderTopWidth="1px"
+          borderColor={borderColor}
+        >
+          <Text fontSize="sm" color={textColor}>
+            Showing {totalItems === 0 ? 0 : startIndex + 1} to{' '}
+            {Math.min(endIndex, totalItems)} of {totalItems} users
+          </Text>
+          <HStack spacing={2}>
             <Button
-              key={page}
               size="sm"
               colorScheme="teal"
-              variant={currentPage === page ? 'solid' : 'outline'}
-              onClick={() => goToPage(page)}
+              variant="outline"
+              onClick={() => goToPage(currentPage - 1)}
+              isDisabled={currentPage === 1}
+              leftIcon={<ChevronLeftIcon />}
               _hover={{ bg: 'teal.600', color: 'white' }}
             >
-              {page}
+              Previous
             </Button>
-          ))}
-          <Button
-            size="sm"
-            colorScheme="teal"
-            variant="outline"
-            onClick={() => goToPage(currentPage + 1)}
-            isDisabled={currentPage === totalPages}
-            rightIcon={<ChevronRightIcon />}
-            _hover={{ bg: 'teal.600', color: 'white' }}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                size="sm"
+                colorScheme="teal"
+                variant={currentPage === page ? 'solid' : 'outline'}
+                onClick={() => goToPage(page)}
+                _hover={{ bg: 'teal.600', color: 'white' }}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              size="sm"
+              colorScheme="teal"
+              variant="outline"
+              onClick={() => goToPage(currentPage + 1)}
+              isDisabled={currentPage === totalPages}
+              rightIcon={<ChevronRightIcon />}
+              _hover={{ bg: 'teal.600', color: 'white' }}
+            >
+              Next
+            </Button>
+          </HStack>
+        </Flex>
+      </Card>
+
+      {/* Modal for full addresses */}
+      <Modal isOpen={isModalOpen} onClose={closeModal} isCentered>
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '600px' }}
+          borderRadius="16px"
+          bg={useColorModeValue('white', 'gray.800')}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
           >
-            Next
-          </Button>
-        </HStack>
-      </Flex>
+            User Addresses
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            {selectedAddresses.length === 0 ? (
+              <Text color={textColor} fontSize="sm">
+                No addresses available.
+              </Text>
+            ) : (
+              selectedAddresses.map((addr, index) => (
+                <Box
+                  key={addr.id}
+                  mb={4}
+                  p={4}
+                  border="1px"
+                  borderColor={borderColor}
+                  borderRadius="8px"
+                >
+                  <Text fontSize="sm" fontWeight="600" color={textColor}>
+                    {index + 1}. {addr.title}
+                  </Text>
+                  <Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Address:</strong> {addr.address || 'N/A'}
+                  </Text>
+                  <Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Landmark:</strong> {addr.landmark || 'N/A'}
+                  </Text>
+                 { /*<Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Latitude:</strong> {addr.latitude || 'N/A'}
+                  </Text>
+                  <Text fontSize="sm" color={textColor} mt={1}>
+                    <strong>Longitude:</strong> {addr.longitude || 'N/A'}
+                  </Text> */}
+                </Box>
+              ))
+            )}
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="teal"
+              onClick={closeModal}
+              borderRadius="12px"
+              size="sm"
+              _hover={{ bg: 'teal.600' }}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -849,6 +847,6 @@ export default function ComplexTable() {
         draggable
         theme={useColorModeValue('light', 'dark')}
       />
-    </Card>
+    </>
   );
 }

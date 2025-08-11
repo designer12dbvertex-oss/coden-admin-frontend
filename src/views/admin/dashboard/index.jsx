@@ -31,6 +31,8 @@ export default function UserReports() {
   const [dashboardData, setDashboardData] = useState({
     users: 0,
     service_provider: 0,
+		unverified_service_provider: 0,
+		verified_service_provider: 0,
     both: 0,
 		requested:0,
 		subadmins:0,
@@ -60,7 +62,9 @@ export default function UserReports() {
 
         setDashboardData({
           users: data.totalUsers ?? 0,
-          service_provider: data.totalSeller ?? 0,
+          verified_service_provider: data.totalVerifiedSeller ?? 0,
+					unverified_service_provider: data.totalUnverifiedSeller ?? 0,
+					service_provider: data.totalServiceProvider ?? 0,
           both: data.totalBoth ?? 0,
 					requested: data.totalRequested ?? 0,
 					subadmins: data.totalSubadmins ?? 0,
@@ -123,6 +127,17 @@ export default function UserReports() {
           value={dashboardData.users}
         />
 				</Link>
+				<Link to ="/">
+        <MiniStatistics
+          startContent={
+            <IconBox w="56px" h="56px" bg={boxBg}
+              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
+            />
+          }
+          name="Total Service Provider"
+          value={dashboardData.service_provider.toLocaleString()}
+        />
+				</Link>
 				<Link to ="/admin/service_provider">
         <MiniStatistics
           startContent={
@@ -130,8 +145,19 @@ export default function UserReports() {
               icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
             />
           }
-          name="Service Provider"
-          value={dashboardData.service_provider.toLocaleString()}
+          name="Verified Service Provider"
+          value={dashboardData.verified_service_provider.toLocaleString()}
+        />
+				</Link>
+				<Link to ="/admin/unverified_service_provider">
+        <MiniStatistics
+          startContent={
+            <IconBox w="56px" h="56px" bg={boxBg}
+              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
+            />
+          }
+          name="Unverified Service Provider"
+          value={dashboardData.unverified_service_provider.toLocaleString()}
         />
 				</Link>
 					<Link to ="/admin/both">
