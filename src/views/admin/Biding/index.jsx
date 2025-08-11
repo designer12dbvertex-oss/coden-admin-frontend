@@ -158,7 +158,7 @@ export default function OrdersTable() {
           item.serviceProvider.toLowerCase().includes(lowerQuery) ||
           item.paymentStatus.toLowerCase().includes(lowerQuery) ||
           item.hireStatus.toLowerCase().includes(lowerQuery) ||
-          item.createdAt.toLowerCase().includes(lowerQuery)
+          item.createdAt.toLowerCase().includes(lowerQuery),
       );
       setFilteredData(filtered);
     },
@@ -206,6 +206,30 @@ export default function OrdersTable() {
   };
 
   const columns = [
+    columnHelper.display({
+					id: 'sno',
+					header: () => (
+						<Text
+							justifyContent="space-between"
+							align="center"
+							fontSize={{ sm: '10px', lg: '12px' }}
+							color="gray.400"
+						>
+							S.No
+						</Text>
+					),
+					cell: ({ row }) => {
+						const serialNumber = row.index + 1;
+		
+						return (
+							<Flex align="center">
+								<Text color={textColor} fontSize="sm" fontWeight="700">
+									{isNaN(serialNumber) ? 'N/A' : serialNumber}
+								</Text>
+							</Flex>
+						);
+					},
+				}),
     columnHelper.accessor('orderId', {
       id: 'orderId',
       header: () => (
@@ -434,7 +458,10 @@ export default function OrdersTable() {
               onChange={(e) => handleSearch(e.target.value)}
               borderRadius="12px"
               bg={useColorModeValue('gray.100', 'gray.700')}
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+              _focus={{
+                borderColor: 'blue.500',
+                boxShadow: '0 0 0 1px blue.500',
+              }}
             />
           </InputGroup>
         </Flex>
@@ -523,9 +550,17 @@ export default function OrdersTable() {
             </Button>
           </Flex>
           <Text fontSize="sm" color={textColor}>
-            Showing {(table.getState().pagination.pageIndex * table.getState().pagination.pageSize) + 1} to{' '}
-            {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredData.length)} of{' '}
-            {filteredData.length} orders
+            Showing{' '}
+            {table.getState().pagination.pageIndex *
+              table.getState().pagination.pageSize +
+              1}{' '}
+            to{' '}
+            {Math.min(
+              (table.getState().pagination.pageIndex + 1) *
+                table.getState().pagination.pageSize,
+              filteredData.length,
+            )}{' '}
+            of {filteredData.length} orders
           </Text>
         </Flex>
       </Card>

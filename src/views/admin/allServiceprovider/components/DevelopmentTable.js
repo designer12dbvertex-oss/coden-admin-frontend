@@ -66,9 +66,12 @@ const useFetchUsers = (baseUrl, token, navigate) => {
         if (!baseUrl || !token) {
           throw new Error('Missing API URL or authentication token');
         }
-        const response = await axios.get(`${baseUrl}api/admin/getAllBothServiceprovider`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          `${baseUrl}api/admin/getAllBothServiceprovider`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         if (!response.data?.users) {
           throw new Error('Invalid API response: No users found');
         }
@@ -358,6 +361,24 @@ export default function ComplexTable() {
 
   const columns = useMemo(
     () => [
+      columnHelper.accessor('sno', {
+        id: 'sno',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            S.No
+          </Text>
+        ),
+        cell: (info) => (
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {startIndex + info.row.index + 1}
+          </Text>
+        ),
+      }),
       columnHelper.accessor('profile_pic', {
         id: 'profile_pic',
         header: () => (
@@ -608,6 +629,7 @@ export default function ComplexTable() {
       handleViewDetails,
       expandedLocations,
       handleToggleLocation,
+			startIndex,
     ],
   );
 

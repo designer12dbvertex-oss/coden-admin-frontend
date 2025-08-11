@@ -43,7 +43,14 @@ import Card from 'components/card/Card';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon, EditIcon, SearchIcon } from '@chakra-ui/icons';
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  EditIcon,
+  SearchIcon,
+} from '@chakra-ui/icons';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import defaultProfilePic from 'assets/img/profile/profile.webp';
@@ -62,9 +69,12 @@ const useFetchSubadmins = (baseUrl, token, navigate) => {
         if (!baseUrl || !token) {
           throw new Error('Missing API URL or authentication token');
         }
-        const response = await axios.get(`${baseUrl}api/admin/getAllSubadmins`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          `${baseUrl}api/admin/getAllSubadmins`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         console.log('Fetched subadmins:', response.data.data);
         if (!response.data?.data) {
           throw new Error('Invalid API response: No subadmins found');
@@ -87,13 +97,18 @@ const useFetchSubadmins = (baseUrl, token, navigate) => {
               ? new Date(subadmin.createdAt).toISOString().split('T')[0]
               : 'N/A',
             active: subadmin.active !== undefined ? subadmin.active : false,
-          }))
+          })),
         );
       } catch (error) {
         console.error('Error fetching data:', error);
         const errorMessage =
-          error.response?.data?.message || error.message || 'Failed to load data';
-        if (errorMessage.includes('Session expired') || errorMessage.includes('Un-Authorized')) {
+          error.response?.data?.message ||
+          error.message ||
+          'Failed to load data';
+        if (
+          errorMessage.includes('Session expired') ||
+          errorMessage.includes('Un-Authorized')
+        ) {
           localStorage.removeItem('token');
           navigate('/');
         } else {
@@ -110,7 +125,15 @@ const useFetchSubadmins = (baseUrl, token, navigate) => {
 };
 
 // Function to update subadmin
-const updateSubadmin = async (baseUrl, token, subadminId, updatedData, profilePicFile, setData, setError) => {
+const updateSubadmin = async (
+  baseUrl,
+  token,
+  subadminId,
+  updatedData,
+  profilePicFile,
+  setData,
+  setError,
+) => {
   try {
     const formData = new FormData();
     formData.append('subadminId', subadminId);
@@ -129,7 +152,7 @@ const updateSubadmin = async (baseUrl, token, subadminId, updatedData, profilePi
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
-      }
+      },
     );
     console.log('Update response:', response.data);
     if (response.data.status) {
@@ -139,10 +162,11 @@ const updateSubadmin = async (baseUrl, token, subadminId, updatedData, profilePi
             ? {
                 ...subadmin,
                 ...updatedData,
-                profile_pic: response.data.data?.profile_pic || subadmin.profile_pic,
+                profile_pic:
+                  response.data.data?.profile_pic || subadmin.profile_pic,
               }
-            : subadmin
-        )
+            : subadmin,
+        ),
       );
       return true;
     } else {
@@ -156,14 +180,20 @@ const updateSubadmin = async (baseUrl, token, subadminId, updatedData, profilePi
 };
 
 // Function to toggle subadmin status
-const toggleSubadminStatus = async (baseUrl, token, subadminId, setData, setError) => {
+const toggleSubadminStatus = async (
+  baseUrl,
+  token,
+  subadminId,
+  setData,
+  setError,
+) => {
   try {
     const response = await axios.patch(
       `${baseUrl}api/admin/toggleSubadminStatus/${subadminId}`,
       {},
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     console.log('Toggle response:', response.data);
     if (response.data.status) {
@@ -171,8 +201,8 @@ const toggleSubadminStatus = async (baseUrl, token, subadminId, setData, setErro
         prevData.map((subadmin) =>
           subadmin.id === subadminId
             ? { ...subadmin, active: response.data.data.active }
-            : subadmin
-        )
+            : subadmin,
+        ),
       );
       toast.success(response.data.message, {
         position: 'top-right',
@@ -188,15 +218,20 @@ const toggleSubadminStatus = async (baseUrl, token, subadminId, setData, setErro
     }
   } catch (error) {
     console.error('Error toggling subadmin status:', error);
-    setError(error.response?.data?.message || 'Failed to toggle subadmin status');
-    toast.error(error.response?.data?.message || 'Failed to toggle subadmin status', {
-      position: 'top-right',
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
+    setError(
+      error.response?.data?.message || 'Failed to toggle subadmin status',
+    );
+    toast.error(
+      error.response?.data?.message || 'Failed to toggle subadmin status',
+      {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      },
+    );
     return false;
   }
 };
@@ -207,7 +242,11 @@ export default function SubadminTable() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredData, setFilteredData] = useState([]);
   const [selectedSubadmin, setSelectedSubadmin] = useState(null);
-  const [formData, setFormData] = useState({ full_name: '', email: '', phone: '' });
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+  });
   const [profilePicFile, setProfilePicFile] = useState(null);
   const [profilePicPreview, setProfilePicPreview] = useState(null);
   const [formError, setFormError] = useState(null);
@@ -219,7 +258,11 @@ export default function SubadminTable() {
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
 
-  const { data, loading, error, setData } = useFetchSubadmins(baseUrl, token, navigate);
+  const { data, loading, error, setData } = useFetchSubadmins(
+    baseUrl,
+    token,
+    navigate,
+  );
 
   // Handle search filtering
   const handleSearch = useCallback(
@@ -236,7 +279,7 @@ export default function SubadminTable() {
           item.full_name.toLowerCase().includes(lowerQuery) ||
           item.email.toLowerCase().includes(lowerQuery) ||
           item.phone.toLowerCase().includes(lowerQuery) ||
-          item.createdAt.toLowerCase().includes(lowerQuery)
+          item.createdAt.toLowerCase().includes(lowerQuery),
       );
       setFilteredData(filtered);
     },
@@ -250,7 +293,13 @@ export default function SubadminTable() {
 
   // Handle toggle switch change
   const handleToggleStatus = async (subadminId) => {
-    await toggleSubadminStatus(baseUrl, token, subadminId, setData, setFormError);
+    await toggleSubadminStatus(
+      baseUrl,
+      token,
+      subadminId,
+      setData,
+      setFormError,
+    );
   };
 
   // Handle opening edit modal
@@ -312,7 +361,7 @@ export default function SubadminTable() {
       formData,
       profilePicFile,
       setData,
-      setFormError
+      setFormError,
     );
     if (success) {
       toast.success('Subadmin updated successfully!', {
@@ -343,7 +392,10 @@ export default function SubadminTable() {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedData = useMemo(() => filteredData.slice(startIndex, endIndex), [filteredData, startIndex, endIndex]);
+  const paginatedData = useMemo(
+    () => filteredData.slice(startIndex, endIndex),
+    [filteredData, startIndex, endIndex],
+  );
 
   // Handle page navigation with validation
   const goToPage = useCallback(
@@ -354,7 +406,7 @@ export default function SubadminTable() {
         setCurrentPage(newPage);
       }
     },
-    [currentPage, totalPages]
+    [currentPage, totalPages],
   );
 
   // Reset page to 1 when data changes significantly
@@ -368,6 +420,24 @@ export default function SubadminTable() {
   // Memoized columns
   const columns = useMemo(
     () => [
+      columnHelper.accessor('sno', {
+        id: 'sno',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            S.No
+          </Text>
+        ),
+        cell: (info) => (
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {startIndex + info.row.index + 1}
+          </Text>
+        ),
+      }),
       columnHelper.accessor('profile_pic', {
         id: 'profile_pic',
         header: () => (
@@ -521,13 +591,16 @@ export default function SubadminTable() {
         ),
       }),
     ],
-    [textColor, handleToggleStatus, handleEditClick]
+    [textColor, handleToggleStatus, handleEditClick, startIndex],
   );
 
   const table = useReactTable({
     data: paginatedData,
     columns,
-    state: { sorting, pagination: { pageIndex: currentPage - 1, pageSize: itemsPerPage } },
+    state: {
+      sorting,
+      pagination: { pageIndex: currentPage - 1, pageSize: itemsPerPage },
+    },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -575,19 +648,22 @@ export default function SubadminTable() {
         >
           Subadmins List
         </Text>
-				 <InputGroup maxW={{ base: '100%', md: '300px' }}>
-            <InputLeftElement pointerEvents="none">
-              <Icon as={SearchIcon} color="gray.400" />
-            </InputLeftElement>
-            <Input
-              placeholder="Search by name, email, phone, or created date"
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              borderRadius="12px"
-              bg={useColorModeValue('gray.100', 'gray.700')}
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
-            />
-          </InputGroup>
+        <InputGroup maxW={{ base: '100%', md: '300px' }}>
+          <InputLeftElement pointerEvents="none">
+            <Icon as={SearchIcon} color="gray.400" />
+          </InputLeftElement>
+          <Input
+            placeholder="Search by name, email, phone, or created date"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            borderRadius="12px"
+            bg={useColorModeValue('gray.100', 'gray.700')}
+            _focus={{
+              borderColor: 'blue.500',
+              boxShadow: '0 0 0 1px blue.500',
+            }}
+          />
+        </InputGroup>
         <Flex align="center" gap="10px" w={{ base: '100%', md: 'auto' }}>
           <Button
             colorScheme="teal"
@@ -627,7 +703,7 @@ export default function SubadminTable() {
                     >
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext()
+                        header.getContext(),
                       )}
                       {header.column.getIsSorted() ? (
                         header.column.getIsSorted() === 'asc' ? (
@@ -660,9 +736,15 @@ export default function SubadminTable() {
           </Tbody>
         </Table>
       </Box>
-      <Flex justifyContent="space-between" alignItems="center" px="25px" py="10px">
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        px="25px"
+        py="10px"
+      >
         <Text fontSize="sm" color={textColor}>
-          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} subadmins
+          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
+          {totalItems} subadmins
         </Text>
         <HStack>
           <Button
@@ -718,11 +800,7 @@ export default function SubadminTable() {
                   fallbackSrc={defaultProfilePic}
                 />
               )}
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
+              <Input type="file" accept="image/*" onChange={handleFileChange} />
             </FormControl>
             <FormControl mb={4}>
               <FormLabel>Full Name</FormLabel>

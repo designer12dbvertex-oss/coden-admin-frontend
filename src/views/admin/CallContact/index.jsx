@@ -37,7 +37,11 @@ import {
 import axios from 'axios';
 import * as React from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { SearchIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import {
+  SearchIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from '@chakra-ui/icons';
 
 // Custom components
 import Card from 'components/card/Card';
@@ -70,13 +74,18 @@ export default function ContactInquiriesTable() {
         throw new Error('Missing base URL or authentication token');
       }
       setLoading(true);
-      const response = await axios.get(`${baseUrl}api/CompanyDetails/contact/mobile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${baseUrl}api/CompanyDetails/contact/mobile`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       console.log('API Response (Contact Inquiries):', response.data);
 
       if (!response.data || !Array.isArray(response.data.data)) {
-        throw new Error('Invalid response format: Expected an array of contact inquiries');
+        throw new Error(
+          'Invalid response format: Expected an array of contact inquiries',
+        );
       }
 
       const formattedData = response.data.data.map((item) => ({
@@ -98,8 +107,10 @@ export default function ContactInquiriesTable() {
       console.error('Fetch Contact Inquiries Error:', err);
       if (
         err.response?.data?.message === 'Not authorized, token failed' ||
-        err.response?.data?.message === 'Session expired or logged in on another device' ||
-        err.response?.data?.message === 'Un-Authorized, You are not authorized to access this route.' ||
+        err.response?.data?.message ===
+          'Session expired or logged in on another device' ||
+        err.response?.data?.message ===
+          'Un-Authorized, You are not authorized to access this route.' ||
         err.response?.data?.message === 'Not authorized, token failed'
       ) {
         localStorage.removeItem('token');
@@ -125,7 +136,7 @@ export default function ContactInquiriesTable() {
         item.subject.toLowerCase().includes(lowerQuery) ||
         item.mobile_number.toLowerCase().includes(lowerQuery) ||
         item.message.toLowerCase().includes(lowerQuery) ||
-        item.user_name.toLowerCase().includes(lowerQuery)
+        item.user_name.toLowerCase().includes(lowerQuery),
     );
     setFilteredData(filtered);
   };
@@ -137,7 +148,7 @@ export default function ContactInquiriesTable() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = React.useMemo(
     () => filteredData.slice(startIndex, endIndex),
-    [filteredData, startIndex, endIndex]
+    [filteredData, startIndex, endIndex],
   );
 
   // Handle page navigation
@@ -172,6 +183,27 @@ export default function ContactInquiriesTable() {
 
   const columns = React.useMemo(
     () => [
+      columnHelper.display({
+        id: 'sno',
+        header: () => (
+          <Text
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
+          >
+            S.No
+          </Text>
+        ),
+        cell: ({ row }) => {
+          const serialNumber = (currentPage - 1) * itemsPerPage + row.index + 1;
+          return (
+            <Text color={textColor} fontSize="sm" fontWeight="500">
+              {serialNumber}
+            </Text>
+          );
+        },
+      }),
       columnHelper.accessor('subject', {
         id: 'subject',
         header: () => (
@@ -258,7 +290,9 @@ export default function ContactInquiriesTable() {
           const message = info.getValue();
           const previewLength = 30;
           const isLongMessage = message.length > previewLength;
-          const preview = isLongMessage ? `${message.slice(0, previewLength)}...` : message;
+          const preview = isLongMessage
+            ? `${message.slice(0, previewLength)}...`
+            : message;
           return (
             <Flex align="center">
               <Text color={textColor} fontSize="sm" fontWeight="500">
@@ -299,7 +333,7 @@ export default function ContactInquiriesTable() {
         ),
       }),
     ],
-    [textColor]
+    [textColor],
   );
 
   const table = useReactTable({
@@ -370,7 +404,10 @@ export default function ContactInquiriesTable() {
           >
             Contact Inquiries
           </Text>
-          <InputGroup maxW={{ base: '100%', md: '300px' }} mt={{ base: '10px', md: '0' }}>
+          <InputGroup
+            maxW={{ base: '100%', md: '300px' }}
+            mt={{ base: '10px', md: '0' }}
+          >
             <InputLeftElement pointerEvents="none">
               <Icon as={SearchIcon} color="gray.400" />
             </InputLeftElement>
@@ -380,7 +417,10 @@ export default function ContactInquiriesTable() {
               onChange={(e) => handleSearch(e.target.value)}
               borderRadius="12px"
               bg={useColorModeValue('gray.100', 'gray.700')}
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+              _focus={{
+                borderColor: 'blue.500',
+                boxShadow: '0 0 0 1px blue.500',
+              }}
             />
           </InputGroup>
         </Flex>
@@ -407,7 +447,10 @@ export default function ContactInquiriesTable() {
                       color="gray.500"
                       fontWeight="bold"
                     >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
                     </Th>
                   ))}
                 </Tr>
@@ -432,7 +475,10 @@ export default function ContactInquiriesTable() {
                       py="12px"
                       px="10px"
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </Td>
                   ))}
                 </Tr>

@@ -172,6 +172,27 @@ export default function EmailInquiriesTable() {
 
   const columns = React.useMemo(
     () => [
+			columnHelper.display({
+      id: 'sno',
+      header: () => (
+        <Text
+          fontSize={{ sm: '12px', lg: '14px' }}
+          fontWeight="bold"
+          color="gray.500"
+          textTransform="uppercase"
+        >
+          S.No
+        </Text>
+      ),
+      cell: ({ row }) => {
+        const serialNumber = (currentPage - 1) * itemsPerPage + row.index + 1;
+        return (
+          <Text color={textColor} fontSize="sm" fontWeight="500">
+            {serialNumber}
+          </Text>
+        );
+      },
+    }),
       columnHelper.accessor('subject', {
         id: 'subject',
         header: () => (

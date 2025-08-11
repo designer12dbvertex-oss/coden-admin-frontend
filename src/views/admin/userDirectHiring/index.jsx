@@ -41,7 +41,7 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { SearchIcon } from '@chakra-ui/icons';
@@ -71,7 +71,7 @@ export default function OrdersTable() {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const navigate = useNavigate();
-
+  const { user_id } = useParams();
   // Fetch orders from API
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
@@ -83,7 +83,7 @@ export default function OrdersTable() {
           throw new Error('Missing base URL or authentication token');
         }
         const response = await axios.get(
-          `${baseUrl}api/emergency-order/getAllEmergencyOrders`,
+          `${baseUrl}api/admin/orders/${user_id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -103,7 +103,12 @@ export default function OrdersTable() {
           paidAmount: item.service_payment?.amount || 0,
           remainingAmount: item.remaining_amount?.amount || 0,
           paymentStatus: item.payment_status || 'Unknown',
-          hireStatus: item.hire_status || 'Unknown',
+          hireStatus:
+            item.hire_status
+              .toLowerCase()
+              .split(' ')
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ') || 'Unknown',
           createdAt: item.createdAt
             ? new Date(item.createdAt).toLocaleDateString()
             : '',
@@ -154,6 +159,7 @@ export default function OrdersTable() {
       const filtered = data.filter(
         (item) =>
           item.orderId.toLowerCase().includes(lowerQuery) ||
+          item.title.toLowerCase().includes(lowerQuery) ||
           item.customerName.toLowerCase().includes(lowerQuery) ||
           item.serviceProvider.toLowerCase().includes(lowerQuery) ||
           item.paymentStatus.toLowerCase().includes(lowerQuery) ||
@@ -240,6 +246,26 @@ export default function OrdersTable() {
           color="gray.400"
         >
           PROJECT ID
+        </Text>
+      ),
+      cell: (info) => (
+        <Flex align="center">
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {info.getValue()}
+          </Text>
+        </Flex>
+      ),
+    }),
+    columnHelper.accessor('title', {
+      id: 'title',
+      header: () => (
+        <Text
+          justifyContent="space-between"
+          align="center"
+          fontSize={{ sm: '10px', lg: '12px' }}
+          color="gray.400"
+        >
+          TITLE
         </Text>
       ),
       cell: (info) => (
@@ -370,7 +396,7 @@ export default function OrdersTable() {
           <Button
             colorScheme="teal"
             size="sm"
-            onClick={() => navigate(`/admin/emergencyOrder/${row.original.id}`)}
+            onClick={() => navigate(`/admin/viewOrder/${row.original.id}`)}
           >
             View Details
           </Button>
@@ -446,14 +472,14 @@ export default function OrdersTable() {
             fontWeight="700"
             lineHeight="100%"
           >
-            Emergency Orders
+            Direct Hiring
           </Text>
           <InputGroup maxW={{ base: '100%', md: '300px' }}>
             <InputLeftElement pointerEvents="none">
               <Icon as={SearchIcon} color="gray.400" />
             </InputLeftElement>
             <Input
-              placeholder="Search by ID, customer, provider, status, or date"
+              placeholder="Search by ID, title, customer, provider, status, or date"
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               borderRadius="12px"
@@ -550,16 +576,25 @@ export default function OrdersTable() {
             </Button>
           </Flex>
           <Text fontSize="sm" color={textColor}>
+            {/*console.log('Pagination Text State:', {
+              pageIndex: table.getState().pagination.pageIndex,
+              pageSize: table.getState().pagination.pageSize,
+              filteredDataLength: filteredData.length,
+            })*/}
             Showing{' '}
-            {table.getState().pagination.pageIndex *
-              table.getState().pagination.pageSize +
-              1}{' '}
+            {filteredData.length === 0
+              ? 0
+              : table.getState().pagination.pageIndex *
+                  table.getState().pagination.pageSize +
+                1}{' '}
             to{' '}
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) *
-                table.getState().pagination.pageSize,
-              filteredData.length,
-            )}{' '}
+            {filteredData.length === 0
+              ? 0
+              : Math.min(
+                  (table.getState().pagination.pageIndex + 1) *
+                    table.getState().pagination.pageSize,
+                  filteredData.length,
+                )}{' '}
             of {filteredData.length} orders
           </Text>
         </Flex>
@@ -581,7 +616,7 @@ export default function OrdersTable() {
               color={textColor}
               textAlign="center"
             >
-              Emergency Order Details
+              Direct Order Details
             </ModalHeader>
             <ModalCloseButton
               size="lg"

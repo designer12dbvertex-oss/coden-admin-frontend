@@ -66,9 +66,12 @@ const useFetchUsers = (baseUrl, token, navigate) => {
         if (!baseUrl || !token) {
           throw new Error('Missing API URL or authentication token');
         }
-        const response = await axios.get(`${baseUrl}api/admin/getAllBoth`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          `${baseUrl}api/admin/getAllUnverifiedServiceProvider`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         if (!response.data?.users) {
           throw new Error('Invalid API response: No users found');
         }
@@ -626,7 +629,7 @@ export default function ComplexTable() {
       handleViewDetails,
       expandedLocations,
       handleToggleLocation,
-      startIndex,
+			startIndex,
     ],
   );
 
@@ -681,11 +684,12 @@ export default function ComplexTable() {
           fontWeight="700"
           lineHeight="100%"
         >
-          Both List
+          Service Provider List
         </Text>
         <InputGroup
           maxW={{ base: '100%', md: '300px' }}
-          mt={{ base: '10px', md: '0' }}
+          mr={{ md: '10px' }}
+          mb={{ base: '10px', md: '0' }}
         >
           <InputLeftElement pointerEvents="none">
             <Icon as={SearchIcon} color="gray.400" />
@@ -702,6 +706,19 @@ export default function ComplexTable() {
             }}
           />
         </InputGroup>
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          align="center"
+          mt={{ base: '10px', md: '0' }}
+          w={{ base: '100%', md: 'auto' }}
+        >
+          <Button
+            colorScheme="teal"
+            onClick={() => navigate('/admin/createServiceProvider')}
+          >
+            Create Service Provider
+          </Button>
+        </Flex>
       </Flex>
       <Box>
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">
@@ -773,7 +790,7 @@ export default function ComplexTable() {
       >
         <Text fontSize="sm" color={textColor}>
           Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
-          {totalItems} entries
+          {totalItems} service providers
         </Text>
         <HStack>
           <Button

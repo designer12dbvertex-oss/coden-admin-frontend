@@ -79,6 +79,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
               : 'N/A',
             location: user.location.address || 'N/A',
             mobile: user.phone || 'N/A',
+            full_address: user.full_address || 'N/A',
             createdAt: user.createdAt
               ? new Date(user.createdAt).toISOString().split('T')[0]
               : 'N/A',
@@ -111,7 +112,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
   return { data, loading, error, setData, setError };
 };
 
-// Function to toggle user status (unchanged)
+// Function to toggle user status
 const toggleUserStatus = async (
   baseUrl,
   token,
@@ -173,6 +174,8 @@ export default function ComplexTable() {
   const itemsPerPage = 10;
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
+  const headerBg = useColorModeValue('gray.100', 'gray.700');
+  const hoverBg = useColorModeValue('gray.50', 'gray.600');
   const baseUrl = useMemo(() => process.env.REACT_APP_BASE_URL, []);
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
@@ -187,7 +190,7 @@ export default function ComplexTable() {
   const handleSearch = useCallback(
     (query) => {
       setSearchQuery(query);
-      setCurrentPage(1); // Reset to first page on search
+      setCurrentPage(1);
       if (!query) {
         setFilteredData(data);
         return;
@@ -198,7 +201,7 @@ export default function ComplexTable() {
           item.full_name.toLowerCase().includes(lowerQuery) ||
           item.location.toLowerCase().includes(lowerQuery) ||
           item.mobile.toLowerCase().includes(lowerQuery) ||
-          item.referral_code.toLowerCase().includes(lowerQuery)
+          item.referral_code.toLowerCase().includes(lowerQuery),
       );
       setFilteredData(filtered);
     },
@@ -243,7 +246,7 @@ export default function ComplexTable() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = useMemo(
     () => filteredData.slice(startIndex, endIndex),
-    [filteredData, startIndex, endIndex]
+    [filteredData, startIndex, endIndex],
   );
 
   const goToPage = useCallback(
@@ -267,30 +270,57 @@ export default function ComplexTable() {
   // Memoized columns
   const columns = useMemo(
     () => [
+      columnHelper.display({
+        id: 'sno',
+        header: () => (
+          <Text
+            justifyContent="center"
+            align="center"
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
+          >
+            S.No
+          </Text>
+        ),
+        cell: ({ row }) => (
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="600"
+            textAlign="center"
+          >
+            {startIndex + row.index + 1}
+          </Text>
+        ),
+      }),
       columnHelper.accessor('profile_pic', {
         id: 'profile_pic',
         header: () => (
           <Text
-            justifyContent="space-between"
+            justifyContent="center"
             align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
           >
-            PROFILE PIC
+            Profile Pic
           </Text>
         ),
         cell: (info) => (
-          <Flex align="center">
+          <Flex justify="center" align="center">
             {info.getValue() !== 'N/A' ? (
               <img
                 src={info.getValue()}
                 alt="Profile"
                 loading="lazy"
-                style={{ width: '50px', height: '50px', borderRadius: '50%' }}
+                style={{ width: '40px', height: '40px', borderRadius: '50%' }}
                 onError={(e) => (e.target.src = defaultProfilePic)}
               />
             ) : (
-              <Text color={textColor} fontSize="sm" fontWeight="700">
+              <Text color={textColor} fontSize="sm" fontWeight="600">
                 N/A
               </Text>
             )}
@@ -301,16 +331,24 @@ export default function ComplexTable() {
         id: 'full_name',
         header: () => (
           <Text
-            justifyContent="space-between"
+            justifyContent="center"
             align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
           >
-            FULL NAME
+            Full Name
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="600"
+            textAlign="center"
+            whiteSpace="nowrap"
+          >
             {info.getValue()}
           </Text>
         ),
@@ -319,12 +357,14 @@ export default function ComplexTable() {
         id: 'location',
         header: () => (
           <Text
-            justifyContent="space-between"
+            justifyContent="center"
             align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="grey.400"
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
           >
-            LOCATION
+            Location
           </Text>
         ),
         cell: (info) => {
@@ -337,8 +377,14 @@ export default function ComplexTable() {
             : location;
 
           return (
-            <Flex align="center">
-              <Text color={textColor} fontSize="sm" fontWeight="700">
+            <Flex justify="center" align="center" wrap="nowrap">
+              <Text
+                color={textColor}
+                fontSize="sm"
+                fontWeight="600"
+                textAlign="center"
+                whiteSpace={isLongText && !isExpanded ? 'nowrap' : 'normal'}
+              >
                 {isExpanded || !isLongText ? location : shortText}
               </Text>
               {isLongText && (
@@ -349,7 +395,56 @@ export default function ComplexTable() {
                   ml={2}
                   onClick={() => handleToggleLocation(userId)}
                 >
-                  {isExpanded ? 'Read Less' : 'Read More'}
+                  {isExpanded ? 'Less' : 'More'}
+                </Button>
+              )}
+            </Flex>
+          );
+        },
+      }),
+      columnHelper.accessor('full_address', {
+        id: 'full_address',
+        header: () => (
+          <Text
+            justifyContent="center"
+            align="center"
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
+          >
+            Permanent Address
+          </Text>
+        ),
+        cell: (info) => {
+          const full_address = info.getValue();
+          const userId = info.row.original.id;
+          const isExpanded = expandedLocations[userId];
+          const isLongText = full_address.length > 30;
+          const shortText = isLongText
+            ? `${full_address.slice(0, 30)}...`
+            : full_address;
+
+          return (
+            <Flex justify="center" align="center" wrap="nowrap">
+              <Text
+                color={textColor}
+                fontSize="sm"
+                fontWeight="600"
+                textAlign="center"
+                whiteSpace={isLongText && !isExpanded ? 'nowrap' : 'normal'}
+              >
+                {isExpanded || !isLongText ? full_address : shortText}
+              </Text>
+              {isLongText && (
+                <Button
+                  size="xs"
+                  variant="link"
+                  colorScheme="teal"
+                  ml={2}
+                  onClick={() => handleToggleLocation(userId)}
+                >
+                  {isExpanded ? 'Less' : 'More'}
                 </Button>
               )}
             </Flex>
@@ -360,16 +455,24 @@ export default function ComplexTable() {
         id: 'mobile',
         header: () => (
           <Text
-            justifyContent="space-between"
+            justifyContent="center"
             align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
           >
-            MOBILE
+            Mobile
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="600"
+            textAlign="center"
+            whiteSpace="nowrap"
+          >
             {info.getValue()}
           </Text>
         ),
@@ -378,16 +481,24 @@ export default function ComplexTable() {
         id: 'referral_code',
         header: () => (
           <Text
-            justifyContent="space-between"
+            justifyContent="center"
             align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
           >
-            REFERRAL CODE
+            Referral Code
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="600"
+            textAlign="center"
+            whiteSpace="nowrap"
+          >
             {info.getValue()}
           </Text>
         ),
@@ -396,16 +507,24 @@ export default function ComplexTable() {
         id: 'createdAt',
         header: () => (
           <Text
-            justifyContent="space-between"
+            justifyContent="center"
             align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
           >
-            CREATED AT
+            Created At
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="600"
+            textAlign="center"
+            whiteSpace="nowrap"
+          >
             {info.getValue()}
           </Text>
         ),
@@ -414,21 +533,76 @@ export default function ComplexTable() {
         id: 'active',
         header: () => (
           <Text
-            justifyContent="space-between"
+            justifyContent="center"
             align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
           >
-            ACTIVE
+            Active
           </Text>
         ),
         cell: (info) => (
-          <Switch
-            isChecked={info.getValue()}
-            onChange={() => handleToggle(info.row.original.id, info.getValue())}
-            colorScheme="teal"
-            isDisabled={toggleLoading[info.row.original.id]}
-          />
+          <Flex justify="center" align="center">
+            <Switch
+              isChecked={info.getValue()}
+              onChange={() => handleToggle(info.row.original.id, info.getValue())}
+              colorScheme="teal"
+              isDisabled={toggleLoading[info.row.original.id]}
+            />
+          </Flex>
+        ),
+      }),
+      columnHelper.display({
+        id: 'actions',
+        header: () => (
+          <Text
+            justifyContent="center"
+            align="center"
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
+          >
+            Actions
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            justify="center"
+            align="center"
+            gap={{ base: 2, md: 3 }}
+          >
+            <Button
+              size="sm"
+              colorScheme="teal"
+              variant="outline"
+              onClick={() => navigate(`/admin/directOrder/${info.row.original.id}`)}
+              _hover={{ bg: 'teal.600', color: 'white' }}
+            >
+              Direct Orders
+            </Button>
+            <Button
+              size="sm"
+              colorScheme="teal"
+              variant="outline"
+              onClick={() => navigate(`/admin/bidding_Order/${info.row.original.id}`)}
+              _hover={{ bg: 'teal.600', color: 'white' }}
+            >
+              Bidding Orders
+            </Button>
+            <Button
+              size="sm"
+              colorScheme="teal"
+              variant="outline"
+              onClick={() => navigate(`/admin/emergency_Order/${info.row.original.id}`)}
+              _hover={{ bg: 'teal.600', color: 'white' }}
+            >
+              Emergency Orders
+            </Button>
+          </Flex>
         ),
       }),
     ],
@@ -438,6 +612,7 @@ export default function ComplexTable() {
       toggleLoading,
       expandedLocations,
       handleToggleLocation,
+      startIndex,
     ],
   );
 
@@ -457,18 +632,39 @@ export default function ComplexTable() {
 
   if (loading) {
     return (
-      <Box textAlign="center" py={10}>
-        <Spinner size="lg" />
-      </Box>
+      <Card
+        w="100%"
+        px={{ base: '15px', md: '25px' }}
+        py="25px"
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={useColorModeValue('white', 'gray.800')}
+      >
+        <Box textAlign="center" py={10}>
+          <Spinner size="lg" color="teal.500" />
+          <Text color={textColor} mt={4}>
+            Loading users...
+          </Text>
+        </Box>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <Alert status="error" mb={4}>
-        <AlertIcon />
-        {error}
-      </Alert>
+      <Card
+        w="100%"
+        px={{ base: '15px', md: '25px' }}
+        py="25px"
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={useColorModeValue('white', 'gray.800')}
+      >
+        <Alert status="error" borderRadius="12px">
+          <AlertIcon />
+          <Text color={textColor}>{error}</Text>
+        </Alert>
+      </Card>
     );
   }
 
@@ -476,25 +672,30 @@ export default function ComplexTable() {
     <Card
       flexDirection="column"
       w="100%"
-      px="0px"
-      overflowX={{ sm: 'scroll', lg: 'hidden' }}
+      px={{ base: '15px', md: '25px' }}
+      py="25px"
+      borderRadius="16px"
+      boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+      bg={useColorModeValue('white', 'gray.800')}
+      overflowX="auto"
     >
       <Flex
-        px="25px"
-        mb="8px"
+        px={{ base: '10px', md: '0' }}
+        mb="20px"
         justifyContent="space-between"
         align="center"
         direction={{ base: 'column', md: 'row' }}
+        gap={{ base: '10px', md: '0' }}
       >
         <Text
           color={textColor}
-          fontSize={{ base: 'xl', md: '22px' }}
+          fontSize={{ base: 'xl', md: '2xl' }}
           fontWeight="700"
           lineHeight="100%"
         >
           Users List
         </Text>
-        <InputGroup maxW={{ base: '100%', md: '300px' }} mt={{ base: '10px', md: '0' }}>
+        <InputGroup maxW={{ base: '100%', md: '300px' }}>
           <InputLeftElement pointerEvents="none">
             <Icon as={SearchIcon} color="gray.400" />
           </InputLeftElement>
@@ -504,20 +705,30 @@ export default function ComplexTable() {
             onChange={(e) => handleSearch(e.target.value)}
             borderRadius="12px"
             bg={useColorModeValue('gray.100', 'gray.700')}
-            _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+            _focus={{
+              borderColor: 'teal.500',
+              boxShadow: '0 0 0 1px teal.500',
+            }}
           />
         </InputGroup>
       </Flex>
-      <Box>
-        <Table variant="simple" color="gray.500" mb="24px" mt="12px">
-          <Thead>
+      <Box overflowX="auto">
+        <Table
+          variant="simple"
+          color="gray.500"
+          mb="24px"
+          mt="12px"
+          minW="1200px"
+        >
+          <Thead bg={headerBg}>
             {table.getHeaderGroups().map((headerGroup) => (
               <Tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <Th
                     key={header.id}
                     colSpan={header.colSpan}
-                    pe="10px"
+                    px={{ base: '8px', md: '16px' }}
+                    py="12px"
                     borderColor={borderColor}
                     cursor="pointer"
                     onClick={header.column.getToggleSortingHandler()}
@@ -530,10 +741,12 @@ export default function ComplexTable() {
                     }
                   >
                     <Flex
-                      justifyContent="space-between"
+                      justifyContent="center"
                       align="center"
-                      fontSize={{ sm: '10px', lg: '12px' }}
-                      color="gray.400"
+                      fontSize={{ sm: '12px', lg: '14px' }}
+                      fontWeight="bold"
+                      color="gray.500"
+                      textTransform="uppercase"
                     >
                       {flexRender(
                         header.column.columnDef.header,
@@ -541,9 +754,9 @@ export default function ComplexTable() {
                       )}
                       {header.column.getIsSorted() ? (
                         header.column.getIsSorted() === 'asc' ? (
-                          <ArrowUpIcon ml={1} />
+                          <ArrowUpIcon ml={2} />
                         ) : (
-                          <ArrowDownIcon ml={1} />
+                          <ArrowDownIcon ml={2} />
                         )
                       ) : null}
                     </Flex>
@@ -554,13 +767,21 @@ export default function ComplexTable() {
           </Thead>
           <Tbody>
             {table.getRowModel().rows.map((row) => (
-              <Tr key={row.id}>
+              <Tr
+                key={row.id}
+                _hover={{
+                  bg: hoverBg,
+                  transition: 'background-color 0.2s ease',
+                }}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <Td
                     key={cell.id}
                     fontSize={{ sm: '14px' }}
-                    minW={{ sm: '150px', md: '200px', lg: 'auto' }}
-                    borderColor="transparent"
+                    px={{ base: '8px', md: '16px' }}
+                    py="12px"
+                    borderColor={borderColor}
+                    whiteSpace="nowrap"
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </Td>
@@ -573,19 +794,24 @@ export default function ComplexTable() {
       <Flex
         justifyContent="space-between"
         alignItems="center"
-        px="25px"
+        px={{ base: '10px', md: '25px' }}
         py="10px"
+        borderTopWidth="1px"
+        borderColor={borderColor}
       >
         <Text fontSize="sm" color={textColor}>
-          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
-          {totalItems} users
+          Showing {totalItems === 0 ? 0 : startIndex + 1} to{' '}
+          {Math.min(endIndex, totalItems)} of {totalItems} users
         </Text>
-        <HStack>
+        <HStack spacing={2}>
           <Button
             size="sm"
+            colorScheme="teal"
+            variant="outline"
             onClick={() => goToPage(currentPage - 1)}
             isDisabled={currentPage === 1}
             leftIcon={<ChevronLeftIcon />}
+            _hover={{ bg: 'teal.600', color: 'white' }}
           >
             Previous
           </Button>
@@ -593,17 +819,22 @@ export default function ComplexTable() {
             <Button
               key={page}
               size="sm"
-              onClick={() => goToPage(page)}
+              colorScheme="teal"
               variant={currentPage === page ? 'solid' : 'outline'}
+              onClick={() => goToPage(page)}
+              _hover={{ bg: 'teal.600', color: 'white' }}
             >
               {page}
             </Button>
           ))}
           <Button
             size="sm"
+            colorScheme="teal"
+            variant="outline"
             onClick={() => goToPage(currentPage + 1)}
             isDisabled={currentPage === totalPages}
             rightIcon={<ChevronRightIcon />}
+            _hover={{ bg: 'teal.600', color: 'white' }}
           >
             Next
           </Button>

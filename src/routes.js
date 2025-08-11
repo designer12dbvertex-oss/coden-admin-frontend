@@ -38,6 +38,7 @@ import RequestUser from 'views/admin/RequestUser';
 import DirectPaymentRequest from 'views/admin/directPaymentRequest';
 import Dispute from 'views/admin/dispute';
 import AllServiceProvider from 'views/admin/allServiceprovider';
+import UnverifiedServiceProvider from 'views/admin/unverifiedServiceProvider';
 // import OnlineOrders from 'views/admin/onlineOrders';
 
 // Auth Imports
@@ -60,11 +61,18 @@ const routes = [
     component: <Users />,
   },
   {
-    name: 'Service Provider',
+    name: 'Verified Service Provider',
     layout: '/admin',
     icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
     path: '/service_provider',
     component: <ServiceProvider />,
+  },
+	{
+    name: 'Unverified Service Provider',
+    layout: '/admin',
+    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
+    path: '/unverified_service_provider',
+    component: <UnverifiedServiceProvider />,
   },
 	{
     name: 'Both',

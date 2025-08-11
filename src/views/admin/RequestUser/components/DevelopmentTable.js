@@ -282,7 +282,7 @@ export default function ComplexTable() {
           item.location.toLowerCase().includes(lowerQuery) ||
           item.mobile.toLowerCase().includes(lowerQuery) ||
           item.referral_code.toLowerCase().includes(lowerQuery) ||
-          item.createdBy.toLowerCase().includes(lowerQuery)
+          item.createdBy.toLowerCase().includes(lowerQuery),
       );
       setFilteredData(filtered);
     },
@@ -375,6 +375,24 @@ export default function ComplexTable() {
 
   const columns = useMemo(
     () => [
+      columnHelper.accessor('sno', {
+        id: 'sno',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            S.No
+          </Text>
+        ),
+        cell: (info) => (
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {startIndex + info.row.index + 1}
+          </Text>
+        ),
+      }),
       columnHelper.accessor('profile_pic', {
         id: 'profile_pic',
         header: () => (
@@ -458,11 +476,24 @@ export default function ComplexTable() {
           const userId = info.row.original.id;
           const isExpanded = expandedLocations[userId];
           const isLongText = location.length > 30;
-          const shortText = isLongText ? `${location.slice(0, 30)}...` : location;
+          const shortText = isLongText
+            ? `${location.slice(0, 30)}...`
+            : location;
 
           return (
-            <Flex align="center" alignItems="center" whiteSpace="normal" maxWidth="200px">
-              <Text color={textColor} fontSize="sm" fontWeight="700" mr={2} noOfLines={isExpanded ? undefined : 1}>
+            <Flex
+              align="center"
+              alignItems="center"
+              whiteSpace="normal"
+              maxWidth="200px"
+            >
+              <Text
+                color={textColor}
+                fontSize="sm"
+                fontWeight="700"
+                mr={2}
+                noOfLines={isExpanded ? undefined : 1}
+              >
                 {isExpanded || !isLongText ? location : shortText}
               </Text>
               {isLongText && (
@@ -614,6 +645,7 @@ export default function ComplexTable() {
       handleViewDetails,
       expandedLocations,
       handleToggleLocation,
+			startIndex,
     ],
   );
 
@@ -670,7 +702,10 @@ export default function ComplexTable() {
         >
           Requested Users For ServiceProvider List
         </Text>
-        <InputGroup maxW={{ base: '100%', md: '300px' }} mt={{ base: '10px', md: '0' }}>
+        <InputGroup
+          maxW={{ base: '100%', md: '300px' }}
+          mt={{ base: '10px', md: '0' }}
+        >
           <InputLeftElement pointerEvents="none">
             <Icon as={SearchIcon} color="gray.400" />
           </InputLeftElement>
@@ -680,7 +715,10 @@ export default function ComplexTable() {
             onChange={(e) => handleSearch(e.target.value)}
             borderRadius="12px"
             bg={useColorModeValue('gray.100', 'gray.700')}
-            _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+            _focus={{
+              borderColor: 'blue.500',
+              boxShadow: '0 0 0 1px blue.500',
+            }}
           />
         </InputGroup>
       </Flex>

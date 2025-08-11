@@ -67,14 +67,14 @@ const useFetchUsers = (baseUrl, token, navigate) => {
           throw new Error('Missing API URL or authentication token');
         }
         const response = await axios.get(
-          `${baseUrl}api/admin/getAllServiceProvider`,
+          `${baseUrl}api/admin/getAllVerifiedServiceProvider`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
         if (!response.data?.users) {
           throw new Error('Invalid API response: No users found');
-        } 
+        }
         setData(
           response.data.users.map((user) => ({
             id: user._id,
@@ -269,7 +269,7 @@ export default function ComplexTable() {
           item.location.toLowerCase().includes(lowerQuery) ||
           item.mobile.toLowerCase().includes(lowerQuery) ||
           item.referral_code.toLowerCase().includes(lowerQuery) ||
-          item.createdBy.toLowerCase().includes(lowerQuery)
+          item.createdBy.toLowerCase().includes(lowerQuery),
       );
       setFilteredData(filtered);
     },
@@ -361,6 +361,24 @@ export default function ComplexTable() {
 
   const columns = useMemo(
     () => [
+      columnHelper.accessor('sno', {
+        id: 'sno',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            S.No
+          </Text>
+        ),
+        cell: (info) => (
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {startIndex + info.row.index + 1}
+          </Text>
+        ),
+      }),
       columnHelper.accessor('profile_pic', {
         id: 'profile_pic',
         header: () => (
@@ -611,6 +629,7 @@ export default function ComplexTable() {
       handleViewDetails,
       expandedLocations,
       handleToggleLocation,
+			startIndex,
     ],
   );
 
@@ -667,19 +686,26 @@ export default function ComplexTable() {
         >
           Service Provider List
         </Text>
-				<InputGroup maxW={{ base: '100%', md: '300px' }} mr={{ md: '10px' }} mb={{ base: '10px', md: '0' }}>
-            <InputLeftElement pointerEvents="none">
-              <Icon as={SearchIcon} color="gray.400" />
-            </InputLeftElement>
-            <Input
-              placeholder="Search by name, location, mobile, referral, or creator"
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              borderRadius="12px"
-              bg={useColorModeValue('gray.100', 'gray.700')}
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
-            />
-          </InputGroup>
+        <InputGroup
+          maxW={{ base: '100%', md: '300px' }}
+          mr={{ md: '10px' }}
+          mb={{ base: '10px', md: '0' }}
+        >
+          <InputLeftElement pointerEvents="none">
+            <Icon as={SearchIcon} color="gray.400" />
+          </InputLeftElement>
+          <Input
+            placeholder="Search by name, location, mobile, referral, or creator"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            borderRadius="12px"
+            bg={useColorModeValue('gray.100', 'gray.700')}
+            _focus={{
+              borderColor: 'blue.500',
+              boxShadow: '0 0 0 1px blue.500',
+            }}
+          />
+        </InputGroup>
         <Flex
           direction={{ base: 'column', md: 'row' }}
           align="center"

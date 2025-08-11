@@ -289,6 +289,30 @@ export default function DisputesTable() {
 
   const columns = React.useMemo(
     () => [
+      columnHelper.display({
+        id: 'sno',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            S.No
+          </Text>
+        ),
+        cell: ({ row }) => {
+          const serialNumber = row.index + 1;
+
+          return (
+            <Flex align="center">
+              <Text color={textColor} fontSize="sm" fontWeight="700">
+                {isNaN(serialNumber) ? 'N/A' : serialNumber}
+              </Text>
+            </Flex>
+          );
+        },
+      }),
       columnHelper.accessor('project_id', {
         id: 'project_id',
         header: () => (
