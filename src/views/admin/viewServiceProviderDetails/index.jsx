@@ -1043,7 +1043,6 @@ export default function ServiceProviderDetails() {
         closeOnClick
         pauseOnHover
         draggable
-       
       />
     </>
   );

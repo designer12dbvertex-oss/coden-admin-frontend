@@ -13,15 +13,16 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
-  useDisclosure,
+  ModalFooter,
   VStack,
   Divider,
   Card as ChakraCard,
   Image,
   Select,
   HStack,
-  ModalFooter,
   Switch,
+  useDisclosure,
+  Input,
 } from '@chakra-ui/react';
 import axios from 'axios';
 import * as React from 'react';
@@ -54,6 +55,17 @@ export default function ServiceProviderDetails() {
     onOpen: onDocumentModalOpen,
     onClose: onDocumentModalClose,
   } = useDisclosure();
+  const {
+    isOpen: isAddressModalOpen,
+    onOpen: onAddressModalOpen,
+    onClose: onAddressModalClose,
+  } = useDisclosure();
+  const {
+    isOpen: isEditAddressModalOpen,
+    onOpen: onEditAddressModalOpen,
+    onClose: onEditAddressModalClose,
+  } = useDisclosure();
+  const [editAddress, setEditAddress] = React.useState(null);
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
@@ -81,7 +93,15 @@ export default function ServiceProviderDetails() {
           throw new Error('Invalid response format: Expected user object');
         }
 
-        setData(response.data);
+        setData({
+          ...response.data,
+          user: {
+            ...response.data.user,
+            full_address: Array.isArray(response.data.user.full_address)
+              ? response.data.user.full_address
+              : [],
+          },
+        });
         setLoading(false);
       } catch (err) {
         console.error('Fetch Orders Error:', err);
@@ -126,7 +146,6 @@ export default function ServiceProviderDetails() {
 
   // Update verification status for Service Provider
   const toggleUserVerified = async (userId, verified) => {
-    // Don't proceed if already verified
     if (verified) {
       toast.info('User is already verified.', {
         position: 'top-right',
@@ -146,14 +165,11 @@ export default function ServiceProviderDetails() {
         `${baseUrl}api/admin/approveServiceProvider`,
         { userId },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         },
       );
 
       if (response.data.success) {
-        // Update local state
         setData((prevData) => ({
           ...prevData,
           user: { ...prevData.user, verified: !verified },
@@ -187,6 +203,7 @@ export default function ServiceProviderDetails() {
       setToggleLoading(false);
     }
   };
+
   const capitalizeFirstLetter = (str) => {
     if (!str) return 'N/A';
     return str
@@ -195,6 +212,7 @@ export default function ServiceProviderDetails() {
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+
   // Update verification status for Worker
   const handleWorkerVerifyStatusUpdate = async (worker) => {
     try {
@@ -236,6 +254,61 @@ export default function ServiceProviderDetails() {
     onDocumentModalOpen();
   };
 
+  // Handle edit button click
+  const handleEditAddress = (address, index) => {
+    setEditAddress({ ...address, index });
+    onEditAddressModalOpen();
+  };
+
+  // Handle address update
+  const handleAddressUpdate = async () => {
+    try {
+      setToggleLoading(true);
+      const response = await axios.put(
+        `${baseUrl}api/admin/updateUserAddress/${data.user._id}`,
+        {
+          addressId: editAddress._id,
+          updatedAddress: {
+            title: editAddress.title,
+            address: editAddress.address,
+            landmark: editAddress.landmark,
+            latitude: editAddress.latitude,
+            longitude: editAddress.longitude,
+          },
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (response.data.success) {
+        const updatedAddresses = [...data.user.full_address];
+        updatedAddresses[editAddress.index] = response.data.updatedAddress;
+
+        setData((prevData) => ({
+          ...prevData,
+          user: { ...prevData.user, full_address: updatedAddresses },
+        }));
+
+        toast.success('Address updated successfully!', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        onEditAddressModalClose();
+      } else {
+        throw new Error('Failed to update address');
+      }
+    } catch (error) {
+      console.error('Error updating address:', error);
+      toast.error(error.response?.data?.message || 'Failed to update address', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    } finally {
+      setToggleLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card
@@ -244,6 +317,9 @@ export default function ServiceProviderDetails() {
         px="0px"
         style={{ marginTop: '100px' }}
         overflowX={{ sm: 'scroll', lg: 'hidden' }}
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={cardBg}
       >
         <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
           Loading...
@@ -260,6 +336,9 @@ export default function ServiceProviderDetails() {
         px="0px"
         style={{ marginTop: '100px' }}
         overflowX={{ sm: 'scroll', lg: 'hidden' }}
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={cardBg}
       >
         <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
           Error: {error}
@@ -276,6 +355,9 @@ export default function ServiceProviderDetails() {
         px="0px"
         style={{ marginTop: '100px' }}
         overflowX={{ sm: 'scroll', lg: 'inherit' }}
+        borderRadius="16px"
+        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
+        bg={cardBg}
       >
         <Flex px="25px" mb="20px" justify="space-between" align="center">
           <Text
@@ -333,7 +415,7 @@ export default function ServiceProviderDetails() {
               </ChakraCard>
 
               {/* Service Provider Information and Documents */}
-              <Flex gap="4">
+              <Flex gap="4" direction={{ base: 'column', md: 'row' }}>
                 {/* Service Provider Information */}
                 <ChakraCard
                   p="15px"
@@ -345,7 +427,7 @@ export default function ServiceProviderDetails() {
                 >
                   <VStack spacing={4} align="stretch">
                     <Text fontWeight="bold" fontSize="lg" color={textColor}>
-                     User Information
+                      User Information
                     </Text>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
@@ -377,21 +459,33 @@ export default function ServiceProviderDetails() {
                         {data.user?.current_location || 'N/A'}
                       </Text>
                     </Flex>
-                    <Flex align="start" gap="4">
+                    <Flex align="start" gap="4" wrap="wrap">
                       <Text fontWeight="semibold" color={textColor}>
                         Address:
                       </Text>
-                      <Text color={textColor}>
-                        {data.user?.full_address ||
-                          [
-                            data.user?.colony_name,
-                            data.user?.gali_number,
-                            data.user?.landmark,
-                          ]
-                            .filter(Boolean)
-                            .join(', ') ||
-                          'N/A'}
-                      </Text>
+                      <Flex align="center" wrap="wrap" gap="2">
+                        <Text
+                          color={textColor}
+                          maxW={{ base: '200px', md: '300px' }}
+                          isTruncated
+                        >
+                          {data.user?.full_address?.length > 0
+                            ? `${data.user.full_address[0].title}: ${data.user.full_address[0].address}`
+                            : [data.user?.colony_name, data.user?.gali_number, data.user?.landmark]
+                                .filter(Boolean)
+                                .join(', ') || 'N/A'}
+                        </Text>
+                        {data.user?.full_address?.length > 0 && (
+                          <Button
+                            size="xs"
+                            variant="link"
+                            colorScheme="teal"
+                            onClick={() => onAddressModalOpen()}
+                          >
+                            Read More
+                          </Button>
+                        )}
+                      </Flex>
                     </Flex>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
@@ -748,7 +842,7 @@ export default function ServiceProviderDetails() {
           onClose={onDocumentModalClose}
           size="xl"
         >
-          <ModalOverlay />
+          <ModalOverlay bg="blackAlpha.600" />
           <ModalContent borderRadius="xl" boxShadow="2xl" p={4} bg={cardBg}>
             <ModalHeader
               fontSize="2xl"
@@ -772,6 +866,7 @@ export default function ServiceProviderDetails() {
                   maxW="100%"
                   objectFit="contain"
                   borderRadius="md"
+                  onError={(e) => (e.target.src = defaultProfilePic)}
                 />
               </ChakraCard>
             </ModalBody>
@@ -789,14 +884,229 @@ export default function ServiceProviderDetails() {
         </Modal>
       )}
 
+      {/* Address Modal */}
+      <Modal
+        isOpen={isAddressModalOpen}
+        onClose={onAddressModalClose}
+        isCentered
+        size="lg"
+      >
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '600px' }}
+          borderRadius="16px"
+          bg={cardBg}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            User Addresses
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            {data.user?.full_address?.length === 0 ? (
+              <Text color={textColor} fontSize="sm">
+                No addresses available.
+              </Text>
+            ) : (
+              data.user.full_address.map((addr, index) => (
+                <Box
+                  key={addr._id || index}
+                  mb={4}
+                  p={4}
+                  border="1px"
+                  borderColor={borderColor}
+                  borderRadius="8px"
+                >
+                  <Flex justify="space-between" align="center">
+                    <Box>
+                      <Text fontSize="sm" fontWeight="600" color={textColor}>
+                        {index + 1}. {addr.title || 'Address'}
+                      </Text>
+                      <Text fontSize="sm" color={textColor} mt={1}>
+                        <strong>Address:</strong> {addr.address || 'N/A'}
+                      </Text>
+                      <Text fontSize="sm" color={textColor} mt={1}>
+                        <strong>Landmark:</strong> {addr.landmark || 'N/A'}
+                      </Text>
+                      <Text fontSize="sm" color={textColor} mt={1}>
+                        <strong>Latitude:</strong> {addr.latitude || 'N/A'}
+                      </Text>
+                      <Text fontSize="sm" color={textColor} mt={1}>
+                        <strong>Longitude:</strong> {addr.longitude || 'N/A'}
+                      </Text>
+                    </Box>
+                    {/*<Button
+                      size="sm"
+                      colorScheme="teal"
+                      onClick={() => handleEditAddress(addr, index)}
+                    >
+                      Edit
+                    </Button>*/}
+                  </Flex>
+                </Box>
+              ))
+            )}
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="teal"
+              onClick={onAddressModalClose}
+              borderRadius="12px"
+              size="sm"
+              _hover={{ bg: 'teal.600' }}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Edit Address Modal */}
+      <Modal
+        isOpen={isEditAddressModalOpen}
+        onClose={onEditAddressModalClose}
+        isCentered
+        size="lg"
+      >
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '600px' }}
+          borderRadius="16px"
+          bg={cardBg}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            Edit Address
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            {editAddress && (
+              <VStack spacing={4} align="stretch">
+                <Box>
+                  <Text fontSize="sm" fontWeight="600" color={textColor}>
+                    Title
+                  </Text>
+                  <Input
+                    value={editAddress.title || ''}
+                    onChange={(e) =>
+                      setEditAddress({ ...editAddress, title: e.target.value })
+                    }
+                    placeholder="Enter title (e.g., Home, Office)"
+                    size="sm"
+                    borderRadius="8px"
+                  />
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="600" color={textColor}>
+                    Address
+                  </Text>
+                  <Input
+                    value={editAddress.address || ''}
+                    onChange={(e) =>
+                      setEditAddress({ ...editAddress, address: e.target.value })
+                    }
+                    placeholder="Enter address"
+                    size="sm"
+                    borderRadius="8px"
+                  />
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="600" color={textColor}>
+                    Landmark
+                  </Text>
+                  <Input
+                    value={editAddress.landmark || ''}
+                    onChange={(e) =>
+                      setEditAddress({ ...editAddress, landmark: e.target.value })
+                    }
+                    placeholder="Enter landmark"
+                    size="sm"
+                    borderRadius="8px"
+                  />
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="600" color={textColor}>
+                    Latitude
+                  </Text>
+                  <Input
+                    value={editAddress.latitude || ''}
+                    onChange={(e) =>
+                      setEditAddress({ ...editAddress, latitude: e.target.value })
+                    }
+                    placeholder="Enter latitude"
+                    type="number"
+                    step="any"
+                    size="sm"
+                    borderRadius="8px"
+                  />
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="600" color={textColor}>
+                    Longitude
+                  </Text>
+                  <Input
+                    value={editAddress.longitude || ''}
+                    onChange={(e) =>
+                      setEditAddress({ ...editAddress, longitude: e.target.value })
+                    }
+                    placeholder="Enter longitude"
+                    type="number"
+                    step="any"
+                    size="sm"
+                    borderRadius="8px"
+                  />
+                </Box>
+              </VStack>
+            )}
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="teal"
+              onClick={handleAddressUpdate}
+              borderRadius="12px"
+              size="sm"
+              isLoading={toggleLoading}
+              _hover={{ bg: 'teal.600' }}
+            >
+              Save
+            </Button>
+            <Button
+              colorScheme="gray"
+              onClick={onEditAddressModalClose}
+              borderRadius="12px"
+              size="sm"
+              ml={2}
+              _hover={{ bg: 'gray.300' }}
+            >
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Worker Details Modal */}
       {selectedWorker && (
         <Modal
-          isOpen={!!selectedWorker}
-          onClose={() => setSelectedWorker(null)}
+          isOpen={isWorkerDetailsOpen}
+          onClose={() => {
+            setSelectedWorker(null);
+            onWorkerDetailsClose();
+          }}
           size="xl"
         >
-          <ModalOverlay />
+          <ModalOverlay bg="blackAlpha.600" />
           <ModalContent borderRadius="xl" boxShadow="2xl" p={4} bg={cardBg}>
             <ModalHeader
               fontSize="2xl"
@@ -828,8 +1138,7 @@ export default function ServiceProviderDetails() {
                     />
                     <Box>
                       <Text fontWeight="bold" fontSize="xl" color={textColor}>
-                        Name:{' '}
-                        {capitalizeFirstLetter(selectedWorker.name || 'N/A')}
+                        Name: {capitalizeFirstLetter(selectedWorker.name || 'N/A')}
                       </Text>
                     </Box>
                   </Flex>
@@ -948,7 +1257,10 @@ export default function ServiceProviderDetails() {
               </Button>
               <Button
                 colorScheme="gray"
-                onClick={() => setSelectedWorker(null)}
+                onClick={() => {
+                  setSelectedWorker(null);
+                  onWorkerDetailsClose();
+                }}
                 _hover={{ bg: 'gray.300', transform: 'scale(1.05)' }}
                 transition="all 0.2s ease-in-out"
               >
