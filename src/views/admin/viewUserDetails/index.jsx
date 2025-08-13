@@ -93,6 +93,7 @@ export default function ServiceProviderDetails() {
             full_address: Array.isArray(response.data.user.full_address)
               ? response.data.user.full_address
               : [],
+            inactivationInfo: response.data.user.inactivationInfo || null,
           },
         });
         setLoading(false);
@@ -473,6 +474,87 @@ export default function ServiceProviderDetails() {
                           : 'N/A'}
                       </Text>
                     </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Verification Status:
+                      </Text>
+                      <HStack>
+                        <Switch
+                          isChecked={data.user?.verified}
+                          onChange={() =>
+                            toggleUserVerified(
+                              data.user._id,
+                              data.user.verified,
+                            )
+                          }
+                          colorScheme="teal"
+                          isDisabled={toggleLoading}
+                        />
+                        <Text
+                          bg={
+                            getStatusStyles(data.user?.verified, 'verifyStatus')
+                              .bg
+                          }
+                          color={
+                            getStatusStyles(data.user?.verified, 'verifyStatus')
+                              .color
+                          }
+                          px="2"
+                          py="1"
+                          borderRadius="md"
+                        >
+                          {data.user?.verified ? 'Approved' : 'Rejected'}
+                        </Text>
+                      </HStack>
+                    </Flex>
+                    {data.user?.inactivationInfo && (
+                      <Box
+                        mt={4}
+                        p={4}
+                        border="1px"
+                        borderColor={borderColor}
+                        borderRadius="8px"
+                      >
+                        <Text fontSize="md" fontWeight="600" color={textColor} mb={2}>
+                          Inactivation Details
+                        </Text>
+                        <Flex align="start" gap="4">
+                          <Text fontWeight="semibold" color={textColor}>
+                            Inactivated By:
+                          </Text>
+                          <Text color={textColor}>
+                            {data.user.inactivationInfo.inactivatedBy?.full_name || 'N/A'} (
+                            {data.user.inactivationInfo.inactivatedBy?.email || 'N/A'})
+                          </Text>
+                        </Flex>
+                        <Flex align="start" gap="4" mt={2}>
+                          <Text fontWeight="semibold" color={textColor}>
+                            Reason:
+                          </Text>
+                          <Text color={textColor}>
+                            {data.user.inactivationInfo.reason || 'N/A'}
+                          </Text>
+                        </Flex>
+                        <Flex align="start" gap="4" mt={2}>
+                          <Text fontWeight="semibold" color={textColor}>
+                            Dispute ID:
+                          </Text>
+                          <Text color={textColor}>
+                            {data.user.inactivationInfo.disputeId?.unique_id || 'N/A'}
+                          </Text>
+                        </Flex>
+                        <Flex align="start" gap="4" mt={2}>
+                          <Text fontWeight="semibold" color={textColor}>
+                            Inactivated At:
+                          </Text>
+                          <Text color={textColor}>
+                            {data.user.inactivationInfo.inactivatedAt
+                              ? new Date(data.user.inactivationInfo.inactivatedAt).toLocaleString()
+                              : 'N/A'}
+                          </Text>
+                        </Flex>
+                      </Box>
+                    )}
                     <Divider />
                     <Text fontWeight="bold" fontSize="lg" color={textColor}>
                       Bank Details
@@ -516,39 +598,6 @@ export default function ServiceProviderDetails() {
                       <Text color={textColor}>
                         {data.user?.bankdetails?.upiId || 'N/A'}
                       </Text>
-                    </Flex>
-                    <Flex align="start" gap="4">
-                      <Text fontWeight="semibold" color={textColor}>
-                        Verification Status:
-                      </Text>
-                      <HStack>
-                        <Switch
-                          isChecked={data.user?.verified}
-                          onChange={() =>
-                            toggleUserVerified(
-                              data.user._id,
-                              data.user.verified,
-                            )
-                          }
-                          colorScheme="teal"
-                          isDisabled={toggleLoading}
-                        />
-                        <Text
-                          bg={
-                            getStatusStyles(data.user?.verified, 'verifyStatus')
-                              .bg
-                          }
-                          color={
-                            getStatusStyles(data.user?.verified, 'verifyStatus')
-                              .color
-                          }
-                          px="2"
-                          py="1"
-                          borderRadius="md"
-                        >
-                          {data.user?.verified ? 'Approved' : 'Rejected'}
-                        </Text>
-                      </HStack>
                     </Flex>
                   </VStack>
                 </ChakraCard>
