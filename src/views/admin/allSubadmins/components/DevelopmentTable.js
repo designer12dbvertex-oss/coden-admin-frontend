@@ -54,6 +54,7 @@ import {
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import defaultProfilePic from 'assets/img/profile/profile.webp';
+import { uniqueId } from 'lodash';
 
 const columnHelper = createColumnHelper();
 
@@ -90,6 +91,7 @@ const useFetchSubadmins = (baseUrl, token, navigate) => {
                   .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                   .join(' ')
               : 'N/A',
+            uniqueId: subadmin.unique_id || 'N/A',
             email: subadmin.email || 'N/A',
             phone: subadmin.phone || 'N/A',
             role: subadmin.role || 'N/A',
@@ -435,6 +437,24 @@ export default function SubadminTable() {
         cell: (info) => (
           <Text color={textColor} fontSize="sm" fontWeight="700">
             {startIndex + info.row.index + 1}
+          </Text>
+        ),
+      }),
+      columnHelper.accessor('uniqueId', {
+        id: 'uniqueId',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            UNIQUE ID
+          </Text>
+        ),
+        cell: (info) => (
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {info.getValue()}
           </Text>
         ),
       }),

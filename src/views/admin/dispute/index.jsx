@@ -42,6 +42,7 @@ import {
 
 // Custom components
 import Card from 'components/card/Card';
+import { uniq, uniqueId } from 'lodash';
 
 const columnHelper = createColumnHelper();
 
@@ -99,6 +100,7 @@ export default function DisputesTable() {
               .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
               .join(' ')
           : 'N/A',
+        uniqueId: item.unique_id || 'N/A', // Generate unique ID if not present
         flow_type_raw: item.flow_type || 'N/A', // Store raw flow_type for filtering
         raised_by: item.raised_by?.full_name || 'N/A',
         raised_by_id: item.raised_by?._id || 'N/A', // Add user ID for raised_by
@@ -312,6 +314,27 @@ export default function DisputesTable() {
             </Flex>
           );
         },
+      }),
+      columnHelper.accessor('uniqueId', {
+        id: 'uniqueId',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+            textTransform="uppercase"
+          >
+            UNIQUE ID
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center">
+            <Text color={textColor} fontSize="sm" fontWeight="400">
+              {info.getValue()}
+            </Text>
+          </Flex>
+        ),
       }),
       columnHelper.accessor('project_id', {
         id: 'project_id',

@@ -22,6 +22,7 @@ import {
   ModalHeader,
   ModalCloseButton,
   ModalBody,
+  ModalFooter,
   useDisclosure,
   Image,
   VStack,
@@ -29,6 +30,10 @@ import {
   InputGroup,
   InputLeftElement,
   Icon,
+  FormControl,
+  FormLabel,
+  Textarea,
+  Select,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -89,6 +94,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
                   .join(' ')
               : 'N/A',
             location: user.location.address || 'N/A',
+            uniqueId: user.unique_id || 'N/A',
             mobile: user.phone || 'N/A',
             createdAt: user.createdAt
               ? new Date(user.createdAt).toISOString().split('T')[0]
@@ -125,6 +131,39 @@ const useFetchUsers = (baseUrl, token, navigate) => {
   return { data, loading, error, setData, setError };
 };
 
+// Custom hook for fetching disputes
+const useFetchDisputes = (baseUrl, token, userId) => {
+  const [disputes, setDisputes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    const fetchDisputes = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          `${baseUrl}api/admin/getAllDisputes/${userId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        setDisputes(response.data.disputes || []);
+      } catch (error) {
+        console.error('Error fetching disputes:', error);
+        setError(
+          error.response?.data?.message || 'Failed to load disputes',
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDisputes();
+  }, [baseUrl, token, userId]);
+
+  return { disputes, loading, error };
+};
+
 // Function to toggle user status
 const toggleUserStatus = async (
   baseUrl,
@@ -133,20 +172,22 @@ const toggleUserStatus = async (
   active,
   setData,
   setError,
+  reason = '',
+  disputeId = '',
 ) => {
   try {
     const response = await axios.patch(
       `${baseUrl}api/admin/updateUserStatus`,
-      { userId, active: !active },
+      { userId, active, reason, disputeId },
       { headers: { Authorization: `Bearer ${token}` } },
     );
     if (response.data.success) {
       setData((prevData) =>
         prevData.map((user) =>
-          user.id === userId ? { ...user, active: !active } : user,
+          user.id === userId ? { ...user, active } : user,
         ),
       );
-      toast.success('User status updated successfully!', {
+      toast.success(`User ${active ? 'enabled' : 'disabled'} successfully!`, {
         position: 'top-right',
         autoClose: 3000,
         hideProgressBar: false,
@@ -239,6 +280,10 @@ export default function ComplexTable() {
   const [toggleLoading, setToggleLoading] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
   const [expandedLocations, setExpandedLocations] = useState({});
+  const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [deactivateReason, setDeactivateReason] = useState('');
+  const [disputeId, setDisputeId] = useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const itemsPerPage = 10;
   const textColor = useColorModeValue('secondaryGray.900', 'white');
@@ -252,12 +297,17 @@ export default function ComplexTable() {
     token,
     navigate,
   );
+  const { disputes, loading: disputesLoading, error: disputesError } = useFetchDisputes(
+    baseUrl,
+    token,
+    selectedUserId,
+  );
 
   // Handle search filtering
   const handleSearch = useCallback(
     (query) => {
       setSearchQuery(query);
-      setCurrentPage(1); // Reset to first page on search
+      setCurrentPage(1);
       if (!query) {
         setFilteredData(data);
         return;
@@ -289,23 +339,78 @@ export default function ComplexTable() {
     }));
   }, []);
 
+  const openDeactivateModal = useCallback((userId) => {
+    setSelectedUserId(userId);
+    setDeactivateReason('');
+    setDisputeId('');
+    setIsDeactivateModalOpen(true);
+  }, []);
+
+  const closeDeactivateModal = useCallback(() => {
+    setIsDeactivateModalOpen(false);
+    setSelectedUserId(null);
+    setDeactivateReason('');
+    setDisputeId('');
+  }, []);
+
+  // Toggle handler for user status
   const handleToggleStatus = useCallback(
     async (userId, currentActive) => {
       if (toggleLoading[userId]) return;
       setToggleLoading((prev) => ({ ...prev, [userId]: true }));
-      const success = await toggleUserStatus(
-        baseUrl,
-        token,
-        userId,
-        currentActive,
-        setData,
-        setError,
-      );
+      
+      if (currentActive) {
+        // Deactivating user - open modal to collect reason and disputeId
+        openDeactivateModal(userId);
+      } else {
+        // Activating user - no additional info needed
+        const success = await toggleUserStatus(
+          baseUrl,
+          token,
+          userId,
+          !currentActive,
+          setData,
+          setError,
+        );
+        setToggleLoading((prev) => ({ ...prev, [userId]: false }));
+        return success;
+      }
       setToggleLoading((prev) => ({ ...prev, [userId]: false }));
-      return success;
     },
-    [baseUrl, token, setData, setError, toggleLoading],
+    [baseUrl, token, setData, setError, toggleLoading, openDeactivateModal],
   );
+
+  // Handle deactivation submission
+  const handleDeactivateSubmit = useCallback(async () => {
+    if (!deactivateReason || !disputeId) {
+      toast.error('Reason and Dispute ID are required', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+
+    setToggleLoading((prev) => ({ ...prev, [selectedUserId]: true }));
+    const success = await toggleUserStatus(
+      baseUrl,
+      token,
+      selectedUserId,
+      false,
+      setData,
+      setError,
+      deactivateReason,
+      disputeId,
+    );
+    setToggleLoading((prev) => ({ ...prev, [selectedUserId]: false }));
+    
+    if (success) {
+      closeDeactivateModal();
+    }
+  }, [baseUrl, token, selectedUserId, deactivateReason, disputeId, setData, setError, closeDeactivateModal]);
 
   const handleToggleVerified = useCallback(
     async (userId, currentVerified) => {
@@ -376,6 +481,32 @@ export default function ComplexTable() {
         cell: (info) => (
           <Text color={textColor} fontSize="sm" fontWeight="700">
             {startIndex + info.row.index + 1}
+          </Text>
+        ),
+      }),
+      columnHelper.accessor('uniqueId', {
+        id: 'uniqueId',
+        header: () => (
+          <Text
+            justifyContent="center"
+            align="center"
+            fontSize={{ sm: '12px', lg: '14px' }}
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
+          >
+            Unique ID
+          </Text>
+        ),
+        cell: (info) => (
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="600"
+            textAlign="center"
+            whiteSpace="nowrap"
+          >
+            {info.getValue()}
           </Text>
         ),
       }),
@@ -629,7 +760,7 @@ export default function ComplexTable() {
       handleViewDetails,
       expandedLocations,
       handleToggleLocation,
-			startIndex,
+      startIndex,
     ],
   );
 
@@ -684,7 +815,7 @@ export default function ComplexTable() {
           fontWeight="700"
           lineHeight="100%"
         >
-          All Service Provider List
+          All Service Providers
         </Text>
         <InputGroup
           maxW={{ base: '100%', md: '300px' }}
@@ -775,7 +906,7 @@ export default function ComplexTable() {
         py="10px"
       >
         <Text fontSize="sm" color={textColor}>
-          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
+          Showing {totalItems === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
           {totalItems} entries
         </Text>
         <HStack>
@@ -932,6 +1063,91 @@ export default function ComplexTable() {
               </VStack>
             )}
           </ModalBody>
+        </ModalContent>
+      </Modal>
+      {/* Modal for deactivation reason */}
+      <Modal isOpen={isDeactivateModalOpen} onClose={closeDeactivateModal} isCentered>
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '500px' }}
+          borderRadius="16px"
+          bg={useColorModeValue('white', 'gray.800')}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            Deactivate Service Provider
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            {disputesLoading ? (
+              <Flex justify="center" align="center" py={4}>
+                <Spinner size="md" color="teal.500" />
+              </Flex>
+            ) : disputesError ? (
+              <Alert status="error" borderRadius="8px">
+                <AlertIcon />
+                <Text color={textColor}>{disputesError}</Text>
+              </Alert>
+            ) : (
+              <>
+                <FormControl isRequired mb={4}>
+                  <FormLabel color={textColor}>Reason for Deactivation</FormLabel>
+                  <Textarea
+                    value={deactivateReason}
+                    onChange={(e) => setDeactivateReason(e.target.value)}
+                    placeholder="Enter reason for deactivation"
+                    bg={useColorModeValue('gray.100', 'gray.700')}
+                    borderRadius="8px"
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel color={textColor}>Dispute ID</FormLabel>
+                  <Select
+                    value={disputeId}
+                    onChange={(e) => setDisputeId(e.target.value)}
+                    placeholder={disputes.length === 0 ? "No disputes available" : "Select dispute ID"}
+                    bg={useColorModeValue('gray.100', 'gray.700')}
+                    borderRadius="8px"
+                    isDisabled={disputes.length === 0}
+                  >
+                    {disputes.map((dispute) => (
+                      <option key={dispute._id} value={dispute._id}>
+                        {dispute.unique_id}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+              </>
+            )}
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="gray"
+              mr={3}
+              onClick={closeDeactivateModal}
+              borderRadius="12px"
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button
+              colorScheme="red"
+              onClick={handleDeactivateSubmit}
+              borderRadius="12px"
+              size="sm"
+              isLoading={toggleLoading[selectedUserId]}
+              isDisabled={disputesLoading || disputesError || disputes.length === 0}
+              _hover={{ bg: 'red.600' }}
+            >
+              Deactivate
+            </Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
       <ToastContainer
