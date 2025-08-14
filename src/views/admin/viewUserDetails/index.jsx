@@ -432,6 +432,14 @@ export default function ServiceProviderDetails() {
                     </Flex>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
+                        Category:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.category_id?.name || 'N/A'}
+                      </Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
                         Subcategories:
                       </Text>
                       <Text color={textColor}>
@@ -515,7 +523,12 @@ export default function ServiceProviderDetails() {
                         borderColor={borderColor}
                         borderRadius="8px"
                       >
-                        <Text fontSize="md" fontWeight="600" color={textColor} mb={2}>
+                        <Text
+                          fontSize="md"
+                          fontWeight="600"
+                          color={textColor}
+                          mb={2}
+                        >
                           Inactivation Details
                         </Text>
                         <Flex align="start" gap="4">
@@ -523,8 +536,12 @@ export default function ServiceProviderDetails() {
                             Inactivated By:
                           </Text>
                           <Text color={textColor}>
-                            {data.user.inactivationInfo.inactivatedBy?.full_name || 'N/A'} (
-                            {data.user.inactivationInfo.inactivatedBy?.email || 'N/A'})
+                            {data.user.inactivationInfo.inactivatedBy
+                              ?.full_name || 'N/A'}{' '}
+                            (
+                            {data.user.inactivationInfo.inactivatedBy?.email ||
+                              'N/A'}
+                            )
                           </Text>
                         </Flex>
                         <Flex align="start" gap="4" mt={2}>
@@ -540,7 +557,8 @@ export default function ServiceProviderDetails() {
                             Dispute ID:
                           </Text>
                           <Text color={textColor}>
-                            {data.user.inactivationInfo.disputeId?.unique_id || 'N/A'}
+                            {data.user.inactivationInfo.disputeId?.unique_id ||
+                              'N/A'}
                           </Text>
                         </Flex>
                         <Flex align="start" gap="4" mt={2}>
@@ -549,7 +567,9 @@ export default function ServiceProviderDetails() {
                           </Text>
                           <Text color={textColor}>
                             {data.user.inactivationInfo.inactivatedAt
-                              ? new Date(data.user.inactivationInfo.inactivatedAt).toLocaleString()
+                              ? new Date(
+                                  data.user.inactivationInfo.inactivatedAt,
+                                ).toLocaleString()
                               : 'N/A'}
                           </Text>
                         </Flex>

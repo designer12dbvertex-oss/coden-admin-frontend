@@ -421,6 +421,12 @@ export default function ServiceProviderDetails() {
                       </Text>
                       <Text color={textColor}>{data.user?.skill || 'N/A'}</Text>
                     </Flex>
+										 <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Category:
+                      </Text>
+                      <Text color={textColor}>{data.user?.category_id?.name || 'N/A'}</Text>
+                    </Flex>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
                         Subcategories:

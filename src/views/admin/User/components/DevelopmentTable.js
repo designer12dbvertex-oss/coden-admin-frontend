@@ -99,7 +99,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
               : 'N/A',
             referral_code: user.referral_code || 'N/A',
             active: user.active ?? true,
-            inactivationInfo: user.inactivationInfo || null, // Include inactivationInfo
+            inactivationInfo: user.inactivationInfo || null,
           })),
         );
       } catch (error) {
@@ -144,7 +144,6 @@ const useFetchDisputes = (baseUrl, token, userId) => {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
-        console.log('disputes', response.data);
         setDisputes(response.data.disputes || []);
       } catch (error) {
         console.error('Error fetching disputes:', error);
@@ -392,7 +391,6 @@ export default function ComplexTable() {
     (page) => {
       const newPage = Math.min(Math.max(1, page), totalPages);
       if (newPage !== currentPage) {
-        console.log(`Navigating to page ${newPage}`);
         setCurrentPage(newPage);
       }
     },
@@ -401,7 +399,6 @@ export default function ComplexTable() {
 
   useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) {
-      console.log(`Resetting page to 1 due to totalPages: ${totalPages}`);
       setCurrentPage(1);
     }
   }, [totalPages, currentPage]);
@@ -581,7 +578,7 @@ export default function ComplexTable() {
                   size="xs"
                   variant="link"
                   colorScheme="teal"
-                  ml={2}
+                  ml="1"
                   onClick={() => openModal(addresses)}
                 >
                   Show More
@@ -684,7 +681,7 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Flex justify="center" align="center">
+          <Flex justify="center" align="center" gap={2}>
             <Switch
               isChecked={info.getValue()}
               onChange={() =>
@@ -693,6 +690,22 @@ export default function ComplexTable() {
               colorScheme="teal"
               isDisabled={toggleLoading[info.row.original.id]}
             />
+            {!info.getValue() && info.row.original.inactivationInfo && (
+              <Button
+                size="xs"
+                colorScheme="red"
+                variant="outline"
+                onClick={() =>
+                  openOrdersModal(
+                    info.row.original.id,
+                    info.row.original.inactivationInfo,
+                  )
+                }
+                _hover={{ bg: 'red.600', color: 'white' }}
+              >
+                View
+              </Button>
+            )}
           </Flex>
         ),
       }),
@@ -1168,14 +1181,23 @@ export default function ComplexTable() {
                 </Text>
                 <Text fontSize="sm" color={textColor} mt={1}>
                   <strong>Dispute ID:</strong>{' '}
-                  {selectedInactivationInfo.disputeId?.unique_id || 'N/A'}
+                  {selectedInactivationInfo.disputeId?.unique_id || 'N/A'} (
+                  {selectedInactivationInfo.disputeId?.status || 'N/A'})
+                </Text>
+                <Text fontSize="sm" color={textColor} mt={1}>
+                  <strong>Dispute Created At:</strong>{' '}
+                  {selectedInactivationInfo.disputeId?.createdAt
+                    ? new Date(
+                        selectedInactivationInfo.disputeId.createdAt,
+                      ).toLocaleDateString('en-IN')
+                    : 'N/A'}
                 </Text>
                 <Text fontSize="sm" color={textColor} mt={1}>
                   <strong>Inactivated At:</strong>{' '}
                   {selectedInactivationInfo.inactivatedAt
                     ? new Date(
                         selectedInactivationInfo.inactivatedAt,
-                      ).toLocaleString()
+                      ).toLocaleDateString('en-IN')
                     : 'N/A'}
                 </Text>
               </Box>

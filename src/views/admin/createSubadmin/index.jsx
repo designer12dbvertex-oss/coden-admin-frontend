@@ -11,11 +11,15 @@ import {
   FormLabel,
   useColorModeValue,
   useToast,
+  Checkbox,
+  CheckboxGroup,
+  VStack,
 } from '@chakra-ui/react';
 import axios from 'axios';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from 'components/card/Card';
+import { ALLOWED_PERMISSIONS } from '../constants/permissions';
 
 export default function CreateSubadmin() {
   const [subadminForm, setSubadminForm] = useState({
@@ -23,6 +27,7 @@ export default function CreateSubadmin() {
     email: '',
     phone: '',
     password: '',
+    permissions: [], // Initialize permissions as an empty array
   });
   const [file, setFile] = useState(null);
   const [errors, setErrors] = useState({});
@@ -63,6 +68,11 @@ export default function CreateSubadmin() {
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
+  const handlePermissionsChange = (selectedPermissions) => {
+    setSubadminForm((prev) => ({ ...prev, permissions: selectedPermissions }));
+    setErrors((prev) => ({ ...prev, permissions: '' }));
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!subadminForm.full_name) {
@@ -82,6 +92,9 @@ export default function CreateSubadmin() {
       newErrors.password = 'Password is required';
     } else if (subadminForm.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
+    }
+    if (subadminForm.permissions.length === 0) {
+      newErrors.permissions = 'At least one permission is required';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -106,6 +119,7 @@ export default function CreateSubadmin() {
       formData.append('email', subadminForm.email);
       formData.append('phone', subadminForm.phone);
       formData.append('password', subadminForm.password);
+      formData.append('permissions', subadminForm.permissions.join(',')); // Send as comma-separated string
       if (file) {
         formData.append('profilePic', file);
       }
@@ -135,6 +149,7 @@ export default function CreateSubadmin() {
         email: '',
         phone: '',
         password: '',
+        permissions: [],
       });
       setFile(null);
       setErrors({});
@@ -143,8 +158,7 @@ export default function CreateSubadmin() {
       console.error('Create Subadmin Error:', err);
       toast({
         title: 'Error',
-        description:
-          err.response?.data?.message || 'Failed to create subadmin',
+        description: err.response?.data?.message || 'Failed to create subadmin',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -229,14 +243,32 @@ export default function CreateSubadmin() {
             </FormControl>
           </Flex>
 
+          {/* Permissions */}
+          <FormControl isRequired isInvalid={!!errors.permissions}>
+            <FormLabel>Permissions</FormLabel>
+            <CheckboxGroup
+              value={subadminForm.permissions}
+              onChange={handlePermissionsChange}
+            >
+              <VStack align="start" spacing={2}>
+                {ALLOWED_PERMISSIONS.map((permission) => (
+                  <Checkbox key={permission} value={permission}>
+                    {permission}
+                  </Checkbox>
+                ))}
+              </VStack>
+            </CheckboxGroup>
+            {errors.permissions && (
+              <Text color="red.500" fontSize="sm">
+                {errors.permissions}
+              </Text>
+            )}
+          </FormControl>
+
           {/* Profile Picture */}
           <FormControl isInvalid={!!errors.profile_pic}>
             <FormLabel>Profile Picture</FormLabel>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-            />
+            <Input type="file" accept="image/*" onChange={handleFileChange} />
             {errors.profile_pic && (
               <Text color="red.500" fontSize="sm">
                 {errors.profile_pic}

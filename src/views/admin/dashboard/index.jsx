@@ -6,40 +6,40 @@ import {
   Spinner,
   Text,
   Icon,
-} from "@chakra-ui/react";
+} from '@chakra-ui/react';
 // Custom components
-import MiniCalendar from "components/calendar/MiniCalendar";
-import MiniStatistics from "components/card/MiniStatistics";
-import IconBox from "components/icons/IconBox";
-import React, { useState, useEffect } from "react";
+import MiniCalendar from 'components/calendar/MiniCalendar';
+import MiniStatistics from 'components/card/MiniStatistics';
+import IconBox from 'components/icons/IconBox';
+import React, { useState, useEffect } from 'react';
+import { MdAddTask, MdAttachMoney, MdPeople, MdMoney } from 'react-icons/md';
+import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  MdAddTask,
-  MdAttachMoney,
-  MdPeople,
-  MdMoney,
-} from "react-icons/md";
-import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
-import { FaExclamationTriangle, FaFileInvoiceDollar, FaGavel, FaMoneyBillWave } from "react-icons/fa";
+  FaExclamationTriangle,
+  FaFileInvoiceDollar,
+  FaGavel,
+  FaMoneyBillWave,
+} from 'react-icons/fa';
 
 export default function UserReports() {
   // Chakra Color Mode
-  const brandColor = useColorModeValue("#045e14", "white");
-  const boxBg = useColorModeValue("secondaryGray.300", "whiteAlpha.100");
+  const brandColor = useColorModeValue('#045e14', 'white');
+  const boxBg = useColorModeValue('secondaryGray.300', 'whiteAlpha.100');
   const navigate = useNavigate();
   // State for API data, loading, and error
   const [dashboardData, setDashboardData] = useState({
     users: 0,
     service_provider: 0,
-		unverified_service_provider: 0,
-		verified_service_provider: 0,
+    unverified_service_provider: 0,
+    verified_service_provider: 0,
     both: 0,
-		requested:0,
-		subadmins:0,
-		directPaymentRequest:0,
-		directOrder: 0,
-		biddingOrder: 0,
-		emergencyOrders: 0,
+    requested: 0,
+    subadmins: 0,
+    directPaymentRequest: 0,
+    directOrder: 0,
+    biddingOrder: 0,
+    emergencyOrders: 0,
     newTasks: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -50,42 +50,47 @@ export default function UserReports() {
     const fetchDashboardData = async () => {
       try {
         const baseUrl = process.env.REACT_APP_BASE_URL;
-        const token = localStorage.getItem("token") || "";
+        const token = localStorage.getItem('token') || '';
 
-        const response = await axios.get(`${baseUrl}api/admin/adminAllDashboardCount`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const response = await axios.get(
+          `${baseUrl}api/admin/adminAllDashboardCount`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          },
+        );
 
         const data = response.data.data || {};
 
-        console.log("data", data);
+        console.log('data', data);
 
         setDashboardData({
           users: data.totalUsers ?? 0,
           verified_service_provider: data.totalVerifiedSeller ?? 0,
-					unverified_service_provider: data.totalUnverifiedSeller ?? 0,
-					service_provider: data.totalServiceProvider ?? 0,
+          unverified_service_provider: data.totalUnverifiedSeller ?? 0,
+          service_provider: data.totalServiceProvider ?? 0,
           both: data.totalBoth ?? 0,
-					requested: data.totalRequested ?? 0,
-					subadmins: data.totalSubadmins ?? 0,
-					directPaymentRequest: data.totalDirectOrderPaymentRequest ?? 0,
-					directOrder: data.totalDirectOrder ?? 0,
-					biddingOrder: data.totalBiddingOrder ?? 0,
-					emergencyOrders: data.totalEmergencyOrder ?? 0,
+          requested: data.totalRequested ?? 0,
+          subadmins: data.totalSubadmins ?? 0,
+          directPaymentRequest: data.totalDirectOrderPaymentRequest ?? 0,
+          directOrder: data.totalDirectOrder ?? 0,
+          biddingOrder: data.totalBiddingOrder ?? 0,
+          emergencyOrders: data.totalEmergencyOrder ?? 0,
           newTasks: data.newTasks ?? 0,
         });
       } catch (err) {
-        console.error("API Error:", err.response || err.message);
-				if (
+        console.error('API Error:', err.response || err.message);
+        if (
           err.response?.data?.message === 'Not authorized, token failed' ||
-          err.response?.data?.message === 'Session expired or logged in on another device' ||
           err.response?.data?.message ===
-            'Un-Authorized, You are not authorized to access this route.' || 'Not authorized, token failed'
+            'Session expired or logged in on another device' ||
+          err.response?.data?.message ===
+            'Un-Authorized, You are not authorized to access this route.' ||
+          'Not authorized, token failed'
         ) {
           localStorage.removeItem('token');
           navigate('/');
         }
-        setError("Failed to fetch dashboard data. Please try again later.");
+        setError('Failed to fetch dashboard data. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -94,11 +99,11 @@ export default function UserReports() {
     fetchDashboardData();
   }, [navigate]);
 
-  console.log("data2", dashboardData)
+  console.log('data2', dashboardData);
 
   if (loading) {
     return (
-      <Box pt={{ base: "130px", md: "80px", xl: "80px" }} textAlign="center">
+      <Box pt={{ base: '130px', md: '80px', xl: '80px' }} textAlign="center">
         <Spinner size="xl" color={brandColor} />
         <Text mt="4">Loading dashboard data...</Text>
       </Box>
@@ -107,137 +112,212 @@ export default function UserReports() {
 
   if (error) {
     return (
-      <Box pt={{ base: "130px", md: "80px", xl: "80px" }} textAlign="center">
+      <Box pt={{ base: '130px', md: '80px', xl: '80px' }} textAlign="center">
         <Text color="red.500">{error}</Text>
       </Box>
     );
   }
 
   return (
-    <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 3, "2xl": 6 }} gap="20px" mb="20px">
-      <Link to ="/admin/users"> 
-        <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
-            />
-          }
-          name="Users"
-          value={dashboardData.users}
-        />
-				</Link>
-				<Link to ="/">
-        <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
-            />
-          }
-          name="Total Service Provider"
-          value={dashboardData.service_provider.toLocaleString()}
-        />
-				</Link>
-				<Link to ="/admin/service_provider">
-        <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
-            />
-          }
-          name="Verified Service Provider"
-          value={dashboardData.verified_service_provider.toLocaleString()}
-        />
-				</Link>
-				<Link to ="/admin/unverified_service_provider">
-        <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
-            />
-          }
-          name="Unverified Service Provider"
-          value={dashboardData.unverified_service_provider.toLocaleString()}
-        />
-				</Link>
-					<Link to ="/admin/both">
-        <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
-            />
-          }
-          name="Both"
-          value={dashboardData.both.toLocaleString()}
-        />
-				</Link> 
-				<Link to ="/admin/requests">
-        <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
-            />
-          }
-          name="Total Request"
-          value={dashboardData.requested.toLocaleString()}
-        />
-				</Link>
-				<Link to ="/admin/sub_admins">
-        <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon as={MdPeople} w="32px" h="32px" color={brandColor} />}
-            />
-          }
-          name="SubAdmins"
-          value={dashboardData.subadmins.toLocaleString()}
-        />
-				</Link>
-				<Link to ="/admin/sub_admins">
-        <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon as={FaMoneyBillWave } w="32px" h="32px" color={brandColor} />}
-            />
-          }
-          name="Direct Order Payment Request"
-          value={dashboardData.directPaymentRequest.toLocaleString()}
-        />
-				</Link>
-				<Link to="/admin/direct-hiring">
-				 <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon as={FaFileInvoiceDollar} w="32px" h="32px" color={brandColor} />}
-            />
-          }
-          name="Direct Orders"
-          value={`${dashboardData.directOrder}`}
-        />
-				</Link>
-				<Link to="/admin/biding">
-				 <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon as={FaGavel} w="32px" h="32px" color={brandColor} />}
-            />
-          }
-          name="Bidding Orders"
-          value={`${dashboardData.biddingOrder}`}
-        />
-				</Link>
-				<Link to="/admin/emergency-hiring">
-				 <MiniStatistics
-          startContent={
-            <IconBox w="56px" h="56px" bg={boxBg}
-              icon={<Icon as={FaExclamationTriangle} w="32px" h="32px" color={brandColor} />}
-            />
-          }
-          name="Emergency Orders"
-          value={`${dashboardData.emergencyOrders}`}
-        />
-				</Link>
-				{ /* <MiniStatistics
+		
+    <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+      <SimpleGrid
+        columns={{ base: 1, md: 2, lg: 3, '2xl': 6 }}
+        gap="20px"
+        mb="20px"
+      >
+        <Link to="/admin/users">
+          <MiniStatistics
+            startContent={
+              <IconBox
+                w="56px"
+                h="56px"
+                bg={boxBg}
+                icon={
+                  <Icon as={MdPeople} w="32px" h="32px" color={brandColor} />
+                }
+              />
+            }
+            name="Users"
+            value={dashboardData.users}
+          />
+        </Link>
+        <Link to="/">
+          <MiniStatistics
+            startContent={
+              <IconBox
+                w="56px"
+                h="56px"
+                bg={boxBg}
+                icon={
+                  <Icon as={MdPeople} w="32px" h="32px" color={brandColor} />
+                }
+              />
+            }
+            name="Total Service Provider"
+            value={dashboardData.service_provider.toLocaleString()}
+          />
+        </Link>
+        <Link to="/admin/service_provider">
+          <MiniStatistics
+            startContent={
+              <IconBox
+                w="56px"
+                h="56px"
+                bg={boxBg}
+                icon={
+                  <Icon as={MdPeople} w="32px" h="32px" color={brandColor} />
+                }
+              />
+            }
+            name="Verified Service Provider"
+            value={dashboardData.verified_service_provider.toLocaleString()}
+          />
+        </Link>
+        <Link to="/admin/unverified_service_provider">
+          <MiniStatistics
+            startContent={
+              <IconBox
+                w="56px"
+                h="56px"
+                bg={boxBg}
+                icon={
+                  <Icon as={MdPeople} w="32px" h="32px" color={brandColor} />
+                }
+              />
+            }
+            name="Unverified Service Provider"
+            value={dashboardData.unverified_service_provider.toLocaleString()}
+          />
+        </Link>
+        <Link to="/admin/both">
+          <MiniStatistics
+            startContent={
+              <IconBox
+                w="56px"
+                h="56px"
+                bg={boxBg}
+                icon={
+                  <Icon as={MdPeople} w="32px" h="32px" color={brandColor} />
+                }
+              />
+            }
+            name="Both"
+            value={dashboardData.both.toLocaleString()}
+          />
+        </Link>
+        <Link to="/admin/requests">
+          <MiniStatistics
+            startContent={
+              <IconBox
+                w="56px"
+                h="56px"
+                bg={boxBg}
+                icon={
+                  <Icon as={MdPeople} w="32px" h="32px" color={brandColor} />
+                }
+              />
+            }
+            name="Total Request"
+            value={dashboardData.requested.toLocaleString()}
+          />
+        </Link>
+        <Link to="/admin/sub_admins">
+          <MiniStatistics
+            startContent={
+              <IconBox
+                w="56px"
+                h="56px"
+                bg={boxBg}
+                icon={
+                  <Icon as={MdPeople} w="32px" h="32px" color={brandColor} />
+                }
+              />
+            }
+            name="SubAdmins"
+            value={dashboardData.subadmins.toLocaleString()}
+          />
+        </Link>
+        <Link to="/admin/sub_admins">
+          <MiniStatistics
+            startContent={
+              <IconBox
+                w="56px"
+                h="56px"
+                bg={boxBg}
+                icon={
+                  <Icon
+                    as={FaMoneyBillWave}
+                    w="32px"
+                    h="32px"
+                    color={brandColor}
+                  />
+                }
+              />
+            }
+            name="Direct Order Payment Request"
+            value={dashboardData.directPaymentRequest.toLocaleString()}
+          />
+        </Link>
+        <Link to="/admin/direct-hiring">
+          <MiniStatistics
+            startContent={
+              <IconBox
+                w="56px"
+                h="56px"
+                bg={boxBg}
+                icon={
+                  <Icon
+                    as={FaFileInvoiceDollar}
+                    w="32px"
+                    h="32px"
+                    color={brandColor}
+                  />
+                }
+              />
+            }
+            name="Direct Orders"
+            value={`${dashboardData.directOrder}`}
+          />
+        </Link>
+        <Link to="/admin/biding">
+          <MiniStatistics
+            startContent={
+              <IconBox
+                w="56px"
+                h="56px"
+                bg={boxBg}
+                icon={
+                  <Icon as={FaGavel} w="32px" h="32px" color={brandColor} />
+                }
+              />
+            }
+            name="Bidding Orders"
+            value={`${dashboardData.biddingOrder}`}
+          />
+        </Link>
+        <Link to="/admin/emergency-hiring">
+          <MiniStatistics
+            startContent={
+              <IconBox
+                w="56px"
+                h="56px"
+                bg={boxBg}
+                icon={
+                  <Icon
+                    as={FaExclamationTriangle}
+                    w="32px"
+                    h="32px"
+                    color={brandColor}
+                  />
+                }
+              />
+            }
+            name="Emergency Orders"
+            value={`${dashboardData.emergencyOrders}`}
+          />
+        </Link>
+        {/* <MiniStatistics
           startContent={
             <IconBox w="56px" h="56px" bg={boxBg}
               icon={<Icon as={MdAttachMoney} w="32px" h="32px" color={brandColor} />}
@@ -263,8 +343,8 @@ export default function UserReports() {
           }
           name="Online Collection"
           value={`₹${dashboardData.onlineCollection}`}
-        /> */}
-        <MiniStatistics
+        /> 
+				<MiniStatistics
           startContent={
             <IconBox w="56px" h="56px"
               bg="linear-gradient(90deg, #4481EB 0%, #04BEFE 100%)"
@@ -274,8 +354,9 @@ export default function UserReports() {
           name="New Tasks"
           value={dashboardData.newTasks}
         />
+				*/}
       </SimpleGrid>
-{			/* Calendar Component 
+      {/* Calendar Component 
       <SimpleGrid columns={{ base: 1, md: 1, xl: 2 }} gap="20px" mb="20px">
         <MiniCalendar h="100%" minW="100%" selectRange={false} />
       </SimpleGrid>

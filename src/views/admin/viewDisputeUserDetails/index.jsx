@@ -88,7 +88,6 @@ export default function ServiceProviderDetails() {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
-
         if (!response.data?.user) {
           throw new Error('Invalid response format: Expected user object');
         }
@@ -471,7 +470,11 @@ export default function ServiceProviderDetails() {
                         >
                           {data.user?.full_address?.length > 0
                             ? `${data.user.full_address[0].title}: ${data.user.full_address[0].address}`
-                            : [data.user?.colony_name, data.user?.gali_number, data.user?.landmark]
+                            : [
+                                data.user?.colony_name,
+                                data.user?.gali_number,
+                                data.user?.landmark,
+                              ]
                                 .filter(Boolean)
                                 .join(', ') || 'N/A'}
                         </Text>
@@ -492,6 +495,14 @@ export default function ServiceProviderDetails() {
                         Skill:
                       </Text>
                       <Text color={textColor}>{data.user?.skill || 'N/A'}</Text>
+                    </Flex>
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Category:
+                      </Text>
+                      <Text color={textColor}>
+                        {data.user?.category_id?.name || 'N/A'}
+                      </Text>
                     </Flex>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
@@ -537,6 +548,73 @@ export default function ServiceProviderDetails() {
                           : 'N/A'}
                       </Text>
                     </Flex>
+                    {/* Inactivation Info Section */}
+                    {data.user?.inactivationInfo && (
+                      <>
+                        <Divider />
+                        <Text fontWeight="bold" fontSize="lg" color={textColor}>
+                          Inactivation Information
+                        </Text>
+                        <Flex align="start" gap="4">
+                          <Text fontWeight="semibold" color={textColor}>
+                            Inactivated By:
+                          </Text>
+                          <Text color={textColor}>
+                            {data.user.inactivationInfo.inactivatedBy
+                              ?.full_name || 'N/A'}{' '}
+                            (
+                            {data.user.inactivationInfo.inactivatedBy?.email ||
+                              'N/A'}
+                            )
+                          </Text>
+                        </Flex>
+                        <Flex align="start" gap="4">
+                          <Text fontWeight="semibold" color={textColor}>
+                            Reason:
+                          </Text>
+                          <Text color={textColor}>
+                            {data.user.inactivationInfo.reason || 'N/A'}
+                          </Text>
+                        </Flex>
+                        <Flex align="start" gap="4">
+                          <Text fontWeight="semibold" color={textColor}>
+                            Dispute ID:
+                          </Text>
+                          <Text color={textColor}>
+                            {data.user.inactivationInfo.disputeId?.unique_id ||
+                              'N/A'}{' '}
+                            (
+                            {data.user.inactivationInfo.disputeId?.status ||
+                              'N/A'}
+                            )
+                          </Text>
+                        </Flex>
+                        <Flex align="start" gap="4">
+                          <Text fontWeight="semibold" color={textColor}>
+                            Dispute Created At:
+                          </Text>
+                          <Text color={textColor}>
+                            {data.user.inactivationInfo.disputeId?.createdAt
+                              ? new Date(
+                                  data.user.inactivationInfo.disputeId.createdAt,
+                                ).toLocaleDateString()
+                              : 'N/A'}
+                          </Text>
+                        </Flex>
+                        <Flex align="start" gap="4">
+                          <Text fontWeight="semibold" color={textColor}>
+                            Inactivated At:
+                          </Text>
+                          <Text color={textColor}>
+                            {data.user.inactivationInfo.inactivatedAt
+                              ? new Date(
+                                  data.user.inactivationInfo.inactivatedAt,
+                                ).toLocaleDateString()
+                              : 'N/A'}
+                          </Text>
+                        </Flex>
+                      </>
+                    )}
                     <Divider />
                     <Text fontWeight="bold" fontSize="lg" color={textColor}>
                       Bank Details
@@ -1015,7 +1093,10 @@ export default function ServiceProviderDetails() {
                   <Input
                     value={editAddress.address || ''}
                     onChange={(e) =>
-                      setEditAddress({ ...editAddress, address: e.target.value })
+                      setEditAddress({
+                        ...editAddress,
+                        address: e.target.value,
+                      })
                     }
                     placeholder="Enter address"
                     size="sm"
@@ -1029,7 +1110,10 @@ export default function ServiceProviderDetails() {
                   <Input
                     value={editAddress.landmark || ''}
                     onChange={(e) =>
-                      setEditAddress({ ...editAddress, landmark: e.target.value })
+                      setEditAddress({
+                        ...editAddress,
+                        landmark: e.target.value,
+                      })
                     }
                     placeholder="Enter landmark"
                     size="sm"
@@ -1043,7 +1127,10 @@ export default function ServiceProviderDetails() {
                   <Input
                     value={editAddress.latitude || ''}
                     onChange={(e) =>
-                      setEditAddress({ ...editAddress, latitude: e.target.value })
+                      setEditAddress({
+                        ...editAddress,
+                        latitude: e.target.value,
+                      })
                     }
                     placeholder="Enter latitude"
                     type="number"
@@ -1059,7 +1146,10 @@ export default function ServiceProviderDetails() {
                   <Input
                     value={editAddress.longitude || ''}
                     onChange={(e) =>
-                      setEditAddress({ ...editAddress, longitude: e.target.value })
+                      setEditAddress({
+                        ...editAddress,
+                        longitude: e.target.value,
+                      })
                     }
                     placeholder="Enter longitude"
                     type="number"
@@ -1138,7 +1228,8 @@ export default function ServiceProviderDetails() {
                     />
                     <Box>
                       <Text fontWeight="bold" fontSize="xl" color={textColor}>
-                        Name: {capitalizeFirstLetter(selectedWorker.name || 'N/A')}
+                        Name:{' '}
+                        {capitalizeFirstLetter(selectedWorker.name || 'N/A')}
                       </Text>
                     </Box>
                   </Flex>

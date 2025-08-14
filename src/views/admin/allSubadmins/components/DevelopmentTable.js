@@ -31,6 +31,8 @@ import {
   InputGroup,
   InputLeftElement,
   Icon,
+  Checkbox,
+  CheckboxGroup,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -50,11 +52,12 @@ import {
   ChevronRightIcon,
   EditIcon,
   SearchIcon,
+  LockIcon,
 } from '@chakra-ui/icons';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import defaultProfilePic from 'assets/img/profile/profile.webp';
-import { uniqueId } from 'lodash';
+import { ALLOWED_PERMISSIONS } from '../../constants/permissions';
 
 const columnHelper = createColumnHelper();
 
@@ -76,7 +79,6 @@ const useFetchSubadmins = (baseUrl, token, navigate) => {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
-        console.log('Fetched subadmins:', response.data.data);
         if (!response.data?.data) {
           throw new Error('Invalid API response: No subadmins found');
         }
@@ -95,6 +97,7 @@ const useFetchSubadmins = (baseUrl, token, navigate) => {
             email: subadmin.email || 'N/A',
             phone: subadmin.phone || 'N/A',
             role: subadmin.role || 'N/A',
+            permissions: subadmin.permissions || [],
             createdAt: subadmin.createdAt
               ? new Date(subadmin.createdAt).toISOString().split('T')[0]
               : 'N/A',
@@ -156,7 +159,6 @@ const updateSubadmin = async (
         },
       },
     );
-    console.log('Update response:', response.data);
     if (response.data.status) {
       setData((prevData) =>
         prevData.map((subadmin) =>
@@ -181,6 +183,61 @@ const updateSubadmin = async (
   }
 };
 
+// Function to update subadmin permissions
+const updateSubadminPermissions = async (
+  baseUrl,
+  token,
+  subadminId,
+  permissions,
+  setData,
+  setError,
+) => {
+  try {
+    const response = await axios.patch(
+      `${baseUrl}api/admin/subadmin/permissions`,
+      { subadminId, permissions },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    if (response.data.status) {
+      setData((prevData) =>
+        prevData.map((subadmin) =>
+          subadmin.id === subadminId
+            ? { ...subadmin, permissions }
+            : subadmin,
+        ),
+      );
+      toast.success('Permissions updated successfully!', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return true;
+    } else {
+      throw new Error('Failed to update permissions');
+    }
+  } catch (error) {
+    console.error('Error updating permissions:', error);
+    setError(error.response?.data?.message || 'Failed to update permissions');
+    toast.error(
+      error.response?.data?.message || 'Failed to update permissions',
+      {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      },
+    );
+    return false;
+  }
+};
+
 // Function to toggle subadmin status
 const toggleSubadminStatus = async (
   baseUrl,
@@ -197,7 +254,6 @@ const toggleSubadminStatus = async (
         headers: { Authorization: `Bearer ${token}` },
       },
     );
-    console.log('Toggle response:', response.data);
     if (response.data.status) {
       setData((prevData) =>
         prevData.map((subadmin) =>
@@ -249,10 +305,12 @@ export default function SubadminTable() {
     email: '',
     phone: '',
   });
+  const [selectedPermissions, setSelectedPermissions] = useState([]);
   const [profilePicFile, setProfilePicFile] = useState(null);
   const [profilePicPreview, setProfilePicPreview] = useState(null);
   const [formError, setFormError] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isPermsOpen, onOpen: onPermsOpen, onClose: onPermsClose } = useDisclosure();
   const itemsPerPage = 10;
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
@@ -270,7 +328,7 @@ export default function SubadminTable() {
   const handleSearch = useCallback(
     (query) => {
       setSearchQuery(query);
-      setCurrentPage(1); // Reset to first page on search
+      setCurrentPage(1);
       if (!query) {
         setFilteredData(data);
         return;
@@ -318,6 +376,14 @@ export default function SubadminTable() {
     onOpen();
   };
 
+  // Handle opening permissions modal
+  const handlePermissionsClick = (subadmin) => {
+    setSelectedSubadmin(subadmin);
+    setSelectedPermissions(subadmin.permissions);
+    setFormError(null);
+    onPermsOpen();
+  };
+
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -330,6 +396,26 @@ export default function SubadminTable() {
     if (file) {
       setProfilePicFile(file);
       setProfilePicPreview(URL.createObjectURL(file));
+    }
+  };
+
+  // Handle permission changes
+  const handlePermissionChange = (permissions) => {
+    setSelectedPermissions(permissions);
+  };
+
+  // Handle saving permissions
+  const handleSavePermissions = async () => {
+    const success = await updateSubadminPermissions(
+      baseUrl,
+      token,
+      selectedSubadmin.id,
+      selectedPermissions,
+      setData,
+      setFormError,
+    );
+    if (success) {
+      onPermsClose();
     }
   };
 
@@ -544,6 +630,24 @@ export default function SubadminTable() {
           </Text>
         ),
       }),
+      columnHelper.accessor('permissions', {
+        id: 'permissions',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            PERMISSIONS
+          </Text>
+        ),
+        cell: (info) => (
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {info.getValue().length > 0 ? info.getValue().join(', ') : 'None'}
+          </Text>
+        ),
+      }),
       columnHelper.accessor('active', {
         id: 'active',
         header: () => (
@@ -600,18 +704,28 @@ export default function SubadminTable() {
           </Text>
         ),
         cell: (info) => (
-          <Button
-            size="sm"
-            colorScheme="teal"
-            leftIcon={<EditIcon />}
-            onClick={() => handleEditClick(info.row.original)}
-          >
-            Edit
-          </Button>
+          <HStack spacing={2}>
+            <Button
+              size="sm"
+              colorScheme="teal"
+              leftIcon={<EditIcon />}
+              onClick={() => handleEditClick(info.row.original)}
+            >
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              colorScheme="blue"
+              leftIcon={<LockIcon />}
+              onClick={() => handlePermissionsClick(info.row.original)}
+            >
+              Permissions
+            </Button>
+          </HStack>
         ),
       }),
     ],
-    [textColor, handleToggleStatus, handleEditClick, startIndex],
+    [textColor, handleToggleStatus, handleEditClick, handlePermissionsClick, startIndex],
   );
 
   const table = useReactTable({
@@ -857,6 +971,49 @@ export default function SubadminTable() {
               Save
             </Button>
             <Button variant="light" onClick={onClose}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      <Modal isOpen={isPermsOpen} onClose={onPermsClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Manage Permissions</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {formError && (
+              <Alert status="error" mb={4}>
+                <AlertIcon />
+                {formError}
+              </Alert>
+            )}
+            <FormControl>
+              <FormLabel>Current Permissions</FormLabel>
+              <Text mb={4}>
+                {selectedSubadmin?.permissions.length > 0
+                  ? selectedSubadmin.permissions.join(', ')
+                  : 'None'}
+              </Text>
+              <FormLabel>Select Permissions</FormLabel>
+              <CheckboxGroup
+                colorScheme="teal"
+                value={selectedPermissions}
+                onChange={handlePermissionChange}
+              >
+                {ALLOWED_PERMISSIONS.map((perm) => (
+                  <Checkbox key={perm} value={perm} mb={2}>
+                    {perm}
+                  </Checkbox>
+                ))}
+              </CheckboxGroup>
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="teal" mr={3} onClick={handleSavePermissions}>
+              Save
+            </Button>
+            <Button variant="light" onClick={onPermsClose}>
               Cancel
             </Button>
           </ModalFooter>

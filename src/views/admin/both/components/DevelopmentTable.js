@@ -34,6 +34,8 @@ import {
   FormLabel,
   Textarea,
   Select,
+  List,
+  ListItem,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -71,9 +73,12 @@ const useFetchUsers = (baseUrl, token, navigate) => {
         if (!baseUrl || !token) {
           throw new Error('Missing API URL or authentication token');
         }
-        const response = await axios.get(`${baseUrl}api/admin/getAllBoth`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          `${baseUrl}api/admin/getAllBoth`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         if (!response.data?.users) {
           throw new Error('Invalid API response: No users found');
         }
@@ -100,6 +105,9 @@ const useFetchUsers = (baseUrl, token, navigate) => {
             createdBy: user.createdBy?.full_name || 'Self-Registered',
             verified: user.verified ?? false,
             active: user.active ?? true,
+            inactivationInfo: user.inactivationInfo || null,
+            categoryName: user.category_id?.name || 'N/A',
+            subcategoryNames: user.subcategory_ids?.map((sub) => sub.name || 'N/A') || [],
             userDetails: user,
           })),
         );
@@ -148,9 +156,7 @@ const useFetchDisputes = (baseUrl, token, userId) => {
         setDisputes(response.data.disputes || []);
       } catch (error) {
         console.error('Error fetching disputes:', error);
-        setError(
-          error.response?.data?.message || 'Failed to load disputes',
-        );
+        setError(error.response?.data?.message || 'Failed to load disputes');
       } finally {
         setLoading(false);
       }
@@ -277,8 +283,11 @@ export default function ComplexTable() {
   const [toggleLoading, setToggleLoading] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
   const [expandedLocations, setExpandedLocations] = useState({});
+  const [expandedCategories, setExpandedCategories] = useState({});
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+  const [isInactivationModalOpen, setIsInactivationModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedInactivationInfo, setSelectedInactivationInfo] = useState(null);
   const [deactivateReason, setDeactivateReason] = useState('');
   const [disputeId, setDisputeId] = useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -294,11 +303,11 @@ export default function ComplexTable() {
     token,
     navigate,
   );
-  const { disputes, loading: disputesLoading, error: disputesError } = useFetchDisputes(
-    baseUrl,
-    token,
-    selectedUserId,
-  );
+  const {
+    disputes,
+    loading: disputesLoading,
+    error: disputesError,
+  } = useFetchDisputes(baseUrl, token, selectedUserId);
 
   // Handle search filtering
   const handleSearch = useCallback(
@@ -316,7 +325,9 @@ export default function ComplexTable() {
           item.location.toLowerCase().includes(lowerQuery) ||
           item.mobile.toLowerCase().includes(lowerQuery) ||
           item.referral_code.toLowerCase().includes(lowerQuery) ||
-          item.createdBy.toLowerCase().includes(lowerQuery),
+          item.createdBy.toLowerCase().includes(lowerQuery) ||
+          item.uniqueId.toLowerCase().includes(lowerQuery) ||
+          item.categoryName.toLowerCase().includes(lowerQuery),
       );
       setFilteredData(filtered);
     },
@@ -328,9 +339,17 @@ export default function ComplexTable() {
     setFilteredData(data);
   }, [data]);
 
-  // Toggle handler for read more/less
+  // Toggle handler for read more/less for location
   const handleToggleLocation = useCallback((userId) => {
     setExpandedLocations((prev) => ({
+      ...prev,
+      [userId]: !prev[userId],
+    }));
+  }, []);
+
+  // Toggle handler for category subcategories
+  const handleToggleCategory = useCallback((userId) => {
+    setExpandedCategories((prev) => ({
       ...prev,
       [userId]: !prev[userId],
     }));
@@ -350,17 +369,27 @@ export default function ComplexTable() {
     setDisputeId('');
   }, []);
 
+  const openInactivationModal = useCallback((userId, inactivationInfo) => {
+    setSelectedUserId(userId);
+    setSelectedInactivationInfo(inactivationInfo);
+    setIsInactivationModalOpen(true);
+  }, []);
+
+  const closeInactivationModal = useCallback(() => {
+    setIsInactivationModalOpen(false);
+    setSelectedUserId(null);
+    setSelectedInactivationInfo(null);
+  }, []);
+
   // Toggle handler for user status
   const handleToggleStatus = useCallback(
     async (userId, currentActive) => {
       if (toggleLoading[userId]) return;
       setToggleLoading((prev) => ({ ...prev, [userId]: true }));
-      
+
       if (currentActive) {
-        // Deactivating user - open modal to collect reason and disputeId
         openDeactivateModal(userId);
       } else {
-        // Activating user - no additional info needed
         const success = await toggleUserStatus(
           baseUrl,
           token,
@@ -379,8 +408,8 @@ export default function ComplexTable() {
 
   // Handle deactivation submission
   const handleDeactivateSubmit = useCallback(async () => {
-    if (!deactivateReason || !disputeId) {
-      toast.error('Reason and Dispute ID are required', {
+    if (!deactivateReason) {
+      toast.error('Reason for deactivation is required', {
         position: 'top-right',
         autoClose: 3000,
         hideProgressBar: false,
@@ -403,11 +432,20 @@ export default function ComplexTable() {
       disputeId,
     );
     setToggleLoading((prev) => ({ ...prev, [selectedUserId]: false }));
-    
+
     if (success) {
       closeDeactivateModal();
     }
-  }, [baseUrl, token, selectedUserId, deactivateReason, disputeId, setData, setError, closeDeactivateModal]);
+  }, [
+    baseUrl,
+    token,
+    selectedUserId,
+    deactivateReason,
+    disputeId,
+    setData,
+    setError,
+    closeDeactivateModal,
+  ]);
 
   const handleToggleVerified = useCallback(
     async (userId, currentVerified) => {
@@ -476,7 +514,7 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
+          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
             {startIndex + info.row.index + 1}
           </Text>
         ),
@@ -520,7 +558,7 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Flex align="center">
+          <Flex align="center" justify="center">
             {info.getValue() !== 'N/A' ? (
               <img
                 src={info.getValue()}
@@ -550,7 +588,7 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
+          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
             {info.getValue()}
           </Text>
         ),
@@ -568,10 +606,80 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
+          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
             {info.getValue()}
           </Text>
         ),
+      }),
+      columnHelper.accessor('categoryName', {
+        id: 'category',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            CATEGORY
+          </Text>
+        ),
+        cell: (info) => {
+          const categoryName = info.getValue();
+          const userId = info.row.original.id;
+          const subcategoryNames = info.row.original.subcategoryNames;
+          const isExpanded = expandedCategories[userId];
+
+          return (
+            <Flex
+              align="center"
+              alignItems="center"
+              whiteSpace="normal"
+              maxWidth="200px"
+              direction="column"
+            >
+              <Flex align="center" w="100%">
+                <Text
+                  color={textColor}
+                  fontSize="sm"
+                  fontWeight="700"
+                  mr={2}
+                  noOfLines={1}
+                >
+                  {categoryName}
+                </Text>
+                {subcategoryNames.length > 0 && (
+                  <Button
+                    size="xs"
+                    variant="link"
+                    colorScheme="teal"
+                    ml={2}
+                    alignSelf="center"
+                    onClick={() => handleToggleCategory(userId)}
+                  >
+                    {isExpanded ? 'Hide Subcategories' : 'Show Subcategories'}
+                  </Button>
+                )}
+              </Flex>
+              {isExpanded && (
+                <Box mt={2} w="100%">
+                  {subcategoryNames.length > 0 ? (
+                    <List spacing={1}>
+                      {subcategoryNames.map((subcategory, index) => (
+                        <ListItem key={index} fontSize="sm" color={textColor}>
+                          - {subcategory}
+                        </ListItem>
+                      ))}
+                    </List>
+                  ) : (
+                    <Text fontSize="sm" color={textColor}>
+                      No subcategories available
+                    </Text>
+                  )}
+                </Box>
+              )}
+            </Flex>
+          );
+        },
       }),
       columnHelper.accessor('location', {
         id: 'location',
@@ -639,7 +747,7 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
+          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
             {info.getValue()}
           </Text>
         ),
@@ -657,7 +765,7 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
+          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
             {info.getValue()}
           </Text>
         ),
@@ -675,7 +783,7 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
+          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
             {info.getValue()}
           </Text>
         ),
@@ -693,14 +801,32 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Switch
-            isChecked={info.getValue()}
-            onChange={() =>
-              handleToggleStatus(info.row.original.id, info.getValue())
-            }
-            colorScheme="teal"
-            isDisabled={toggleLoading[info.row.original.id]}
-          />
+          <Flex justify="center" align="center" gap={2} whiteSpace="nowrap">
+            <Switch
+              isChecked={info.getValue()}
+              onChange={() =>
+                handleToggleStatus(info.row.original.id, info.getValue())
+              }
+              colorScheme="teal"
+              isDisabled={toggleLoading[info.row.original.id]}
+            />
+            {!info.getValue() && info.row.original.inactivationInfo && (
+              <Button
+                size="xs"
+                colorScheme="red"
+                variant="outline"
+                onClick={() =>
+                  openInactivationModal(
+                    info.row.original.id,
+                    info.row.original.inactivationInfo,
+                  )
+                }
+                _hover={{ bg: 'red.600', color: 'white' }}
+              >
+                View
+              </Button>
+            )}
+          </Flex>
         ),
       }),
       columnHelper.accessor('verified', {
@@ -743,6 +869,7 @@ export default function ComplexTable() {
             size="sm"
             colorScheme="teal"
             onClick={() => navigate(`/admin/details/${info.row.original.id}`)}
+            whiteSpace="nowrap"
           >
             View Details
           </Button>
@@ -757,6 +884,9 @@ export default function ComplexTable() {
       handleViewDetails,
       expandedLocations,
       handleToggleLocation,
+      expandedCategories,
+      handleToggleCategory,
+      openInactivationModal,
       startIndex,
     ],
   );
@@ -797,7 +927,7 @@ export default function ComplexTable() {
       flexDirection="column"
       w="100%"
       px="0px"
-      overflowX={{ sm: 'scroll', lg: 'hidden' }}
+      overflowX="auto"
     >
       <Flex
         px="25px"
@@ -822,7 +952,7 @@ export default function ComplexTable() {
             <Icon as={SearchIcon} color="gray.400" />
           </InputLeftElement>
           <Input
-            placeholder="Search by name, location, mobile, referral, or creator"
+            placeholder="Search by name, location, mobile, referral, creator, or category"
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             borderRadius="12px"
@@ -834,8 +964,8 @@ export default function ComplexTable() {
           />
         </InputGroup>
       </Flex>
-      <Box>
-        <Table variant="simple" color="gray.500" mb="24px" mt="12px">
+      <Box overflowX="auto">
+        <Table variant="simple" color="gray.500" mb="24px" mt="12px" minWidth="1200px">
           <Thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <Tr key={headerGroup.id}>
@@ -885,8 +1015,10 @@ export default function ComplexTable() {
                   <Td
                     key={cell.id}
                     fontSize={{ sm: '14px' }}
-                    minW={{ sm: '150px', md: '200px', lg: 'auto' }}
+                    minW={{ sm: '100px', md: '150px', lg: '150px' }}
                     borderColor="transparent"
+                    py="8px"
+                    px="10px"
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </Td>
@@ -903,8 +1035,8 @@ export default function ComplexTable() {
         py="10px"
       >
         <Text fontSize="sm" color={textColor}>
-          Showing {totalItems === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
-          {totalItems} entries
+          Showing {totalItems === 0 ? 0 : startIndex + 1} to{' '}
+          {Math.min(endIndex, totalItems)} of {totalItems} service providers
         </Text>
         <HStack>
           <Button
@@ -993,11 +1125,11 @@ export default function ComplexTable() {
                 </Text>
                 <Text>
                   <strong>Created At:</strong>{' '}
-                  {new Date(selectedUser.createdAt).toLocaleString()}
+                  {new Date(selectedUser.createdAt).toLocaleDateString('en-IN')}
                 </Text>
                 <Text>
                   <strong>Updated At:</strong>{' '}
-                  {new Date(selectedUser.updatedAt).toLocaleString()}
+                  {new Date(selectedUser.updatedAt).toLocaleDateString('en-IN')}
                 </Text>
                 {selectedUser.hiswork && selectedUser.hiswork.length > 0 && (
                   <>
@@ -1063,7 +1195,11 @@ export default function ComplexTable() {
         </ModalContent>
       </Modal>
       {/* Modal for deactivation reason */}
-      <Modal isOpen={isDeactivateModalOpen} onClose={closeDeactivateModal} isCentered>
+      <Modal
+        isOpen={isDeactivateModalOpen}
+        onClose={closeDeactivateModal}
+        isCentered
+      >
         <ModalOverlay bg="blackAlpha.600" />
         <ModalContent
           maxW={{ base: '90%', md: '500px' }}
@@ -1094,7 +1230,9 @@ export default function ComplexTable() {
             ) : (
               <>
                 <FormControl isRequired mb={4}>
-                  <FormLabel color={textColor}>Reason for Deactivation</FormLabel>
+                  <FormLabel color={textColor}>
+                    Reason for Deactivation
+                  </FormLabel>
                   <Textarea
                     value={deactivateReason}
                     onChange={(e) => setDeactivateReason(e.target.value)}
@@ -1103,12 +1241,16 @@ export default function ComplexTable() {
                     borderRadius="8px"
                   />
                 </FormControl>
-                <FormControl isRequired>
-                  <FormLabel color={textColor}>Dispute ID</FormLabel>
+                <FormControl>
+                  <FormLabel color={textColor}>Dispute ID (Optional)</FormLabel>
                   <Select
                     value={disputeId}
                     onChange={(e) => setDisputeId(e.target.value)}
-                    placeholder={disputes.length === 0 ? "No disputes available" : "Select dispute ID"}
+                    placeholder={
+                      disputes.length === 0
+                        ? 'No disputes available'
+                        : 'Select dispute ID (optional)'
+                    }
                     bg={useColorModeValue('gray.100', 'gray.700')}
                     borderRadius="8px"
                     isDisabled={disputes.length === 0}
@@ -1139,10 +1281,90 @@ export default function ComplexTable() {
               borderRadius="12px"
               size="sm"
               isLoading={toggleLoading[selectedUserId]}
-              isDisabled={disputesLoading || disputesError || disputes.length === 0}
+              isDisabled={disputesLoading || disputesError}
               _hover={{ bg: 'red.600' }}
             >
               Deactivate
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      {/* Modal for inactivation details */}
+      <Modal
+        isOpen={isInactivationModalOpen}
+        onClose={closeInactivationModal}
+        isCentered
+      >
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '600px' }}
+          borderRadius="16px"
+          bg={useColorModeValue('white', 'gray.800')}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            Inactivation Details
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            {selectedInactivationInfo && (
+              <Box
+                p={4}
+                border="1px"
+                borderColor={borderColor}
+                borderRadius="8px"
+              >
+                <Text fontSize="md" fontWeight="600" color={textColor} mb={2}>
+                  Inactivation Details
+                </Text>
+                <Text fontSize="sm" color={textColor}>
+                  <strong>Inactivated By:</strong>{' '}
+                  {selectedInactivationInfo.inactivatedBy?.full_name || 'N/A'} (
+                  {selectedInactivationInfo.inactivatedBy?.email || 'N/A'})
+                </Text>
+                <Text fontSize="sm" color={textColor} mt={1}>
+                  <strong>Reason:</strong>{' '}
+                  {selectedInactivationInfo.reason || 'N/A'}
+                </Text>
+                <Text fontSize="sm" color={textColor} mt={1}>
+                  <strong>Dispute ID:</strong>{' '}
+                  {selectedInactivationInfo.disputeId?.unique_id || 'N/A'} (
+                  {selectedInactivationInfo.disputeId?.status || 'N/A'})
+                </Text>
+                <Text fontSize="sm" color={textColor} mt={1}>
+                  <strong>Dispute Created At:</strong>{' '}
+                  {selectedInactivationInfo.disputeId?.createdAt
+                    ? new Date(
+                        selectedInactivationInfo.disputeId.createdAt,
+                      ).toLocaleDateString('en-IN')
+                    : 'N/A'}
+                </Text>
+                <Text fontSize="sm" color={textColor} mt={1}>
+                  <strong>Inactivated At:</strong>{' '}
+                  {selectedInactivationInfo.inactivatedAt
+                    ? new Date(
+                        selectedInactivationInfo.inactivatedAt,
+                      ).toLocaleDateString('en-IN')
+                    : 'N/A'}
+                </Text>
+              </Box>
+            )}
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="teal"
+              onClick={closeInactivationModal}
+              borderRadius="12px"
+              size="sm"
+              _hover={{ bg: 'teal.600' }}
+            >
+              Close
             </Button>
           </ModalFooter>
         </ModalContent>
