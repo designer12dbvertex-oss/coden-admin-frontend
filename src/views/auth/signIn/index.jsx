@@ -176,13 +176,14 @@ function SignIn() {
 							<Input
 								isRequired={true}
 								fontSize="sm"
-								placeholder="Min. 8 characters"
+								placeholder="Min. 6 characters"
 								mb="24px"
 								size="lg"
 								type={show ? 'text' : 'password'}
 								variant="auth"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && handleSignIn()} 
 								isDisabled={isLoading}
 							/>
 							<InputRightElement display="flex" alignItems="center" mt="4px">

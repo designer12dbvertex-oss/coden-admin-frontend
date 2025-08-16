@@ -36,6 +36,7 @@ export default function ServiceProviderDetails() {
     user: null,
     workers: [],
     workerCount: 0,
+    payments: null,
   });
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -421,7 +422,7 @@ export default function ServiceProviderDetails() {
                       </Text>
                       <Text color={textColor}>{data.user?.skill || 'N/A'}</Text>
                     </Flex>
-										 <Flex align="start" gap="4">
+                    <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
                         Category:
                       </Text>
@@ -647,6 +648,198 @@ export default function ServiceProviderDetails() {
                       {data.user?.bankdetails?.upiId || 'N/A'}
                     </Text>
                   </Flex>
+                </VStack>
+              </ChakraCard>
+
+              {/* Payments Section */}
+              <ChakraCard
+                p="15px"
+                borderRadius="lg"
+                border="1px solid"
+                borderColor={borderColor}
+                bg={cardBg}
+              >
+                <VStack spacing={4} align="stretch">
+                  <Divider />
+                  <Text fontWeight="bold" fontSize="lg" color={textColor}>
+                    Payment Details
+                  </Text>
+                  {data.payments ? (
+                    <Box>
+                      <Flex justify="space-between" gap="4">
+                        {/* Direct Orders Column */}
+                        <VStack flex="1" align="stretch" spacing={2}>
+                          <Text fontWeight="semibold" color={textColor}>
+                            Direct Orders
+                          </Text>
+                          <Text color={textColor}>
+                            Total: ₹{data.payments.direct.total || 0}
+                          </Text>
+                          <Box>
+                            <Text fontWeight="medium" color={textColor}>
+                              Monthly:
+                            </Text>
+                            {Object.keys(data.payments.direct.monthly).length > 0 ? (
+                              Object.entries(data.payments.direct.monthly).map(([month, amount]) => (
+                                <Text key={month} color={textColor} fontSize="sm">
+                                  {month}: ₹{amount}
+                                </Text>
+                              ))
+                            ) : (
+                              <Text color={textColor} fontSize="sm">
+                                N/A
+                              </Text>
+                            )}
+                          </Box>
+                          <Box>
+                            <Text fontWeight="medium" color={textColor}>
+                              Yearly:
+                            </Text>
+                            {Object.keys(data.payments.direct.yearly).length > 0 ? (
+                              Object.entries(data.payments.direct.yearly).map(([year, amount]) => (
+                                <Text key={year} color={textColor} fontSize="sm">
+                                  {year}: ₹{amount}
+                                </Text>
+                              ))
+                            ) : (
+                              <Text color={textColor} fontSize="sm">
+                                N/A
+                              </Text>
+                            )}
+                          </Box>
+                        </VStack>
+
+                        {/* Bidding Orders Column */}
+                        <VStack flex="1" align="stretch" spacing={2}>
+                          <Text fontWeight="semibold" color={textColor}>
+                            Bidding Orders
+                          </Text>
+                          <Text color={textColor}>
+                            Total: ₹{data.payments.bidding.total || 0}
+                          </Text>
+                          <Box>
+                            <Text fontWeight="medium" color={textColor}>
+                              Monthly:
+                            </Text>
+                            {Object.keys(data.payments.bidding.monthly).length > 0 ? (
+                              Object.entries(data.payments.bidding.monthly).map(([month, amount]) => (
+                                <Text key={month} color={textColor} fontSize="sm">
+                                  {month}: ₹{amount}
+                                </Text>
+                              ))
+                            ) : (
+                              <Text color={textColor} fontSize="sm">
+                                N/A
+                              </Text>
+                            )}
+                          </Box>
+                          <Box>
+                            <Text fontWeight="medium" color={textColor}>
+                              Yearly:
+                            </Text>
+                            {Object.keys(data.payments.bidding.yearly).length > 0 ? (
+                              Object.entries(data.payments.bidding.yearly).map(([year, amount]) => (
+                                <Text key={year} color={textColor} fontSize="sm">
+                                  {year}: ₹{amount}
+                                </Text>
+                              ))
+                            ) : (
+                              <Text color={textColor} fontSize="sm">
+                                N/A
+                              </Text>
+                            )}
+                          </Box>
+                        </VStack>
+
+                        {/* Emergency Orders Column */}
+                        <VStack flex="1" align="stretch" spacing={2}>
+                          <Text fontWeight="semibold" color={textColor}>
+                            Emergency Orders
+                          </Text>
+                          <Text color={textColor}>
+                            Total: ₹{data.payments.emergency.total || 0}
+                          </Text>
+                          <Box>
+                            <Text fontWeight="medium" color={textColor}>
+                              Monthly:
+                            </Text>
+                            {Object.keys(data.payments.emergency.monthly).length > 0 ? (
+                              Object.entries(data.payments.emergency.monthly).map(([month, amount]) => (
+                                <Text key={month} color={textColor} fontSize="sm">
+                                  {month}: ₹{amount}
+                                </Text>
+                              ))
+                            ) : (
+                              <Text color={textColor} fontSize="sm">
+                                N/A
+                              </Text>
+                            )}
+                          </Box>
+                          <Box>
+                            <Text fontWeight="medium" color={textColor}>
+                              Yearly:
+                            </Text>
+                            {Object.keys(data.payments.emergency.yearly).length > 0 ? (
+                              Object.entries(data.payments.emergency.yearly).map(([year, amount]) => (
+                                <Text key={year} color={textColor} fontSize="sm">
+                                  {year}: ₹{amount}
+                                </Text>
+                              ))
+                            ) : (
+                              <Text color={textColor} fontSize="sm">
+                                N/A
+                              </Text>
+                            )}
+                          </Box>
+                        </VStack>
+                      </Flex>
+                      {/* Overall Totals */}
+                      <Box mt={4}>
+                        <Text fontWeight="semibold" color={textColor} mb={2}>
+                          Overall Totals
+                        </Text>
+                        <Text color={textColor}>
+                          Total: ₹{data.payments.totals.overall || 0}
+                        </Text>
+                        <Box>
+                          <Text fontWeight="medium" color={textColor}>
+                            Monthly:
+                          </Text>
+                          {Object.keys(data.payments.totals.monthly).length > 0 ? (
+                            Object.entries(data.payments.totals.monthly).map(([month, amount]) => (
+                              <Text key={month} color={textColor} fontSize="sm">
+                                {month}: ₹{amount}
+                              </Text>
+                            ))
+                          ) : (
+                            <Text color={textColor} fontSize="sm">
+                              N/A
+                            </Text>
+                          )}
+                        </Box>
+                        <Box>
+                          <Text fontWeight="medium" color={textColor}>
+                            Yearly:
+                          </Text>
+                          {Object.keys(data.payments.totals.yearly).length > 0 ? (
+                            Object.entries(data.payments.totals.yearly).map(([year, amount]) => (
+                              <Text key={year} color={textColor} fontSize="sm">
+                                {year}: ₹{amount}
+                              </Text>
+                            ))
+                          ) : (
+                            <Text color={textColor} fontSize="sm">
+                              N/A
+                            </Text>
+                          )}
+                        </Box>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Text color={textColor} mt="2">
+                      No payment details available
+                    </Text>
+                  )}
                 </VStack>
               </ChakraCard>
 
