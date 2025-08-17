@@ -338,8 +338,8 @@ export default function ComplexTable() {
 
   // Handle deactivation submission
   const handleDeactivateSubmit = useCallback(async () => {
-    if (!deactivateReason || !disputeId) {
-      toast.error('Reason and Dispute ID are required', {
+    if (!deactivateReason) {
+      toast.error('Reason is required', {
         position: 'top-right',
         autoClose: 3000,
         hideProgressBar: false,
@@ -1125,7 +1125,7 @@ export default function ComplexTable() {
               size="sm"
               isLoading={toggleLoading[selectedUserId]}
               isDisabled={
-                disputesLoading || disputesError || disputes.length === 0
+                disputesLoading || disputesError 
               }
               _hover={{ bg: 'red.600' }}
             >

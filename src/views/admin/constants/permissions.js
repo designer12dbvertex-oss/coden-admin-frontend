@@ -17,5 +17,6 @@ export const ALLOWED_PERMISSIONS = [
   "email-us",
   "add-aboutus",
 	"add-terms-conditions",
-	"add-privacypolicy",	
+	"add-privacypolicy",
+	"chat_monitor",	
 ];

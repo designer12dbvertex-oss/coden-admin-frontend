@@ -764,7 +764,7 @@ export default function SubadminTable() {
       flexDirection="column"
       w="100%"
       px="0px"
-      overflowX={{ sm: 'scroll', lg: 'hidden' }}
+      overflowX={{ base: 'hidden', lg: 'auto' }} // Ensure scroll on large screens
     >
       <Flex
         px="25px"
@@ -808,8 +808,17 @@ export default function SubadminTable() {
           </Button>
         </Flex>
       </Flex>
-      <Box>
-        <Table variant="simple" color="gray.500" mb="24px" mt="12px">
+      <Box
+        overflowX="auto" // Enable horizontal scrolling for the table
+        maxWidth="100%" // Ensure it doesn't exceed the card width
+      >
+        <Table
+          variant="simple"
+          color="gray.500"
+          mb="24px"
+          mt="12px"
+          whiteSpace="nowrap" // Prevent text wrapping
+        >
           <Thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <Tr key={headerGroup.id}>
@@ -828,6 +837,7 @@ export default function SubadminTable() {
                           : 'descending'
                         : 'none'
                     }
+                    minW={{ base: '100px', md: '150px' }} // Minimum width for responsiveness
                   >
                     <Flex
                       justifyContent="space-between"
@@ -859,8 +869,12 @@ export default function SubadminTable() {
                   <Td
                     key={cell.id}
                     fontSize={{ sm: '14px' }}
-                    minW={{ sm: '150px', md: '200px', lg: 'auto' }}
+                    minW={{ base: '100px', md: '150px' }} // Minimum width for cells
+                    maxW={{ base: '200px', md: '300px' }} // Maximum width to control overflow
                     borderColor="transparent"
+                    whiteSpace="nowrap" // Prevent text wrapping
+                    overflow="hidden"
+                    textOverflow="ellipsis" // Add ellipsis for long text
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </Td>
@@ -875,6 +889,8 @@ export default function SubadminTable() {
         alignItems="center"
         px="25px"
         py="10px"
+        direction={{ base: 'column', md: 'row' }}
+        gap={{ base: '10px', md: '0' }}
       >
         <Text fontSize="sm" color={textColor}>
           Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}

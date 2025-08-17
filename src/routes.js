@@ -13,6 +13,7 @@ import {
 	MdEmail,
 	MdPhone,
 	MdReportProblem,
+	MdChat,
 } from 'react-icons/md';
 
 // Admin Imports
@@ -39,11 +40,13 @@ import DirectPaymentRequest from 'views/admin/directPaymentRequest';
 import Dispute from 'views/admin/dispute';
 import AllServiceProvider from 'views/admin/allServiceprovider';
 import UnverifiedServiceProvider from 'views/admin/unverifiedServiceProvider';
+import ChatMonitor from 'views/admin/ChatMonitor';
+import TotalRevenue from 'views/admin/TotalRevenue';
 // import OnlineOrders from 'views/admin/onlineOrders';
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
-import { FaFileContract, FaGavel, FaMoneyBillWave,} from 'react-icons/fa';
+import { FaChartLine, FaFileContract, FaGavel, FaMoneyBillWave,} from 'react-icons/fa';
 
 const routes = [
   {
@@ -116,6 +119,13 @@ const routes = [
     path: '/platform_fee',
     component: <PlatformFee />,
   },
+		{
+    name: 'Chat Monitor',
+    layout: '/admin',
+    icon: <Icon as={MdChat} width="20px" height="20px" color="inherit" />,
+    path: '/chat_monitor',
+    component: <ChatMonitor />,
+  },
 	 {
     name: 'Biding Hiring',
     layout: '/admin',
@@ -143,6 +153,13 @@ const routes = [
     icon: <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />,
     path: '/direct_payment_request',
     component: <DirectPaymentRequest />,
+  },
+	{
+    name: 'Total Revenue',
+    layout: '/admin',
+    icon: <Icon as={FaChartLine} width="20px" height="20px" color="inherit" />,
+    path: '/revenue',
+    component: <TotalRevenue />,
   },
 	 {
     name: 'All Dispute',
