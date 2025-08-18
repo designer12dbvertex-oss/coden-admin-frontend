@@ -9,16 +9,18 @@ import {
   Stack,
   Select,
   useColorModeValue,
-  useToast,
-	CardHeader,
+  CardHeader,
+  Flex,
+  Heading,
 } from '@chakra-ui/react';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -28,19 +30,17 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // Register ChartJS components
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-
-
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
 export default function PaymentsDashboard() {
   const [data, setData] = React.useState({});
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [selectedYear, setSelectedYear] = React.useState('');
   const [selectedMonth, setSelectedMonth] = React.useState('');
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const cardBg = useColorModeValue('white', 'gray.700');
   const navigate = useNavigate();
-  const toast = useToast();
 
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
@@ -110,38 +110,66 @@ export default function PaymentsDashboard() {
 	{ key: 'totals', label: 'Totals' },
   ];
 
-  const getChartData = (paymentData, label) => {
-	// Use available months as x-axis labels
-	const months = Object.keys(paymentData.monthly || {}).sort();
-	const labels = ['Initial', ...months, 'Final'];
-	const monthlyValues = months.map(month => paymentData.monthly[month] || 0);
-	const selectedValue = selectedMonth ? paymentData.monthly?.[selectedMonth] || 0 : paymentData.yearly?.['2025'] || 0;
+  // Extract unique years and available months from totals.monthly keys
+  const allMonthKeys = Object.keys(data.totals?.monthly || {});
+  const years = [...new Set(allMonthKeys.map((key) => key.split('-')[0]))].sort();
+  const availableMonths = selectedYear
+	? [...new Set(allMonthKeys.filter((key) => key.startsWith(`${selectedYear}-`)).map((key) => key.split('-')[1]))].sort()
+	: [];
 
-	// Create interpolated data for Released, Release Request, and Pending
-	const releasedData = [0, ...monthlyValues.map(() => paymentData.released / months.length).slice(0, -1), paymentData.released || 0];
-	const releaseRequestData = [0, ...monthlyValues.map(() => paymentData.release_request / months.length).slice(0, -1), paymentData.release_request || 0];
-	const pendingData = [0, ...monthlyValues.map(() => paymentData.pending / months.length).slice(0, -1), paymentData.pending || 0];
+  // Filtered months based on selection
+  const getFilteredMonths = () => {
+	if (selectedMonth && selectedYear) {
+	  return [`${selectedYear}-${selectedMonth}`];
+	}
+	if (selectedYear) {
+	  return allMonthKeys.filter((key) => key.startsWith(`${selectedYear}-`)).sort();
+	}
+	return allMonthKeys.sort();
+  };
+
+  const filteredMonths = getFilteredMonths();
+
+  // Handle year change and reset month if necessary
+  const handleYearChange = (e) => {
+	const newYear = e.target.value;
+	setSelectedYear(newYear);
+	if (newYear && availableMonths.length > 0 && !availableMonths.includes(selectedMonth)) {
+	  setSelectedMonth('');
+	}
+  };
+
+  const getChartData = (paymentData) => {
+	const total = paymentData.total || 1; // Avoid division by zero
+	const labels = filteredMonths;
+	const getProportionedData = (key) => {
+	  const totalValue = paymentData[key] || 0;
+	  return labels.map((month) => {
+		const monthlyTotal = paymentData.monthly?.[month] || 0;
+		return monthlyTotal > 0 ? (totalValue / total) * monthlyTotal : 0;
+	  });
+	};
 
 	return {
 	  labels,
 	  datasets: [
 		{
 		  label: 'Released',
-		  data: releasedData,
+		  data: getProportionedData('released'),
 		  borderColor: 'rgb(75, 192, 192)',
 		  backgroundColor: 'rgba(75, 192, 192, 0.5)',
 		  tension: 0.1,
 		},
 		{
 		  label: 'Release Request',
-		  data: releaseRequestData,
+		  data: getProportionedData('release_request'),
 		  borderColor: 'rgb(255, 99, 132)',
 		  backgroundColor: 'rgba(255, 99, 132, 0.5)',
 		  tension: 0.1,
 		},
 		{
 		  label: 'Pending',
-		  data: pendingData,
+		  data: getProportionedData('pending'),
 		  borderColor: 'rgb(54, 162, 235)',
 		  backgroundColor: 'rgba(54, 162, 235, 0.5)',
 		  tension: 0.1,
@@ -151,48 +179,90 @@ export default function PaymentsDashboard() {
   };
 
   return (
-	<Box p="20px" bg="white" minHeight="100vh">
+	<Box p="20px" bg="white" minHeight="100vh" mt="80px">
 	  <Card bg={cardBg} p="20px" borderRadius="20px" boxShadow="lg" mb="30px">
-		<CardHeader title="Order: Admin Payments Overview" />
+		<CardHeader>
+		  <Heading size="xl">Admin Payments Overview</Heading>
+		</CardHeader>
 		<CardBody>
-		  <Select
-			mt="20px"
-			value={selectedMonth}
-			onChange={(e) => setSelectedMonth(e.target.value)}
-			placeholder="Monthly Breakdown ▼"
-			borderRadius="8px"
-			borderColor="gray.300"
-			_focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
-		  >
-			{Object.keys(data.totals?.monthly || {}).map((month) => (
-			  <option key={month} value={month}>
-				{month}
-			  </option>
-			))}
-		  </Select>
+		  <Stack direction={{ base: 'column', md: 'row' }} spacing="4">
+			<Select
+			  value={selectedYear}
+			  onChange={handleYearChange}
+			  placeholder="Select Year ▼"
+			  borderRadius="8px"
+			  borderColor="gray.300"
+			  _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+			>
+			  <option value="">All Years</option>
+			  {years.map((year) => (
+				<option key={year} value={year}>
+				  {year}
+				</option>
+			  ))}
+			</Select>
+			<Select
+			  value={selectedMonth}
+			  onChange={(e) => setSelectedMonth(e.target.value)}
+			  placeholder="Select Month ▼"
+			  borderRadius="8px"
+			  borderColor="gray.300"
+			  _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+			  isDisabled={!selectedYear}
+			>
+			  <option value="">All Months</option>
+			  {availableMonths.map((month) => (
+				<option key={month} value={month}>
+				  {month}
+				</option>
+			  ))}
+			</Select>
+		  </Stack>
 		</CardBody>
 	  </Card>
 
 	  <Stack spacing="20px">
 		{paymentTypes.map(({ key, label }) => {
 		  const payment = data[key] || {};
+		  const filteredMonths = getFilteredMonths();
+		  const isSingleMonth = filteredMonths.length === 1;
+
+		  const periodReleased = filteredMonths.reduce((acc, m) => acc + getProportionedDataForMonth(payment, m, 'released'), 0);
+		  const periodReleaseRequest = filteredMonths.reduce((acc, m) => acc + getProportionedDataForMonth(payment, m, 'release_request'), 0);
+		  const periodPending = filteredMonths.reduce((acc, m) => acc + getProportionedDataForMonth(payment, m, 'pending'), 0);
+		  const periodTotal = filteredMonths.reduce((acc, m) => acc + (payment.monthly?.[m] || 0), 0);
+
+		  const periodType = selectedMonth
+			? 'Monthly'
+			: selectedYear
+			? 'Yearly'
+			: 'Overall';
+
+		  const periodLabel = selectedMonth
+			? ` (${selectedYear}-${selectedMonth})`
+			: selectedYear
+			? ` (${selectedYear})`
+			: '';
+
 		  const chartOptions = {
 			responsive: true,
 			plugins: {
 			  legend: { position: 'top' },
 			  title: {
 				display: true,
-				text: `${paymentTypes.find(p => p.key === key)?.label} Payments`,
+				text: `${label} Payments${periodLabel}`,
 				font: { size: 18 },
 			  },
 			},
 			scales: {
 			  y: {
 				beginAtZero: true,
-				ticks: { callback: value => `₹${value.toLocaleString()}` },
+				ticks: { callback: (value) => `₹${value.toLocaleString()}` },
 			  },
 			},
 		  };
+
+		  const ChartComponent = isSingleMonth ? Bar : Line;
 
 		  return (
 			<Card
@@ -202,11 +272,36 @@ export default function PaymentsDashboard() {
 			  boxShadow="lg"
 			  p="20px"
 			>
-			  <CardHeader title={`${label} Payments`} />
+			  <CardHeader>
+				<Heading size="md">{label} Payments</Heading>
+			  </CardHeader>
 			  <CardBody>
-				<Box h="400px">
-				  <Line data={getChartData(payment, label)} options={chartOptions} />
-				</Box>
+				<Flex direction="column" align="stretch">
+				  {/* Chart */}
+				  <Box h="400px" mb="20px">
+					<ChartComponent data={getChartData(payment)} options={chartOptions} />
+				  </Box>
+				  {/* Data Display - Improved styling */}
+				  <Box p="20px" bg="gray.100" borderRadius="12px" boxShadow="md">
+					<Text fontSize="lg" fontWeight="bold" mb="10px" color="blue.600">
+					  Payment Details{periodLabel}
+					</Text>
+					<Stack spacing="2">
+					  <Text fontWeight="semibold" color="green.500">
+						Released: ₹{periodReleased.toLocaleString()}
+					  </Text>
+					  <Text fontWeight="semibold" color="red.500">
+						Release Request: ₹{periodReleaseRequest.toLocaleString()}
+					  </Text>
+					  <Text fontWeight="semibold" color="blue.500">
+						Pending: ₹{periodPending.toLocaleString()}
+					  </Text>
+					  <Text fontWeight="semibold" color="purple.500">
+						{periodType} Total: ₹{periodTotal.toLocaleString()}
+					  </Text>
+					</Stack>
+				  </Box>
+				</Flex>
 			  </CardBody>
 			</Card>
 		  );
@@ -214,4 +309,12 @@ export default function PaymentsDashboard() {
 	  </Stack>
 	</Box>
   );
+}
+
+// Helper function to proportion data for a specific month
+function getProportionedDataForMonth(paymentData, month, key) {
+  const total = paymentData.total || 1; // Avoid division by zero
+  const monthlyTotal = paymentData.monthly?.[month] || 0;
+  const totalValue = paymentData[key] || 0;
+  return monthlyTotal > 0 ? (totalValue / total) * monthlyTotal : 0;
 }

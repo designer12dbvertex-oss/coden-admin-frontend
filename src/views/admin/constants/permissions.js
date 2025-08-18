@@ -19,4 +19,5 @@ export const ALLOWED_PERMISSIONS = [
 	"add-terms-conditions",
 	"add-privacypolicy",
 	"chat_monitor",	
+	"promotion"
 ];

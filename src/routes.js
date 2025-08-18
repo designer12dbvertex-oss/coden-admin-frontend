@@ -42,11 +42,12 @@ import AllServiceProvider from 'views/admin/allServiceprovider';
 import UnverifiedServiceProvider from 'views/admin/unverifiedServiceProvider';
 import ChatMonitor from 'views/admin/ChatMonitor';
 import TotalRevenue from 'views/admin/TotalRevenue';
-// import OnlineOrders from 'views/admin/onlineOrders';
+import Promotion from 'views/admin/Promotion';
+ // import OnlineOrders from 'views/admin/onlineOrders';
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
-import { FaChartLine, FaFileContract, FaGavel, FaMoneyBillWave,} from 'react-icons/fa';
+import { FaBullhorn, FaChartLine, FaFileContract, FaGavel, FaMoneyBillWave,} from 'react-icons/fa';
 
 const routes = [
   {
@@ -160,6 +161,13 @@ const routes = [
     icon: <Icon as={FaChartLine} width="20px" height="20px" color="inherit" />,
     path: '/revenue',
     component: <TotalRevenue />,
+  },
+	{
+    name: 'Promotion',
+    layout: '/admin',
+    icon: <Icon as={FaBullhorn} width="20px" height="20px" color="inherit" />,
+    path: '/promotion',
+    component: <Promotion />,
   },
 	 {
     name: 'All Dispute',

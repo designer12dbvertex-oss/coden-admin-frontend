@@ -246,6 +246,7 @@ export default function PaymentsDashboard() {
 
           const chartOptions = {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
               legend: { position: 'top' },
               title: {
@@ -278,7 +279,7 @@ export default function PaymentsDashboard() {
               <CardBody>
                 <Flex direction="column" align="stretch">
                   {/* Chart */}
-                  <Box h="400px" mb="20px">
+                  <Box h="400px" mb="20px" w="100%">
                     <ChartComponent data={getChartData(payment)} options={chartOptions} />
                   </Box>
                   {/* Data Display - Improved styling */}
