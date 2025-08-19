@@ -941,7 +941,6 @@ export default function ComplexTable() {
             <Button
               size="sm"
               colorScheme="teal"
-              variant="outline"
               onClick={() => goToPage(currentPage - 1)}
               isDisabled={currentPage === 1}
               leftIcon={<ChevronLeftIcon />}
@@ -964,7 +963,6 @@ export default function ComplexTable() {
             <Button
               size="sm"
               colorScheme="teal"
-              variant="outline"
               onClick={() => goToPage(currentPage + 1)}
               isDisabled={currentPage === totalPages}
               rightIcon={<ChevronRightIcon />}

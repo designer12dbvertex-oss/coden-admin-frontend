@@ -2,43 +2,48 @@
 'use client';
 
 import {
-  Box,
-  Button,
-  Flex,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  useColorModeValue,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  useDisclosure,
-  VStack,
-  Divider,
-  Grid,
-  GridItem,
-  Card as ChakraCard,
+	Box,
+	Button,
+	Flex,
+	Table,
+	Tbody,
+	Td,
+	Text,
+	Th,
+	Thead,
+	Tr,
+	useColorModeValue,
+	Modal,
+	ModalOverlay,
+	ModalContent,
+	ModalHeader,
+	ModalFooter,
+	ModalBody,
+	ModalCloseButton,
+	useDisclosure,
+	VStack,
+	Divider,
+	Grid,
+	Card as ChakraCard,
+	Input,
+	InputGroup,
+	InputLeftElement,
+	Icon,
 } from '@chakra-ui/react';
 import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	getSortedRowModel,
+	getPaginationRowModel,
+	useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { SearchIcon } from '@chakra-ui/icons';
 
 // Custom components
 import Card from 'components/card/Card';
@@ -46,601 +51,865 @@ import Card from 'components/card/Card';
 const columnHelper = createColumnHelper();
 
 export default function OrdersTable() {
-  const [sorting, setSorting] = React.useState([]);
-  const [data, setData] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
-  const [selectedOrder, setSelectedOrder] = React.useState(null);
-  const {
-    isOpen: isDetailsOpen,
-    onOpen: onDetailsOpen,
-    onClose: onDetailsClose,
-  } = useDisclosure();
-  const textColor = useColorModeValue('secondaryGray.900', 'white');
-  const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
-  const navigate = useNavigate();
+	const [sorting, setSorting] = React.useState([]);
+	const [data, setData] = React.useState([]);
+	const [filteredData, setFilteredData] = React.useState([]);
+	const [searchQuery, setSearchQuery] = React.useState('');
+	const [loading, setLoading] = React.useState(true);
+	const [error, setError] = React.useState(null);
+	const [selectedOrder, setSelectedOrder] = React.useState(null);
+	const [showPendingReleaseOnly, setShowPendingReleaseOnly] =
+		React.useState(false);
+	const [pagination, setPagination] = React.useState({
+		pageIndex: 0,
+		pageSize: 10,
+	});
+	const {
+		isOpen: isDetailsOpen,
+		onOpen: onDetailsOpen,
+		onClose: onDetailsClose,
+	} = useDisclosure();
+	const textColor = useColorModeValue('secondaryGray.900', 'white');
+	const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
+	const navigate = useNavigate();
 
-  // Fetch orders from API
-  const baseUrl = process.env.REACT_APP_BASE_URL;
-  const token = localStorage.getItem('token');
+	// Fetch orders from API
+	const baseUrl = process.env.REACT_APP_BASE_URL;
+	const token = localStorage.getItem('token');
 
-  React.useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        if (!baseUrl || !token) {
-          throw new Error('Missing base URL or authentication token');
-        }
-        const response = await axios.get(
-          `${baseUrl}api/direct-order/getAllDirectOrders`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
-        console.log('API Response (Orders):', response.data);
-        if (!response.data || !Array.isArray(response.data.data)) {
-          throw new Error(
-            'Invalid response format: Expected an array of orders',
-          );
-        }
+	React.useEffect(() => {
+		const fetchOrders = async () => {
+			try {
+				if (!baseUrl || !token) {
+					throw new Error('Missing base URL or authentication token');
+				}
+				const response = await axios.get(
+					`${baseUrl}api/direct-order/getAllDirectOrders`,
+					{
+						headers: { Authorization: `Bearer ${token}` },
+					},
+				);
+				if (!response.data || !Array.isArray(response.data.data)) {
+					throw new Error(
+						'Invalid response format: Expected an array of orders',
+					);
+				}
 
-        const formattedData = response.data.data.map((item) => ({
-          id: item._id || '',
-          orderId: item.razorOrderIdPlatform || '',
-          customerName: item.user_id?.full_name || 'Unknown',
-          serviceProvider: item.service_provider_id?.full_name || 'N/A',
-          totalAmount: item.service_payment?.total_expected || 0,
-          paidAmount: item.service_payment?.amount || 0,
-          remainingAmount: item.remaining_amount?.amount || 0,
-          paymentStatus: item.payment_status || 'Unknown',
-          hireStatus: item.hire_status || 'Unknown',
-          createdAt: item.createdAt
-            ? new Date(item.createdAt).toLocaleDateString()
-            : '',
-          address: item.address,
-          title: item.title,
-          description: item.description,
-          deadline: item.deadline
-            ? new Date(item.deadline).toLocaleDateString()
-            : '',
-          paymentHistory: item.service_payment?.payment_history || [],
-        }));
+				const formattedData = response.data.data.map((item) => ({
+					id: item._id || '',
+					orderId: item.project_id || '',
+					customerName: item.user_id?.full_name || 'Unknown',
+					serviceProvider: item.service_provider_id?.full_name || 'N/A',
+					totalAmount: item.service_payment?.total_expected || 0,
+					paidAmount: item.service_payment?.amount || 0,
+					remainingAmount: item.service_payment?.remaining_amount || 0,
+					paymentStatus: item.payment_status || 'Unknown',
+					hireStatus:
+						item.hire_status
+							.toLowerCase()
+							.split(' ')
+							.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+							.join(' ') || 'Unknown',
+					createdAt: item.createdAt
+						? new Date(item.createdAt).toLocaleDateString()
+						: '',
+					address: item.address || 'N/A',
+					title: item.title || 'N/A',
+					description: item.description || 'N/A',
+					deadline: item.deadline
+						? new Date(item.deadline).toLocaleDateString()
+						: 'N/A',
+					paymentHistory: item.service_payment?.payment_history || [],
+					pendingReleasePayments:
+						item.service_payment?.payment_history?.filter(
+							(payment) =>
+								payment.status === 'success' &&
+								payment.release_status === 'pending',
+						).length || 0,
+				}));
 
-        setData(formattedData);
-        setLoading(false);
-      } catch (err) {
-        console.error('Fetch Orders Error:', err);
-        if (
-          err.response?.data?.message === 'Not authorized, token failed' ||
-          err.response?.data?.message ===
-            'Session expired or logged in on another device' ||
-          err.response?.data?.message ===
-            'Un-Authorized, You are not authorized to access this route.' ||
-          err.response?.data?.message === 'Not authorized, token failed'
-        ) {
-          localStorage.removeItem('token');
-          navigate('/');
-        } else {
-          setError(err.message || 'Failed to fetch orders');
-          setLoading(false);
-        }
-      }
-    };
+				setData(formattedData);
+				setFilteredData(formattedData);
+				setLoading(false);
+			} catch (err) {
+				console.error('Fetch Orders Error:', err);
+				if (
+					err.response?.data?.message === 'Not authorized, token failed' ||
+					err.response?.data?.message ===
+						'Session expired or logged in on another device' ||
+					err.response?.data?.message ===
+						'Un-Authorized, You are not authorized to access this route.' ||
+					err.response?.data?.message === 'Not authorized, token failed'
+				) {
+					localStorage.removeItem('token');
+					navigate('/');
+				} else {
+					setError(err.message || 'Failed to fetch orders');
+					setLoading(false);
+				}
+			}
+		};
 
-    fetchOrders();
-  }, [navigate]);
+		fetchOrders();
+	}, [baseUrl, token, navigate]);
 
-  // Handle view details click
-  const handleViewDetails = (order) => {
-    setSelectedOrder(order);
-    onDetailsOpen();
-  };
+	// Handle search filtering
+	const handleSearch = React.useCallback(
+		(query) => {
+			setSearchQuery(query);
+			setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+			if (!query) {
+				setFilteredData(data);
+				return;
+			}
+			const lowerQuery = query.toLowerCase();
+			const filtered = data.filter(
+				(item) =>
+					item.orderId.toLowerCase().includes(lowerQuery) ||
+					item.title.toLowerCase().includes(lowerQuery) ||
+					item.customerName.toLowerCase().includes(lowerQuery) ||
+					item.serviceProvider.toLowerCase().includes(lowerQuery) ||
+					item.paymentStatus.toLowerCase().includes(lowerQuery) ||
+					item.hireStatus.toLowerCase().includes(lowerQuery) ||
+					item.createdAt.toLowerCase().includes(lowerQuery),
+			);
+			setFilteredData(filtered);
+		},
+		[data],
+	);
 
-  // Status color mapping
-  const getStatusStyles = (status, type) => {
-    if (type === 'hireStatus') {
-      switch (status) {
-        case 'accepted':
-          return { bg: 'green.100', color: 'green.800' };
-        case 'pending':
-          return { bg: 'yellow.100', color: 'yellow.800' };
-        case 'rejected':
-          return { bg: 'red.100', color: 'red.800' };
-        default:
-          return { bg: 'gray.100', color: 'gray.800' };
-      }
-    } else if (type === 'paymentStatus') {
-      switch (status) {
-        case 'success':
-          return { bg: 'green.100', color: 'green.800' };
-        case 'pending':
-          return { bg: 'yellow.100', color: 'yellow.800' };
-        case 'failed':
-          return { bg: 'red.100', color: 'red.800' };
-        default:
-          return { bg: 'gray.100', color: 'gray.800' };
-      }
-    }
-    return { bg: 'gray.100', color: 'gray.800' };
-  };
+	// Handle view details click
+	const handleViewDetails = (order, pendingReleaseOnly = false) => {
+		setSelectedOrder(order);
+		setShowPendingReleaseOnly(pendingReleaseOnly);
+		onDetailsOpen();
+	};
 
-  const columns = [
-    columnHelper.accessor('orderId', {
-      id: 'orderId',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          ORDER ID
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.accessor('customerName', {
-      id: 'customerName',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          CUSTOMER
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.accessor('serviceProvider', {
-      id: 'serviceProvider',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          SERVICE PROVIDER
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.accessor('totalAmount', {
-      id: 'totalAmount',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          TOTAL AMOUNT
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            ₹{info.getValue()}
-          </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.accessor('paidAmount', {
-      id: 'paidAmount',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          PAID AMOUNT
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            ₹{info.getValue()}
-          </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.accessor('remainingAmount', {
-      id: 'remainingAmount',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          REMAINING AMOUNT
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            ₹{info.getValue()}
-          </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.accessor('paymentStatus', {
-      id: 'paymentStatus',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          PAYMENT STATUS
-        </Text>
-      ),
-      cell: (info) => {
-        const { bg, color } = getStatusStyles(info.getValue(), 'paymentStatus');
-        return (
-          <Flex align="center" bg={bg} px={2} py={1} borderRadius="md">
-            <Text fontSize="sm" color={color}>
-              {info.getValue()}
-            </Text>
-          </Flex>
-        );
-      },
-    }),
-    columnHelper.accessor('hireStatus', {
-      id: 'hireStatus',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          HIRE STATUS
-        </Text>
-      ),
-      cell: (info) => {
-        const { bg, color } = getStatusStyles(info.getValue(), 'hireStatus');
-        return (
-          <Flex align="center" bg={bg} px={2} py={1} borderRadius="md">
-            <Text fontSize="sm" color={color}>
-              {info.getValue()}
-            </Text>
-          </Flex>
-        );
-      },
-    }),
-    columnHelper.accessor('createdAt', {
-      id: 'createdAt',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          CREATED AT
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          ACTIONS
-        </Text>
-      ),
-      cell: ({ row }) => (
-        <Flex align="center" gap="2">
-          <Button
-            colorScheme="teal"
-            size="sm"
-            onClick={() => handleViewDetails(row.original)}
-          >
-            View Details
-          </Button>
-        </Flex>
-      ),
-    }),
-  ];
+	// Status color mapping
+	const getStatusStyles = (status, type) => {
+		if (type === 'hireStatus') {
+			switch (status.toLowerCase()) {
+				case 'accepted':
+					return { bg: 'green.100', color: 'green.800' };
+				case 'pending':
+					return { bg: 'yellow.100', color: 'yellow.800' };
+				case 'rejected':
+					return { bg: 'red.100', color: 'red.800' };
+				case 'completed':
+					return { bg: 'green.100', color: 'green.800' };
+				case 'cancelled':
+					return { bg: 'red.100', color: 'red.800' };
+				case 'cancelledDispute':
+					return { bg: 'red.100', color: 'red.800' };
+				default:
+					return { bg: 'gray.100', color: 'gray.800' };
+			}
+		} else if (type === 'paymentStatus') {
+			switch (status.toLowerCase()) {
+				case 'success':
+					return { bg: 'green.100', color: 'green.800' };
+				case 'pending':
+					return { bg: 'yellow.100', color: 'yellow.800' };
+				case 'failed':
+					return { bg: 'red.100', color: 'red.800' };
+				default:
+					return { bg: 'gray.100', color: 'gray.800' };
+			}
+		}
+		return { bg: 'gray.100', color: 'gray.800' };
+	};
 
-  const table = useReactTable({
-    data,
-    columns,
-    state: { sorting },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    debugTable: true,
-  });
+	const columns = [
+		columnHelper.display({
+			id: 'sno',
+			header: () => (
+				<Text
+					justifyContent="space-between"
+					align="center"
+					fontSize={{ sm: '10px', lg: '12px' }}
+					color="gray.400"
+				>
+					S.No
+				</Text>
+			),
+			cell: ({ row }) => {
+				const serialNumber = row.index + 1;
+				return (
+					<Flex align="center">
+						<Text color={textColor} fontSize="sm" fontWeight="700">
+							{isNaN(serialNumber) ? 'N/A' : serialNumber}
+						</Text>
+					</Flex>
+				);
+			},
+		}),
+		columnHelper.accessor('orderId', {
+			id: 'orderId',
+			header: () => (
+				<Text
+					justifyContent="space-between"
+					align="center"
+					fontSize={{ sm: '10px', lg: '12px' }}
+					color="gray.400"
+				>
+					PROJECT ID
+				</Text>
+			),
+			cell: (info) => (
+				<Flex align="center">
+					<Text color={textColor} fontSize="sm" fontWeight="700">
+						{info.getValue()}
+					</Text>
+				</Flex>
+			),
+		}),
+		columnHelper.accessor('title', {
+			id: 'title',
+			header: () => (
+				<Text
+					justifyContent="space-between"
+					align="center"
+					fontSize={{ sm: '10px', lg: '12px' }}
+					color="gray.400"
+				>
+					TITLE
+				</Text>
+			),
+			cell: (info) => (
+				<Flex align="center">
+					<Text color={textColor} fontSize="sm" fontWeight="700">
+						{info.getValue()}
+					</Text>
+				</Flex>
+			),
+		}),
+		columnHelper.accessor('customerName', {
+			id: 'customerName',
+			header: () => (
+				<Text
+					justifyContent="space-between"
+					align="center"
+					fontSize={{ sm: '10px', lg: '12px' }}
+					color="gray.400"
+				>
+					CUSTOMER
+				</Text>
+			),
+			cell: (info) => (
+				<Flex align="center">
+					<Text color={textColor} fontSize="sm" fontWeight="700">
+						{info.getValue()}
+					</Text>
+				</Flex>
+			),
+		}),
+		columnHelper.accessor('serviceProvider', {
+			id: 'serviceProvider',
+			header: () => (
+				<Text
+					justifyContent="space-between"
+					align="center"
+					fontSize={{ sm: '10px', lg: '12px' }}
+					color="gray.400"
+				>
+					SERVICE PROVIDER
+				</Text>
+			),
+			cell: (info) => (
+				<Flex align="center">
+					<Text color={textColor} fontSize="sm" fontWeight="700">
+						{info.getValue()}
+					</Text>
+				</Flex>
+			),
+		}),
+		columnHelper.accessor('paidAmount', {
+			id: 'paidAmount',
+			header: () => (
+				<Text
+					justifyContent="space-between"
+					align="center"
+					fontSize={{ sm: '10px', lg: '12px' }}
+					color="gray.400"
+				>
+					PAID AMOUNT
+				</Text>
+			),
+			cell: (info) => (
+				<Flex align="center">
+					<Text color={textColor} fontSize="sm" fontWeight="700">
+						₹{info.getValue().toLocaleString()}
+					</Text>
+				</Flex>
+			),
+		}),
+		columnHelper.accessor('hireStatus', {
+			id: 'hireStatus',
+			header: () => (
+				<Text
+					justifyContent="space-between"
+					align="center"
+					fontSize={{ sm: '10px', lg: '12px' }}
+					color="gray.400"
+				>
+					HIRE STATUS
+				</Text>
+			),
+			cell: (info) => {
+				const { bg, color } = getStatusStyles(info.getValue(), 'hireStatus');
+				return (
+					<Flex align="center" bg={bg} px={2} py={1} borderRadius="md">
+						<Text fontSize="sm" color={color}>
+							{info.getValue()}
+						</Text>
+					</Flex>
+				);
+			},
+		}),
+		columnHelper.accessor('createdAt', {
+			id: 'createdAt',
+			header: () => (
+				<Text
+					justifyContent="space-between"
+					align="center"
+					fontSize={{ sm: '10px', lg: '12px' }}
+					color="gray.400"
+				>
+					CREATED AT
+				</Text>
+			),
+			cell: (info) => (
+				<Flex align="center">
+					<Text color={textColor} fontSize="sm" fontWeight="700">
+						{info.getValue()}
+					</Text>
+				</Flex>
+			),
+		}),
+		columnHelper.accessor('pendingReleasePayments', {
+			id: 'pendingReleasePayments',
+			header: () => (
+				<Text
+					justifyContent="space-between"
+					align="center"
+					fontSize={{ sm: '10px', lg: '12px' }}
+					color="gray.400"
+				>
+					PENDING RELEASE PAYMENTS
+				</Text>
+			),
+			cell: (info) => (
+				<Flex align="center" gap="2">
+					<Text color={textColor} fontSize="sm" fontWeight="700">
+						{info.getValue()}
+					</Text>
+					{info.getValue() > 0 && (
+						<Button
+							colorScheme="teal"
+							size="xs"
+							onClick={() => handleViewDetails(info.row.original, true)}
+						>
+							View
+						</Button>
+					)}
+				</Flex>
+			),
+		}),
+		columnHelper.display({
+			id: 'actions',
+			header: () => (
+				<Text
+					justifyContent="space-between"
+					align="center"
+					fontSize={{ sm: '10px', lg: '12px' }}
+					color="gray.400"
+				>
+					ACTIONS
+				</Text>
+			),
+			cell: ({ row }) => (
+				<Flex align="center" gap="2">
+					<Button
+						colorScheme="teal"
+						size="sm"
+						onClick={() => handleViewDetails(row.original, false)}
+					>
+						View Details
+					</Button>
+				</Flex>
+			),
+		}),
+	];
 
-  if (loading) {
-    return (
-      <Card
-        flexDirection="column"
-        w="100%"
-        px="0px"
-        style={{ marginTop: "100px" }}
-        overflowX={{ sm: 'scroll', lg: 'hidden' }}
-      >
-        <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
-          Loading...
-        </Text>
-      </Card>
-    );
-  }
+	const table = useReactTable({
+		data: filteredData,
+		columns,
+		state: { sorting, pagination },
+		onSortingChange: setSorting,
+		onPaginationChange: setPagination,
+		getCoreRowModel: getCoreRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+		debugTable: process.env.NODE_ENV === 'development',
+	});
 
-  if (error) {
-    return (
-      <Card
-        flexDirection="column"
-        w="100%"
-        px="0px"
-        style={{ marginTop: "100px" }}
-        overflowX={{ sm: 'scroll', lg: 'hidden' }}
-      >
-        <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
-          Error: {error}
-        </Text>
-      </Card>
-    );
-  }
+	if (loading) {
+		return (
+			<Card
+				flexDirection="column"
+				w="100%"
+				px="0px"
+				style={{ marginTop: '100px' }}
+				overflowX={{ sm: 'scroll', lg: 'hidden' }}
+			>
+				<Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
+					Loading...
+				</Text>
+			</Card>
+		);
+	}
 
-  return (
-    <>
-      <Card
-        flexDirection="column"
-        w="100%"
-        px="0px"
-        style={{ marginTop: "100px" }}
-        overflowX={{ sm: 'scroll', lg: 'hidden' }}
-      >
-        <Flex px="25px" mb="20px" justify="space-between" align="center">
-          <Text
-            color={textColor}
-            fontSize="22px"
-            fontWeight="700"
-            lineHeight="100%"
-          >
-            Orders Table
-          </Text>
-        </Flex>
-        <Box>
-          <Table variant="simple" color="gray.500" mb="24px">
-            <Thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <Tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <Th
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      pe="10px"
-                      borderColor={borderColor}
-                      cursor={header.column.getCanSort() ? 'pointer' : 'default'}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      <Flex
-                        justifyContent="space-between"
-                        align="center"
-                        fontSize={{ sm: '10px', lg: '12px' }}
-                        color="gray.400"
-                      >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                        {{
-                          asc: ' 🔼',
-                          desc: ' 🔽',
-                        }[header.column.getIsSorted()] ?? null}
-                      </Flex>
-                    </Th>
-                  ))}
-                </Tr>
-              ))}
-            </Thead>
-            <Tbody>
-              {table.getRowModel().rows.map((row) => (
-                <Tr key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <Td
-                      key={cell.id}
-                      fontSize={{ sm: '14px' }}
-                      minW={{ sm: '150px', md: '200px', lg: 'auto' }}
-                      borderColor={borderColor}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </Td>
-                  ))}
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </Box>
-      </Card>
+	if (error) {
+		return (
+			<Card
+				flexDirection="column"
+				w="100%"
+				px="0px"
+				style={{ marginTop: '100px' }}
+				overflowX={{ sm: 'scroll', lg: 'hidden' }}
+			>
+				<Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
+					Error: {error}
+				</Text>
+			</Card>
+		);
+	}
 
-      {/* Details Modal */}
-      {selectedOrder && (
-        <Modal isOpen={isDetailsOpen} onClose={onDetailsClose} size="lg">
-          <ModalOverlay />
-          <ModalContent borderRadius="xl" boxShadow="2xl" p={4} bg={useColorModeValue('white', 'gray.800')}>
-            <ModalHeader fontSize="2xl" fontWeight="bold" color={textColor} textAlign="center">
-              Order Details
-            </ModalHeader>
-            <ModalCloseButton
-              size="lg"
-              _hover={{ bg: 'gray.100', transform: 'scale(1.1)' }}
-              transition="all 0.2s ease-in-out"
-            />
-            <ModalBody>
-              <ChakraCard p={4} boxShadow="md" borderRadius="lg" bg={useColorModeValue('gray.50', 'gray.700')}>
-                <VStack spacing={4} align="stretch">
-                  <Grid templateColumns={{ base: '1fr', md: '150px 1fr' }} gap={4}>
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Order ID:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.orderId}</Text>
-                    </GridItem>
+	return (
+		<>
+			<Card
+				flexDirection="column"
+				w="100%"
+				px="0px"
+				style={{ marginTop: '100px' }}
+				overflowX={{ sm: 'scroll', lg: 'hidden' }}
+			>
+				<Flex
+					px="25px"
+					mb="20px"
+					justify="space-between"
+					align="center"
+					direction={{ base: 'column', md: 'row' }}
+					gap={{ base: '10px', md: '0' }}
+				>
+					<Text
+						color={textColor}
+						fontSize={{ base: 'xl', md: '22px' }}
+						fontWeight="700"
+						lineHeight="100%"
+					>
+						Direct Hiring
+					</Text>
+					<InputGroup maxW={{ base: '100%', md: '300px' }}>
+						<InputLeftElement pointerEvents="none">
+							<Icon as={SearchIcon} color="gray.400" />
+						</InputLeftElement>
+						<Input
+							placeholder="Search by ID, title, customer, provider, status, or date"
+							value={searchQuery}
+							onChange={(e) => handleSearch(e.target.value)}
+							borderRadius="12px"
+							bg={useColorModeValue('gray.100', 'gray.700')}
+							_focus={{
+								borderColor: 'blue.500',
+								boxShadow: '0 0 0 1px blue.500',
+							}}
+						/>
+					</InputGroup>
+				</Flex>
+				<Box>
+					<Table variant="simple" color="gray.500" mb="24px">
+						<Thead>
+							{table.getHeaderGroups().map((headerGroup) => (
+								<Tr key={headerGroup.id}>
+									{headerGroup.headers.map((header) => (
+										<Th
+											key={header.id}
+											colSpan={header.colSpan}
+											pe="10px"
+											borderColor={borderColor}
+											cursor={
+												header.column.getCanSort() ? 'pointer' : 'default'
+											}
+											onClick={header.column.getToggleSortingHandler()}
+										>
+											<Flex
+												justifyContent="space-between"
+												align="center"
+												fontSize={{ sm: '10px', lg: '12px' }}
+												color="gray.400"
+											>
+												{flexRender(
+													header.column.columnDef.header,
+													header.getContext(),
+												)}
+												{{
+													asc: ' 🔼',
+													desc: ' 🔽',
+												}[header.column.getIsSorted()] ?? null}
+											</Flex>
+										</Th>
+									))}
+								</Tr>
+							))}
+						</Thead>
+						<Tbody>
+							{table.getRowModel().rows.map((row) => (
+								<Tr key={row.id}>
+									{row.getVisibleCells().map((cell) => (
+										<Td
+											key={cell.id}
+											fontSize={{ sm: '14px' }}
+											minW={{ sm: '150px', md: '200px', lg: 'auto' }}
+											borderColor={borderColor}
+										>
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext(),
+											)}
+										</Td>
+									))}
+								</Tr>
+							))}
+						</Tbody>
+					</Table>
+				</Box>
+				{/* Pagination Controls */}
+				<Flex
+					justify="space-between"
+					align="center"
+					px="25px"
+					py="10px"
+					borderTopWidth="1px"
+					borderColor={borderColor}
+				>
+					<Flex align="center" gap="2">
+						<Button
+							size="sm"
+							colorScheme="teal"
+							onClick={() => table.previousPage()}
+							isDisabled={!table.getCanPreviousPage()}
+						>
+							Previous
+						</Button>
+						<Button
+							size="sm"
+							colorScheme="teal"
+							onClick={() => table.nextPage()}
+							isDisabled={!table.getCanNextPage()}
+						>
+							Next
+						</Button>
+					</Flex>
+					<Text fontSize="sm" color={textColor}>
+						Showing{' '}
+						{filteredData.length === 0
+							? 0
+							: table.getState().pagination.pageIndex *
+									table.getState().pagination.pageSize +
+								1}{' '}
+						to{' '}
+						{filteredData.length === 0
+							? 0
+							: Math.min(
+									(table.getState().pagination.pageIndex + 1) *
+										table.getState().pagination.pageSize,
+									filteredData.length,
+								)}{' '}
+						of {filteredData.length} orders
+					</Text>
+				</Flex>
+			</Card>
 
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Customer:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.customerName}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Service Provider:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.serviceProvider}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Title:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.title}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Description:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.description}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Address:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.address}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Total Amount:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>₹{selectedOrder.totalAmount}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Paid Amount:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>₹{selectedOrder.paidAmount}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Payment Status:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Flex align="center" bg={getStatusStyles(selectedOrder.paymentStatus, 'paymentStatus').bg} px={2} py={1} borderRadius="md">
-                        <Text fontSize="sm" color={getStatusStyles(selectedOrder.paymentStatus, 'paymentStatus').color}>
-                          {selectedOrder.paymentStatus}
-                        </Text>
-                      </Flex>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Hire Status:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Flex align="center" bg={getStatusStyles(selectedOrder.hireStatus, 'hireStatus').bg} px={2} py={1} borderRadius="md">
-                        <Text fontSize="sm" color={getStatusStyles(selectedOrder.hireStatus, 'hireStatus').color}>
-                          {selectedOrder.hireStatus}
-                        </Text>
-                      </Flex>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Created At:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.createdAt}</Text>
-                    </GridItem>
-
-                    <GridItem>
-                      <Text fontWeight="semibold" color={textColor}>Deadline:</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text color={textColor}>{selectedOrder.deadline}</Text>
-                    </GridItem>
-                  </Grid>
-
-                  <Divider />
-
-                  <Text fontWeight="bold" fontSize="lg" color={textColor}>
-                    Payment History
-                  </Text>
-                  {selectedOrder.paymentHistory.length > 0 ? (
-                    <VStack spacing={3} align="stretch">
-                      {selectedOrder.paymentHistory.map((payment, index) => (
-                        <ChakraCard key={index} p={3} boxShadow="sm" borderRadius="md" bg={useColorModeValue('white', 'gray.600')}>
-                          <Text color={textColor}>
-                            <strong>Payment {index + 1}:</strong> ₹{payment.amount} - {payment.description} ({payment.status}) on{' '}
-                            {new Date(payment.date).toLocaleDateString()}
-                          </Text>
-                        </ChakraCard>
-                      ))}
-                    </VStack>
-                  ) : (
-                    <Text color={textColor}>No payment history available</Text>
-                  )}
-                </VStack>
-              </ChakraCard>
-            </ModalBody>
-            <ModalFooter>
-              <Button
-                colorScheme="teal"
-                mr={3}
-                onClick={onDetailsClose}
-                _hover={{ bg: 'teal.600', transform: 'scale(1.05)' }}
-                transition="all 0.2s ease-in-out"
-              >
-                Close
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
-      )}
-      <ToastContainer />
-    </>
-  );
+			{/* Payment History Modal */}
+			{selectedOrder && (
+				<Modal isOpen={isDetailsOpen} onClose={onDetailsClose} size="xl">
+					<ModalOverlay />
+					<ModalContent
+						borderRadius="xl"
+						boxShadow="2xl"
+						p={4}
+						style={{ width: '100%', maxWidth: '1020px', margin: 'auto' }}
+						bg={useColorModeValue('white', 'gray.800')}
+					>
+						<ModalHeader
+							fontSize="2xl"
+							fontWeight="bold"
+							color={textColor}
+							textAlign="center"
+						>
+							Payment History for Order {selectedOrder.orderId}
+						</ModalHeader>
+						<ModalCloseButton
+							size="lg"
+							_hover={{ bg: 'gray.100', transform: 'scale(1.1)' }}
+							transition="all 0.2s ease-in-out"
+						/>
+						<ModalBody>
+							<ChakraCard
+								p={4}
+								boxShadow="md"
+								borderRadius="lg"
+								bg={useColorModeValue('gray.50', 'gray.700')}
+							>
+								<VStack spacing={4} align="stretch">
+									<Flex gap={4} wrap="wrap" justify="center">
+										<Text fontWeight="semibold" color={textColor}>
+											Total Payments: {selectedOrder.paymentHistory.length}
+										</Text>
+										<Text fontWeight="semibold" color={textColor}>
+											Pending:{' '}
+											{
+												selectedOrder.paymentHistory.filter(
+													(p) => p.release_status === 'pending',
+												).length
+											}
+										</Text>
+										<Text fontWeight="semibold" color={textColor}>
+											Release Requested:{' '}
+											{
+												selectedOrder.paymentHistory.filter(
+													(p) => p.release_status === 'release_requested',
+												).length
+											}
+										</Text>
+										<Text fontWeight="semibold" color={textColor}>
+											Released:{' '}
+											{
+												selectedOrder.paymentHistory.filter(
+													(p) => p.release_status === 'released',
+												).length
+											}
+										</Text>
+										<Text fontWeight="semibold" color={textColor}>
+											Refunded:{' '}
+											{
+												selectedOrder.paymentHistory.filter(
+													(p) => p.release_status === 'refunded',
+												).length
+											}
+										</Text>
+									</Flex>
+									<Divider />
+									<Text
+										fontWeight="bold"
+										fontSize="lg"
+										color={textColor}
+										textAlign="center"
+									>
+										{showPendingReleaseOnly
+											? 'Pending Release Payments'
+											: 'All Payments'}
+									</Text>
+									<Grid
+										templateColumns={{ base: '1fr', md: '1fr 1fr 1fr 1fr' }}
+										gap={4}
+									>
+										{/* Pending Column */}
+										<VStack align="stretch" spacing={3}>
+											<Text
+												fontWeight="semibold"
+												color={textColor}
+												textAlign="center"
+											>
+												Pending
+											</Text>
+											{selectedOrder.paymentHistory
+												.filter((payment) =>
+													showPendingReleaseOnly
+														? payment.status === 'success' &&
+															payment.release_status === 'pending'
+														: payment.release_status === 'pending',
+												)
+												.map((payment, index) => (
+													<ChakraCard
+														key={index}
+														p={3}
+														boxShadow="sm"
+														borderRadius="md"
+														bg={useColorModeValue('white', 'gray.600')}
+													>
+														<Text color={textColor} fontSize="sm">
+															<strong>Payment {index + 1}:</strong> ₹
+															{payment.amount.toLocaleString()} -{' '}
+															{payment.description} ({payment.status},{' '}
+															{payment.release_status}) on{' '}
+															{new Date(payment.date).toLocaleDateString()}
+														</Text>
+													</ChakraCard>
+												))}
+											{selectedOrder.paymentHistory.filter((payment) =>
+												showPendingReleaseOnly
+													? payment.status === 'success' &&
+														payment.release_status === 'pending'
+													: payment.release_status === 'pending',
+											).length === 0 && (
+												<Text
+													color={textColor}
+													fontSize="sm"
+													textAlign="center"
+												>
+													No pending payments
+												</Text>
+											)}
+										</VStack>
+										{/* Release Requested Column */}
+										<VStack align="stretch" spacing={3}>
+											<Text
+												fontWeight="semibold"
+												color={textColor}
+												textAlign="center"
+											>
+												Release Requested
+											</Text>
+											{selectedOrder.paymentHistory
+												.filter(
+													(payment) =>
+														payment.release_status === 'release_requested',
+												)
+												.map((payment, index) => (
+													<ChakraCard
+														key={index}
+														p={3}
+														boxShadow="sm"
+														borderRadius="md"
+														bg={useColorModeValue('white', 'gray.600')}
+													>
+														<Text color={textColor} fontSize="sm">
+															<strong>Payment {index + 1}:</strong> ₹
+															{payment.amount.toLocaleString()} -{' '}
+															{payment.description} ({payment.status},{' '}
+															{payment.release_status}) on{' '}
+															{new Date(payment.date).toLocaleDateString()}
+														</Text>
+													</ChakraCard>
+												))}
+											{selectedOrder.paymentHistory.filter(
+												(payment) =>
+													payment.release_status === 'release_requested',
+											).length === 0 && (
+												<Text
+													color={textColor}
+													fontSize="sm"
+													textAlign="center"
+												>
+													No release requested payments
+												</Text>
+											)}
+										</VStack>
+										{/* Released Column */}
+										<VStack align="stretch" spacing={3}>
+											<Text
+												fontWeight="semibold"
+												color={textColor}
+												textAlign="center"
+											>
+												Released
+											</Text>
+											{selectedOrder.paymentHistory
+												.filter(
+													(payment) => payment.release_status === 'released',
+												)
+												.map((payment, index) => (
+													<ChakraCard
+														key={index}
+														p={3}
+														boxShadow="sm"
+														borderRadius="md"
+														bg={useColorModeValue('white', 'gray.600')}
+													>
+														<Text color={textColor} fontSize="sm">
+															<strong>Payment {index + 1}:</strong> ₹
+															{payment.amount.toLocaleString()} -{' '}
+															{payment.description} ({payment.status},{' '}
+															{payment.release_status}) on{' '}
+															{new Date(payment.date).toLocaleDateString()}
+														</Text>
+													</ChakraCard>
+												))}
+											{selectedOrder.paymentHistory.filter(
+												(payment) => payment.release_status === 'released',
+											).length === 0 && (
+												<Text
+													color={textColor}
+													fontSize="sm"
+													textAlign="center"
+												>
+													No released payments
+												</Text>
+											)}
+										</VStack>
+										{/* Refunded Column */}
+										<VStack align="stretch" spacing={3}>
+											<Text
+												fontWeight="semibold"
+												color={textColor}
+												textAlign="center"
+											>
+												Refunded
+											</Text>
+											{selectedOrder.paymentHistory
+												.filter(
+													(payment) => payment.release_status === 'refunded',
+												)
+												.map((payment, index) => (
+													<ChakraCard
+														key={index}
+														p={3}
+														boxShadow="sm"
+														borderRadius="md"
+														bg={useColorModeValue('white', 'gray.600')}
+													>
+														<Text color={textColor} fontSize="sm">
+															<strong>Payment {index + 1}:</strong> ₹
+															{payment.amount.toLocaleString()} -{' '}
+															{payment.description} ({payment.status},{' '}
+															{payment.release_status}) on{' '}
+															{new Date(payment.date).toLocaleDateString()}
+														</Text>
+													</ChakraCard>
+												))}
+											{selectedOrder.paymentHistory.filter(
+												(payment) => payment.release_status === 'refunded',
+											).length === 0 && (
+												<Text
+													color={textColor}
+													fontSize="sm"
+													textAlign="center"
+												>
+													No refunded payments
+												</Text>
+											)}
+										</VStack>
+									</Grid>
+								</VStack>
+							</ChakraCard>
+						</ModalBody>
+						<ModalFooter>
+							<Button
+								colorScheme="teal"
+								mr={3}
+								onClick={onDetailsClose}
+								_hover={{ bg: 'teal.600', transform: 'scale(1.05)' }}
+								transition="all 0.2s ease-in-out"
+							>
+								Close
+							</Button>
+						</ModalFooter>
+					</ModalContent>
+				</Modal>
+			)}
+			<ToastContainer />
+		</>
+	);
 }

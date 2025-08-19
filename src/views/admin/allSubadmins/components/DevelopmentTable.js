@@ -899,6 +899,7 @@ export default function SubadminTable() {
         <HStack>
           <Button
             size="sm"
+						colorScheme="teal"
             onClick={() => goToPage(currentPage - 1)}
             isDisabled={currentPage === 1}
             leftIcon={<ChevronLeftIcon />}
@@ -909,6 +910,7 @@ export default function SubadminTable() {
             <Button
               key={page}
               size="sm"
+							colorScheme="teal"
               onClick={() => goToPage(page)}
               variant={currentPage === page ? 'solid' : 'outline'}
             >
@@ -917,6 +919,7 @@ export default function SubadminTable() {
           ))}
           <Button
             size="sm"
+						colorScheme="teal"
             onClick={() => goToPage(currentPage + 1)}
             isDisabled={currentPage === totalPages}
             rightIcon={<ChevronRightIcon />}

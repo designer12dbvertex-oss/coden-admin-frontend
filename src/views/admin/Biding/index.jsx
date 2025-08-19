@@ -41,7 +41,7 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { SearchIcon } from '@chakra-ui/icons';
@@ -98,7 +98,9 @@ export default function OrdersTable() {
           id: item._id || '',
           orderId: item.project_id || '',
           customerName: item.user_id?.full_name || 'Unknown',
+          customerId: item.user_id?._id || '',
           serviceProvider: item.service_provider_id?.full_name || 'N/A',
+          serviceProviderId: item.service_provider_id?._id || '',
           totalAmount: item.service_payment?.total_expected || 0,
           paidAmount: item.service_payment?.amount || 0,
           remainingAmount: item.remaining_amount?.amount || 0,
@@ -145,7 +147,7 @@ export default function OrdersTable() {
   const handleSearch = React.useCallback(
     (query) => {
       setSearchQuery(query);
-      setPagination((prev) => ({ ...prev, pageIndex: 0 })); // Reset to first page on search
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
       if (!query) {
         setFilteredData(data);
         return;
@@ -207,29 +209,28 @@ export default function OrdersTable() {
 
   const columns = [
     columnHelper.display({
-					id: 'sno',
-					header: () => (
-						<Text
-							justifyContent="space-between"
-							align="center"
-							fontSize={{ sm: '10px', lg: '12px' }}
-							color="gray.400"
-						>
-							S.No
-						</Text>
-					),
-					cell: ({ row }) => {
-						const serialNumber = row.index + 1;
-		
-						return (
-							<Flex align="center">
-								<Text color={textColor} fontSize="sm" fontWeight="700">
-									{isNaN(serialNumber) ? 'N/A' : serialNumber}
-								</Text>
-							</Flex>
-						);
-					},
-				}),
+      id: 'sno',
+      header: () => (
+        <Text
+          justifyContent="space-between"
+          align="center"
+          fontSize={{ sm: '10px', lg: '12px' }}
+          color="gray.400"
+        >
+          S.No
+        </Text>
+      ),
+      cell: ({ row }) => {
+        const serialNumber = row.index + 1;
+        return (
+          <Flex align="center">
+            <Text color={textColor} fontSize="sm" fontWeight="700">
+              {isNaN(serialNumber) ? 'N/A' : serialNumber}
+            </Text>
+          </Flex>
+        );
+      },
+    }),
     columnHelper.accessor('orderId', {
       id: 'orderId',
       header: () => (
@@ -264,9 +265,22 @@ export default function OrdersTable() {
       ),
       cell: (info) => (
         <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
+          {info.row.original.customerId ? (
+            <Link to={`/admin/Dispute/UserDetails/${info.row.original.customerId}`}>
+              <Text
+                color="blue.500"
+                fontSize="sm"
+                fontWeight="700"
+                _hover={{ textDecoration: 'underline' }}
+              >
+                {info.getValue()}
+              </Text>
+            </Link>
+          ) : (
+            <Text color={textColor} fontSize="sm" fontWeight="700">
+              {info.getValue()}
+            </Text>
+          )}
         </Flex>
       ),
     }),
@@ -284,9 +298,22 @@ export default function OrdersTable() {
       ),
       cell: (info) => (
         <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
+          {info.row.original.serviceProviderId ? (
+            <Link to={`/admin/Dispute/UserDetails/${info.row.original.serviceProviderId}`}>
+              <Text
+                color="blue.500"
+                fontSize="sm"
+                fontWeight="700"
+                _hover={{ textDecoration: 'underline' }}
+              >
+                {info.getValue()}
+              </Text>
+            </Link>
+          ) : (
+            <Text color={textColor} fontSize="sm" fontWeight="700">
+              {info.getValue()}
+            </Text>
+          )}
         </Flex>
       ),
     }),
@@ -492,7 +519,7 @@ export default function OrdersTable() {
                           header.getContext(),
                         )}
                         {{
-                          asc: ' 🔼',
+                          asc22px: ' 🔼',
                           desc: ' 🔽',
                         }[header.column.getIsSorted()] ?? null}
                       </Flex>
@@ -615,9 +642,18 @@ export default function OrdersTable() {
                       </Text>
                     </GridItem>
                     <GridItem>
-                      <Text color={textColor}>
-                        {selectedOrder.customerName}
-                      </Text>
+                      {selectedOrder.customerId ? (
+                        <Link to={`/admin/Dispute/UserDetails/${selectedOrder.customerId}`}>
+                          <Text
+                            color="blue.500"
+                            _hover={{ textDecoration: 'underline' }}
+                          >
+                            {selectedOrder.customerName}
+                          </Text>
+                        </Link>
+                      ) : (
+                        <Text color={textColor}>{selectedOrder.customerName}</Text>
+                      )}
                     </GridItem>
 
                     <GridItem>
@@ -626,9 +662,18 @@ export default function OrdersTable() {
                       </Text>
                     </GridItem>
                     <GridItem>
-                      <Text color={textColor}>
-                        {selectedOrder.serviceProvider}
-                      </Text>
+                      {selectedOrder.serviceProviderId ? (
+                        <Link to={`/admin/Dispute/UserDetails/${selectedOrder.serviceProviderId}`}>
+                          <Text
+                            color="blue.500"
+                            _hover={{ textDecoration: 'underline' }}
+                          >
+                            {selectedOrder.serviceProvider}
+                          </Text>
+                        </Link>
+                      ) : (
+                        <Text color={textColor}>{selectedOrder.serviceProvider}</Text>
+                      )}
                     </GridItem>
 
                     <GridItem>

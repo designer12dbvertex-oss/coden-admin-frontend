@@ -90,7 +90,7 @@ export default function DisputesTable() {
       }
 
       const formattedData = response.data.disputes.map((item) => ({
-        id: item._id,
+        id: item._id || 'N/A',
         order_id: item.order_id || 'N/A',
         project_id: item.order_details?.project_id || 'N/A',
         flow_type: item.flow_type
@@ -100,13 +100,13 @@ export default function DisputesTable() {
               .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
               .join(' ')
           : 'N/A',
-        uniqueId: item.unique_id || 'N/A', // Generate unique ID if not present
-        flow_type_raw: item.flow_type || 'N/A', // Store raw flow_type for filtering
+        uniqueId: item.unique_id || uniqueId('dispute_'),
+        flow_type_raw: item.flow_type || 'N/A',
         raised_by: item.raised_by?.full_name || 'N/A',
-        raised_by_id: item.raised_by?._id || 'N/A', // Add user ID for raised_by
+        raised_by_id: item.raised_by?._id || 'N/A',
         against: item.against?.full_name || 'N/A',
-        against_id: item.against?._id || 'N/A', // Add user ID for against
-        amount: item.amount ? `₹${item.amount}` : 'N/A',
+        against_id: item.against?._id || 'N/A',
+        amount: item.amount ? `₹${item.amount.toLocaleString()}` : 'N/A',
         description: item.description || 'N/A',
         requirement: item.requirement || 'N/A',
         title: item.order_details?.title || 'N/A',
@@ -125,7 +125,7 @@ export default function DisputesTable() {
       }));
 
       setData(formattedData);
-      setFilteredData(formattedData); // Initially show all disputes
+      setFilteredData(formattedData);
       setLoading(false);
     } catch (err) {
       console.error('Fetch Disputes Error:', err);
@@ -150,17 +150,15 @@ export default function DisputesTable() {
   const handleSearch = React.useCallback(
     (query) => {
       setSearchQuery(query);
-      setCurrentPage(1); // Reset to first page on search
+      setCurrentPage(1);
       let filtered = data;
 
-      // Apply flow type filter first
       if (activeFilter !== 'all') {
         filtered = data.filter(
           (item) => item.flow_type_raw.toLowerCase() === activeFilter,
         );
       }
 
-      // Apply search filter
       if (query) {
         const lowerQuery = query.toLowerCase();
         filtered = filtered.filter(
@@ -249,8 +247,8 @@ export default function DisputesTable() {
   // Handle filter button click
   const handleFilterClick = (filter) => {
     setActiveFilter(filter);
-    setCurrentPage(1); // Reset to first page on filter change
-    setSearchQuery(''); // Clear search query on filter change
+    setCurrentPage(1);
+    setSearchQuery('');
     if (filter === 'all') {
       setFilteredData(data);
     } else {
@@ -305,7 +303,6 @@ export default function DisputesTable() {
         ),
         cell: ({ row }) => {
           const serialNumber = row.index + 1;
-
           return (
             <Flex align="center">
               <Text color={textColor} fontSize="sm" fontWeight="700">
@@ -349,13 +346,40 @@ export default function DisputesTable() {
             Project ID
           </Text>
         ),
-        cell: (info) => (
-          <Flex align="center">
-            <Text color={textColor} fontSize="sm" fontWeight="400">
-              {info.getValue()}
-            </Text>
-          </Flex>
-        ),
+        cell: (info) => {
+          const flowType = info.row.original.flow_type_raw.toLowerCase();
+          const orderId = info.row.original.order_id;
+          let linkTo = '';
+          if (orderId !== 'N/A') {
+            if (flowType === 'direct') {
+              linkTo = `/admin/viewOrder/${orderId}`;
+            } else if (flowType === 'bidding') {
+              linkTo = `/admin/biddingOrder/${orderId}`;
+            } else if (flowType === 'emergency') {
+              linkTo = `/admin/emergencyOrder/${orderId}`;
+            }
+          }
+          return (
+            <Flex align="center">
+              {linkTo ? (
+                <Link
+                  as={RouterLink}
+                  to={linkTo}
+                  color="blue.500"
+                  fontSize="sm"
+                  fontWeight="700"
+                  _hover={{ textDecoration: 'underline' }}
+                >
+                  {info.getValue()}
+                </Link>
+              ) : (
+                <Text color={textColor} fontSize="sm" fontWeight="400">
+                  {info.getValue()}
+                </Text>
+              )}
+            </Flex>
+          );
+        },
       }),
       columnHelper.accessor('title', {
         id: 'title',
@@ -419,9 +443,9 @@ export default function DisputesTable() {
                 as={RouterLink}
                 to={`/admin/Dispute/UserDetails/${info.row.original.raised_by_id}`}
                 color="blue.500"
-                textDecoration="underline"
                 fontSize="sm"
-                fontWeight="400"
+                fontWeight="700"
+                _hover={{ textDecoration: 'underline' }}
               >
                 {info.getValue()}
               </Link>
@@ -453,9 +477,9 @@ export default function DisputesTable() {
                 as={RouterLink}
                 to={`/admin/Dispute/UserDetails/${info.row.original.against_id}`}
                 color="blue.500"
-                textDecoration="underline"
                 fontSize="sm"
-                fontWeight="400"
+                fontWeight="700"
+                _hover={{ textDecoration: 'underline' }}
               >
                 {info.getValue()}
               </Link>
@@ -827,6 +851,7 @@ export default function DisputesTable() {
           <Button
             size="sm"
             onClick={() => goToPage(currentPage - 1)}
+						colorScheme="teal"
             isDisabled={currentPage === 1}
             leftIcon={<ChevronLeftIcon />}
           >
@@ -836,6 +861,7 @@ export default function DisputesTable() {
             <Button
               key={page}
               size="sm"
+							colorScheme="teal"
               onClick={() => goToPage(page)}
               variant={currentPage === page ? 'solid' : 'outline'}
             >
@@ -845,6 +871,7 @@ export default function DisputesTable() {
           <Button
             size="sm"
             onClick={() => goToPage(currentPage + 1)}
+						colorScheme="teal"
             isDisabled={currentPage === totalPages}
             rightIcon={<ChevronRightIcon />}
           >

@@ -1055,6 +1055,7 @@ export default function ComplexTable() {
         <HStack>
           <Button
             size="sm"
+						colorScheme="teal"
             onClick={() => goToPage(currentPage - 1)}
             isDisabled={currentPage === 1}
             leftIcon={<ChevronLeftIcon />}
@@ -1065,6 +1066,7 @@ export default function ComplexTable() {
             <Button
               key={page}
               size="sm"
+							colorScheme="teal"
               onClick={() => goToPage(page)}
               variant={currentPage === page ? 'solid' : 'outline'}
             >
@@ -1073,6 +1075,7 @@ export default function ComplexTable() {
           ))}
           <Button
             size="sm"
+						colorScheme="teal"
             onClick={() => goToPage(currentPage + 1)}
             isDisabled={currentPage === totalPages}
             rightIcon={<ChevronRightIcon />}

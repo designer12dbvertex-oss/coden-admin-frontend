@@ -40,7 +40,7 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { SearchIcon } from '@chakra-ui/icons';
@@ -99,14 +99,16 @@ export default function OrdersTable() {
           id: item._id || '',
           orderId: item.project_id || '',
           customerName: item.user_id?.full_name || 'Unknown',
+          customerId: item.user_id?._id || '',
           serviceProvider: item.service_provider_id?.full_name || 'N/A',
+          serviceProviderId: item.service_provider_id?._id || '',
           totalAmount: item.service_payment?.total_expected || 0,
           paidAmount: item.service_payment?.amount || 0,
           remainingAmount: item.service_payment?.remaining_amount || 0,
-          paymentStatus: item.payment_status || 'Unknown',
+          paymentStatus: item.paymentItem?.payment_status || 'Unknown',
           hireStatus:
             item.hire_status
-              .toLowerCase()
+              ?.toLowerCase()
               .split(' ')
               .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
               .join(' ') || 'Unknown',
@@ -199,7 +201,7 @@ export default function OrdersTable() {
           return { bg: 'green.100', color: 'green.800' };
         case 'cancelled':
           return { bg: 'red.100', color: 'red.800' };
-        case 'cancelledDispute':
+        case 'cancelleddispute':
           return { bg: 'red.100', color: 'red.800' };
         default:
           return { bg: 'gray.100', color: 'gray.800' };
@@ -297,9 +299,22 @@ export default function OrdersTable() {
       ),
       cell: (info) => (
         <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
+          {info.row.original.customerId ? (
+            <Link to={`/admin/Dispute/UserDetails/${info.row.original.customerId}`}>
+              <Text
+                color="blue.500"
+                fontSize="sm"
+                fontWeight="700"
+                _hover={{ textDecoration: 'underline' }}
+              >
+                {info.getValue()}
+              </Text>
+            </Link>
+          ) : (
+            <Text color={textColor} fontSize="sm" fontWeight="700">
+              {info.getValue()}
+            </Text>
+          )}
         </Flex>
       ),
     }),
@@ -317,9 +332,24 @@ export default function OrdersTable() {
       ),
       cell: (info) => (
         <Flex align="center">
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
+          {info.row.original.serviceProviderId ? (
+            <Link
+              to={`/admin/Dispute/UserDetails/${info.row.original.serviceProviderId}`}
+            >
+              <Text
+                color="blue.500"
+                fontSize="sm"
+                fontWeight="700"
+                _hover={{ textDecoration: 'underline' }}
+              >
+                {info.getValue()}
+              </Text>
+            </Link>
+          ) : (
+            <Text color={textColor} fontSize="sm" fontWeight="700">
+              {info.getValue()}
+            </Text>
+          )}
         </Flex>
       ),
     }),
@@ -432,7 +462,7 @@ export default function OrdersTable() {
           <Button
             colorScheme="teal"
             size="sm"
-            onClick={() => handleViewDetails(row.original, false)}
+           onClick={() => navigate(`/admin/viewOrder/${row.original.id}`)}
           >
             View Details
           </Button>

@@ -501,6 +501,7 @@ export default function ContactInquiriesTable() {
               size="sm"
               onClick={() => goToPage(currentPage - 1)}
               isDisabled={currentPage === 1}
+							colorScheme="teal"
               leftIcon={<ChevronLeftIcon />}
             >
               Previous
@@ -510,6 +511,7 @@ export default function ContactInquiriesTable() {
                 key={page}
                 size="sm"
                 onClick={() => goToPage(page)}
+								colorScheme="teal"
                 variant={currentPage === page ? 'solid' : 'outline'}
               >
                 {page}
@@ -518,6 +520,7 @@ export default function ContactInquiriesTable() {
             <Button
               size="sm"
               onClick={() => goToPage(currentPage + 1)}
+							colorScheme="teal"
               isDisabled={currentPage === totalPages}
               rightIcon={<ChevronRightIcon />}
             >
