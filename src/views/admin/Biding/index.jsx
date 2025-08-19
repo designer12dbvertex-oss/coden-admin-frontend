@@ -51,6 +51,271 @@ import Card from 'components/card/Card';
 
 const columnHelper = createColumnHelper();
 
+// New PaymentHistoryModal component (extracted from first component)
+const PaymentHistoryModal = ({
+  isOpen,
+  onClose,
+  selectedOrder,
+  showPendingReleaseOnly,
+  textColor,
+}) => {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <ModalOverlay />
+      <ModalContent
+        borderRadius="xl"
+        boxShadow="2xl"
+        p={4}
+        style={{ width: '100%', maxWidth: '1020px', margin: 'auto' }}
+        bg={useColorModeValue('white', 'gray.800')}
+      >
+        <ModalHeader
+          fontSize="2xl"
+          fontWeight="bold"
+          color={textColor}
+          textAlign="center"
+        >
+          Payment History for Order {selectedOrder.orderId}
+        </ModalHeader>
+        <ModalCloseButton
+          size="lg"
+          _hover={{ bg: 'gray.100', transform: 'scale(1.1)' }}
+          transition="all 0.2s ease-in-out"
+        />
+        <ModalBody>
+          <ChakraCard
+            p={4}
+            boxShadow="md"
+            borderRadius="lg"
+            bg={useColorModeValue('gray.50', 'gray.700')}
+          >
+            <VStack spacing={4} align="stretch">
+              <Flex gap={4} wrap="wrap" justify="center">
+                <Text fontWeight="semibold" color={textColor}>
+                  Total Payments: {selectedOrder.paymentHistory.length}
+                </Text>
+                <Text fontWeight="semibold" color={textColor}>
+                  Pending:{' '}
+                  {
+                    selectedOrder.paymentHistory.filter(
+                      (p) => p.release_status === 'pending',
+                    ).length
+                  }
+                </Text>
+                <Text fontWeight="semibold" color={textColor}>
+                  Release Requested:{' '}
+                  {
+                    selectedOrder.paymentHistory.filter(
+                      (p) => p.release_status === 'release_requested',
+                    ).length
+                  }
+                </Text>
+                <Text fontWeight="semibold" color={textColor}>
+                  Released:{' '}
+                  {
+                    selectedOrder.paymentHistory.filter(
+                      (p) => p.release_status === 'released',
+                    ).length
+                  }
+                </Text>
+                <Text fontWeight="semibold" color={textColor}>
+                  Refunded:{' '}
+                  {
+                    selectedOrder.paymentHistory.filter(
+                      (p) => p.release_status === 'refunded',
+                    ).length
+                  }
+                </Text>
+              </Flex>
+              <Divider />
+              <Text
+                fontWeight="bold"
+                fontSize="lg"
+                color={textColor}
+                textAlign="center"
+              >
+                {showPendingReleaseOnly
+                  ? 'Pending Release Payments'
+                  : 'All Payments'}
+              </Text>
+              <Grid
+                templateColumns={{ base: '1fr', md: '1fr 1fr 1fr 1fr' }}
+                gap={4}
+              >
+                {/* Pending Column */}
+                <VStack align="stretch" spacing={3}>
+                  <Text
+                    fontWeight="semibold"
+                    color={textColor}
+                    textAlign="center"
+                  >
+                    Pending
+                  </Text>
+                  {selectedOrder.paymentHistory
+                    .filter((payment) =>
+                      showPendingReleaseOnly
+                        ? payment.status === 'success' &&
+                          payment.release_status === 'pending'
+                        : payment.release_status === 'pending',
+                    )
+                    .map((payment, index) => (
+                      <ChakraCard
+                        key={index}
+                        p={3}
+                        boxShadow="sm"
+                        borderRadius="md"
+                        bg={useColorModeValue('white', 'gray.600')}
+                      >
+                        <Text color={textColor} fontSize="sm">
+                          <strong>Payment {index + 1}:</strong> ₹
+                          {payment.amount.toLocaleString()} -{' '}
+                          {payment.description} ({payment.status},{' '}
+                          {payment.release_status}) on{' '}
+                          {new Date(payment.date).toLocaleDateString()}
+                        </Text>
+                      </ChakraCard>
+                    ))}
+                  {selectedOrder.paymentHistory.filter((payment) =>
+                    showPendingReleaseOnly
+                      ? payment.status === 'success' &&
+                        payment.release_status === 'pending'
+                      : payment.release_status === 'pending',
+                  ).length === 0 && (
+                    <Text color={textColor} fontSize="sm" textAlign="center">
+                      No pending payments
+                    </Text>
+                  )}
+                </VStack>
+                {/* Release Requested Column */}
+                <VStack align="stretch" spacing={3}>
+                  <Text
+                    fontWeight="semibold"
+                    color={textColor}
+                    textAlign="center"
+                  >
+                    Release Requested
+                  </Text>
+                  {selectedOrder.paymentHistory
+                    .filter(
+                      (payment) => payment.release_status === 'release_requested',
+                    )
+                    .map((payment, index) => (
+                      <ChakraCard
+                        key={index}
+                        p={3}
+                        boxShadow="sm"
+                        borderRadius="md"
+                        bg={useColorModeValue('white', 'gray.600')}
+                      >
+                        <Text color={textColor} fontSize="sm">
+                          <strong>Payment {index + 1}:</strong> ₹
+                          {payment.amount.toLocaleString()} -{' '}
+                          {payment.description} ({payment.status},{' '}
+                          {payment.release_status}) on{' '}
+                          {new Date(payment.date).toLocaleDateString()}
+                        </Text>
+                      </ChakraCard>
+                    ))}
+                  {selectedOrder.paymentHistory.filter(
+                    (payment) => payment.release_status === 'release_requested',
+                  ).length === 0 && (
+                    <Text color={textColor} fontSize="sm" textAlign="center">
+                      No release requested payments
+                    </Text>
+                  )}
+                </VStack>
+                {/* Released Column */}
+                <VStack align="stretch" spacing={3}>
+                  <Text
+                    fontWeight="semibold"
+                    color={textColor}
+                    textAlign="center"
+                  >
+                    Released
+                  </Text>
+                  {selectedOrder.paymentHistory
+                    .filter((payment) => payment.release_status === 'released')
+                    .map((payment, index) => (
+                      <ChakraCard
+                        key={index}
+                        p={3}
+                        boxShadow="sm"
+                        borderRadius="md"
+                        bg={useColorModeValue('white', 'gray.600')}
+                      >
+                        <Text color={textColor} fontSize="sm">
+                          <strong>Payment {index + 1}:</strong> ₹
+                          {payment.amount.toLocaleString()} -{' '}
+                          {payment.description} ({payment.status},{' '}
+                          {payment.release_status}) on{' '}
+                          {new Date(payment.date).toLocaleDateString()}
+                        </Text>
+                      </ChakraCard>
+                    ))}
+                  {selectedOrder.paymentHistory.filter(
+                    (payment) => payment.release_status === 'released',
+                  ).length === 0 && (
+                    <Text color={textColor} fontSize="sm" textAlign="center">
+                      No released payments
+                    </Text>
+                  )}
+                </VStack>
+                {/* Refunded Column */}
+                <VStack align="stretch" spacing={3}>
+                  <Text
+                    fontWeight="semibold"
+                    color={textColor}
+                    textAlign="center"
+                  >
+                    Refunded
+                  </Text>
+                  {selectedOrder.paymentHistory
+                    .filter((payment) => payment.release_status === 'refunded')
+                    .map((payment, index) => (
+                      <ChakraCard
+                        key={index}
+                        p={3}
+                        boxShadow="sm"
+                        borderRadius="md"
+                        bg={useColorModeValue('white', 'gray.600')}
+                      >
+                        <Text color={textColor} fontSize="sm">
+                          <strong>Payment {index + 1}:</strong> ₹
+                          {payment.amount.toLocaleString()} -{' '}
+                          {payment.description} ({payment.status},{' '}
+                          {payment.release_status}) on{' '}
+                          {new Date(payment.date).toLocaleDateString()}
+                        </Text>
+                      </ChakraCard>
+                    ))}
+                  {selectedOrder.paymentHistory.filter(
+                    (payment) => payment.release_status === 'refunded',
+                  ).length === 0 && (
+                    <Text color={textColor} fontSize="sm" textAlign="center">
+                      No refunded payments
+                    </Text>
+                  )}
+                </VStack>
+              </Grid>
+            </VStack>
+          </ChakraCard>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            colorScheme="teal"
+            mr={3}
+            onClick={onClose}
+            _hover={{ bg: 'teal.600', transform: 'scale(1.05)' }}
+            transition="all 0.2s ease-in-out"
+          >
+            Close
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
 export default function OrdersTable() {
   const [sorting, setSorting] = React.useState([]);
   const [data, setData] = React.useState([]);
@@ -59,6 +324,8 @@ export default function OrdersTable() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [selectedOrder, setSelectedOrder] = React.useState(null);
+  // New state for controlling pending release modal
+  const [showPendingReleaseOnly, setShowPendingReleaseOnly] = React.useState(false);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
@@ -67,6 +334,12 @@ export default function OrdersTable() {
     isOpen: isDetailsOpen,
     onOpen: onDetailsOpen,
     onClose: onDetailsClose,
+  } = useDisclosure();
+  // New disclosure for payment history modal
+  const {
+    isOpen: isPaymentHistoryOpen,
+    onOpen: onPaymentHistoryOpen,
+    onClose: onPaymentHistoryClose,
   } = useDisclosure();
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
@@ -116,6 +389,13 @@ export default function OrdersTable() {
             ? new Date(item.deadline).toLocaleDateString()
             : 'N/A',
           paymentHistory: item.service_payment?.payment_history || [],
+          // New field for pending release payments
+          pendingReleasePayments:
+            item.service_payment?.payment_history?.filter(
+              (payment) =>
+                payment.status === 'success' &&
+                payment.release_status === 'pending',
+            ).length || 0,
         }));
 
         setData(formattedData);
@@ -167,10 +447,15 @@ export default function OrdersTable() {
     [data],
   );
 
-  // Handle view details click
-  const handleViewDetails = (order) => {
+  // Modified handleViewDetails for both modals
+  const handleViewDetails = (order, pendingReleaseOnly = false) => {
     setSelectedOrder(order);
-    onDetailsOpen();
+    setShowPendingReleaseOnly(pendingReleaseOnly);
+    if (pendingReleaseOnly) {
+      onPaymentHistoryOpen();
+    } else {
+      onDetailsOpen();
+    }
   };
 
   // Status color mapping
@@ -187,7 +472,7 @@ export default function OrdersTable() {
           return { bg: 'green.100', color: 'green.800' };
         case 'cancelled':
           return { bg: 'red.100', color: 'red.800' };
-        case 'cancelledDispute':
+        case 'cancelleddispute':
           return { bg: 'red.100', color: 'red.800' };
         default:
           return { bg: 'gray.100', color: 'gray.800' };
@@ -302,7 +587,7 @@ export default function OrdersTable() {
             <Link to={`/admin/Dispute/UserDetails/${info.row.original.serviceProviderId}`}>
               <Text
                 color="blue.500"
-                fontSize="sm"
+                fontSize="sm" 
                 fontWeight="700"
                 _hover={{ textDecoration: 'underline' }}
               >
@@ -377,6 +662,36 @@ export default function OrdersTable() {
           <Text color={textColor} fontSize="sm" fontWeight="700">
             {info.getValue()}
           </Text>
+        </Flex>
+      ),
+    }),
+    // New Pending Release Payments column
+    columnHelper.accessor('pendingReleasePayments', {
+      id: 'pendingReleasePayments',
+      header: () => (
+        <Text
+          justifyContent="space-between"
+          align="center"
+          fontSize={{ sm: '10px', lg: '12px' }}
+          color="gray.400"
+        >
+          PENDING RELEASE PAYMENTS
+        </Text>
+      ),
+      cell: (info) => (
+        <Flex align="center" gap="2">
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {info.getValue()}
+          </Text>
+          {info.getValue() > 0 && (
+            <Button
+              colorScheme="teal"
+              size="xs"
+              onClick={() => handleViewDetails(info.row.original, true)}
+            >
+              View
+            </Button>
+          )}
         </Flex>
       ),
     }),
@@ -519,7 +834,7 @@ export default function OrdersTable() {
                           header.getContext(),
                         )}
                         {{
-                          asc22px: ' 🔼',
+                          asc: ' 🔼',
                           desc: ' 🔽',
                         }[header.column.getIsSorted()] ?? null}
                       </Flex>
@@ -851,6 +1166,17 @@ export default function OrdersTable() {
             </ModalFooter>
           </ModalContent>
         </Modal>
+      )}
+
+      {/* New Payment History Modal for Pending Release Payments */}
+      {selectedOrder && (
+        <PaymentHistoryModal
+          isOpen={isPaymentHistoryOpen}
+          onClose={onPaymentHistoryClose}
+          selectedOrder={selectedOrder}
+          showPendingReleaseOnly={showPendingReleaseOnly}
+          textColor={textColor}
+        />
       )}
       <ToastContainer />
     </>
