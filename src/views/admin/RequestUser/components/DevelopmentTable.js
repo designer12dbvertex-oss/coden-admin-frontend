@@ -230,9 +230,9 @@ const toggleUserVerified = async (
   setError,
 ) => {
   try {
-    const response = await axios.patch(
-      `${baseUrl}api/admin/updateUserverified`,
-      { userId, verified: !verified },
+    const response = await axios.post(
+      `${baseUrl}api/admin/approveServiceProvider`,
+      { userId },
       { headers: { Authorization: `Bearer ${token}` } },
     );
     if (response.data.success) {
