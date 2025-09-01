@@ -120,13 +120,13 @@ const routes = [
     path: '/platform_fee',
     component: <PlatformFee />,
   },
-	// 	{
-  //   name: 'Chat Monitor',
-  //   layout: '/admin',
-  //   icon: <Icon as={MdChat} width="20px" height="20px" color="inherit" />,
-  //   path: '/chat_monitor',
-  //   component: <ChatMonitor />,
-  // },
+		{
+    name: 'Chat Monitor',
+    layout: '/admin',
+    icon: <Icon as={MdChat} width="20px" height="20px" color="inherit" />,
+    path: '/chat_monitor',
+    component: <ChatMonitor />,
+  },
 	 {
     name: 'Biding Hiring',
     layout: '/admin',
