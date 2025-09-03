@@ -19,6 +19,7 @@ import ViewDisputeUser from "views/admin/viewDisputeUserDetails"
 import UserDirectOrder from 'views/admin/userDirectHiring';
 import UserBiddingOrder from 'views/admin/userBiddingHiring';
 import UserEmergencyOrder from 'views/admin/userEmergencyHiring';
+import ViewAddBanner from 'views/admin/addBanner';
 // Custom Chakra theme
 export default function Dashboard(props) {
   const { ...rest } = props;
@@ -145,6 +146,9 @@ export default function Dashboard(props) {
   );
 allRoutes.push(
     <Route path="/createSubadmin" element={<ViewCreateSubadmin />} key="ViewCreateSubadmin" />
+  );
+	allRoutes.push(
+    <Route path="/addBanner" element={<ViewAddBanner />} key="ViewCreateBanner" />
   );
   return allRoutes;
 };

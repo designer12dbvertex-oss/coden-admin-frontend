@@ -14,6 +14,7 @@ import {
 	MdPhone,
 	MdReportProblem,
 	MdChat,
+	MdCampaign,
 } from 'react-icons/md';
 
 // Admin Imports
@@ -43,6 +44,7 @@ import UnverifiedServiceProvider from 'views/admin/unverifiedServiceProvider';
 import ChatMonitor from 'views/admin/ChatMonitor';
 import TotalRevenue from 'views/admin/TotalRevenue';
 import Promotion from 'views/admin/Promotion';
+import Banner from 'views/admin/Banner';
  // import OnlineOrders from 'views/admin/onlineOrders';
 
 // Auth Imports
@@ -168,6 +170,13 @@ const routes = [
     icon: <Icon as={FaBullhorn} width="20px" height="20px" color="inherit" />,
     path: '/promotion',
     component: <Promotion />,
+  },
+	{
+    name: 'App Banner',
+    layout: '/admin',
+    icon: <Icon as={MdCampaign} width="20px" height="20px" color="inherit" />,
+    path: '/banner',
+    component: <Banner />,
   },
 	 {
     name: 'All Dispute',
