@@ -45,6 +45,8 @@ import ChatMonitor from 'views/admin/ChatMonitor';
 import TotalRevenue from 'views/admin/TotalRevenue';
 import Promotion from 'views/admin/Promotion';
 import Banner from 'views/admin/Banner';
+import Worker from 'views/admin/Worker';
+import PendingWorker from 'views/admin/PendingWorker';
  // import OnlineOrders from 'views/admin/onlineOrders';
 
 // Auth Imports
@@ -100,6 +102,20 @@ const routes = [
     icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
     path: '/requests',
     component: <RequestUser />,
+  },
+	{
+    name: 'All Co-Worker',
+    layout: '/admin',
+    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
+    path: '/worker',
+    component: <Worker />,
+  },
+	{
+    name: 'Pending Co-worker',
+    layout: '/admin',
+    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
+    path: '/pending-worker',
+    component: <PendingWorker />,
   },
 	{
     name: 'Sub Admins',

@@ -96,6 +96,9 @@ export default function PromotionsTable() {
           date: item.date || 'N/A',
           user: capitalizeWords(item.user_id?.full_name) || 'Unknown',
           userId: item.user_id?._id || '',
+					paymentId:item.paymentId || 'N/A',
+          amount:item.amount || 'N/A',
+					phone:item.phone || 'N/A',
           createdAt: new Date(item.createdAt).toLocaleString(),
         };
       });
@@ -208,6 +211,48 @@ export default function PromotionsTable() {
           </Flex>
         ),
       }),
+			 columnHelper.accessor('phone', {
+        id: 'phone',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+            textTransform="uppercase"
+          >
+            phone
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center">
+            <Text color={textColor} fontSize="sm" fontWeight="400">
+              {info.getValue()}
+            </Text>
+          </Flex>
+        ),
+      }),
+			 columnHelper.accessor('amount', {
+        id: 'amount',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+            textTransform="uppercase"
+          >
+            Amount
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center">
+            <Text color={textColor} fontSize="sm" fontWeight="400">
+              {info.getValue()}
+            </Text>
+          </Flex>
+        ),
+      }),
       columnHelper.accessor('images', {
         id: 'images',
         header: () => (
@@ -281,6 +326,27 @@ export default function PromotionsTable() {
             textTransform="uppercase"
           >
             Date
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center">
+            <Text color={textColor} fontSize="sm" fontWeight="400">
+              {info.getValue()}
+            </Text>
+          </Flex>
+        ),
+      }),
+			 columnHelper.accessor('paymentId', {
+        id: 'paymentId',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+            textTransform="uppercase"
+          >
+            PaymentId
           </Text>
         ),
         cell: (info) => (

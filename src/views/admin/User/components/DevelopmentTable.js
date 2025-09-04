@@ -526,7 +526,7 @@ export default function ComplexTable() {
             color="gray.500"
             textTransform="uppercase"
           >
-            Location
+            Saved Address
           </Text>
         ),
         cell: (info) => (
@@ -541,53 +541,53 @@ export default function ComplexTable() {
           </Text>
         ),
       }),
-      columnHelper.accessor('full_address', {
-        id: 'full_address',
-        header: () => (
-          <Text
-            justifyContent="center"
-            align="center"
-            fontSize={{ sm: '12px', lg: '14px' }}
-            fontWeight="bold"
-            color="gray.500"
-            textTransform="uppercase"
-          >
-            Permanent Address
-          </Text>
-        ),
-        cell: (info) => {
-          const addresses = info.getValue();
-          const preview = addresses.length > 0 ? addresses[0].address : 'N/A';
-          const isMultiple = addresses.length > 0;
+      // columnHelper.accessor('full_address', {
+      //   id: 'full_address',
+      //   header: () => (
+      //     <Text
+      //       justifyContent="center"
+      //       align="center"
+      //       fontSize={{ sm: '12px', lg: '14px' }}
+      //       fontWeight="bold"
+      //       color="gray.500"
+      //       textTransform="uppercase"
+      //     >
+      //       Permanent Address
+      //     </Text>
+      //   ),
+      //   cell: (info) => {
+      //     const addresses = info.getValue();
+      //     const preview = addresses.length > 0 ? addresses[0].address : 'N/A';
+      //     const isMultiple = addresses.length > 0;
 
-          return (
-            <Flex justify="center" align="center" wrap="nowrap">
-              <Text
-                color={textColor}
-                fontSize="sm"
-                fontWeight="600"
-                textAlign="center"
-                whiteSpace="nowrap"
-                maxW="200px"
-                isTruncated
-              >
-                {preview}
-              </Text>
-              {isMultiple && (
-                <Button
-                  size="xs"
-                  variant="link"
-                  colorScheme="teal"
-                  ml="1"
-                  onClick={() => openModal(addresses)}
-                >
-                  Show More
-                </Button>
-              )}
-            </Flex>
-          );
-        },
-      }),
+      //     return (
+      //       <Flex justify="center" align="center" wrap="nowrap">
+      //         <Text
+      //           color={textColor}
+      //           fontSize="sm"
+      //           fontWeight="600"
+      //           textAlign="center"
+      //           whiteSpace="nowrap"
+      //           maxW="200px"
+      //           isTruncated
+      //         >
+      //           {preview}
+      //         </Text>
+      //         {isMultiple && (
+      //           <Button
+      //             size="xs"
+      //             variant="link"
+      //             colorScheme="teal"
+      //             ml="1"
+      //             onClick={() => openModal(addresses)}
+      //           >
+      //             Show More
+      //           </Button>
+      //         )}
+      //       </Flex>
+      //     );
+      //   },
+      // }),
       columnHelper.accessor('mobile', {
         id: 'mobile',
         header: () => (

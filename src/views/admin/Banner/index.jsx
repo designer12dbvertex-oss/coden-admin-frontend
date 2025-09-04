@@ -22,6 +22,13 @@ import {
   useDisclosure,
   Link,
   Button,
+  IconButton,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -33,6 +40,7 @@ import {
 import axios from 'axios';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { DeleteIcon } from '@chakra-ui/icons';
 import defaultProfilePic from 'assets/img/profile/profile.webp';
 // Custom components
 import Card from 'components/card/Card';
@@ -45,6 +53,7 @@ export default function PromotionsTable() {
   const [error, setError] = React.useState(null);
   const [selectedImages, setSelectedImages] = React.useState([]);
   const [selectedImage, setSelectedImage] = React.useState(null);
+  const [bannerToDelete, setBannerToDelete] = React.useState(null);
   const {
     isOpen: isImagesOpen,
     onOpen: onImagesOpen,
@@ -55,6 +64,12 @@ export default function PromotionsTable() {
     onOpen: onImageOpen,
     onClose: onImageClose,
   } = useDisclosure();
+  const {
+    isOpen: isDeleteOpen,
+    onOpen: onDeleteOpen,
+    onClose: onDeleteClose,
+  } = useDisclosure();
+  const cancelRef = React.useRef();
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const navigate = useNavigate();
@@ -140,6 +155,37 @@ export default function PromotionsTable() {
         setLoading(false);
       }
     }
+  };
+
+  // Handle delete banner
+  const handleDelete = async (id) => {
+    try {
+      if (!baseUrl || !token) {
+        throw new Error('Missing base URL or authentication token');
+      }
+      await axios.delete(`${baseUrl}api/banner/deleteBanner/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setData((prevData) => prevData.filter((banner) => banner.id !== id));
+      onDeleteClose();
+    } catch (err) {
+      console.error(
+        'Delete Banner Error:',
+        err.response?.data || err.message,
+      );
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to delete banner',
+      );
+      onDeleteClose();
+    }
+  };
+
+  // Handle delete confirmation
+  const handleConfirmDelete = (id) => {
+    setBannerToDelete(id);
+    onDeleteOpen();
   };
 
   // Handle image modal
@@ -338,6 +384,31 @@ export default function PromotionsTable() {
           </Flex>
         ),
       }),
+      columnHelper.display({
+        id: 'actions',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+            textTransform="uppercase"
+          >
+            Actions
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center">
+            <IconButton
+              aria-label="Delete banner"
+              icon={<DeleteIcon />}
+              colorScheme="red"
+              size="sm"
+              onClick={() => handleConfirmDelete(info.row.original.id)}
+            />
+          </Flex>
+        ),
+      }),
     ],
     [textColor],
   );
@@ -416,7 +487,7 @@ export default function PromotionsTable() {
           onClick={() => navigate('/admin/addBanner')}
           w={{ base: '100%', md: 'auto' }}
         >
-	      Add Banner
+          Add Banner
         </Button>
       </Flex>
       <Box>
@@ -568,6 +639,36 @@ export default function PromotionsTable() {
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        isOpen={isDeleteOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onDeleteClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Banner
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Are you sure you want to delete this banner? This action cannot be undone.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onDeleteClose}>
+                Cancel
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={() => handleDelete(bannerToDelete)}
+                ml={3}
+              >
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Card>
   );
 }

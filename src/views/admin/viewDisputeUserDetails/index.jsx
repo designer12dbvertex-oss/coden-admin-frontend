@@ -88,6 +88,7 @@ export default function ServiceProviderDetails() {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
+				console.log("data", response.data)
         if (!response.data?.user) {
           throw new Error('Invalid response format: Expected user object');
         }
@@ -444,13 +445,13 @@ export default function ServiceProviderDetails() {
                     </Flex>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
-                        Location:
+                        Saved Address:
                       </Text>
                       <Text color={textColor}>
                         {data.user?.location.address || 'N/A'}
                       </Text>
                     </Flex>
-                    <Flex align="start" gap="4">
+                   {/* <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
                         Current Location:
                       </Text>
@@ -489,7 +490,7 @@ export default function ServiceProviderDetails() {
                           </Button>
                         )}
                       </Flex>
-                    </Flex>
+                    </Flex> */}
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
                         Skill:
@@ -737,7 +738,7 @@ export default function ServiceProviderDetails() {
               </Flex>
 
               {/* Workers Section */}
-              <ChakraCard
+             {/* <ChakraCard
                 p="15px"
                 borderRadius="lg"
                 border="1px solid"
@@ -819,10 +820,10 @@ export default function ServiceProviderDetails() {
                     No workers assigned
                   </Text>
                 )}
-              </ChakraCard>
+              </ChakraCard>*/}
 
               {/* Work Samples Section */}
-              <ChakraCard
+              {/*<ChakraCard
                 p="15px"
                 borderRadius="lg"
                 border="1px solid"
@@ -849,7 +850,7 @@ export default function ServiceProviderDetails() {
                     No work samples available
                   </Text>
                 )}
-              </ChakraCard>
+              </ChakraCard>*/}
 
               {/* Reviews Section */}
               <ChakraCard

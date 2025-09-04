@@ -384,20 +384,20 @@ export default function ServiceProviderDetails() {
                     </Flex>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
-                        Location:
+                        Saved Address:
                       </Text>
                       <Text color={textColor}>
                         {data.user?.location.address || 'N/A'}
                       </Text>
                     </Flex>
-                    <Flex align="start" gap="4">
+                    {/*<Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
                         Current Location:
                       </Text>
                       <Text color={textColor}>
                         {data.user?.current_location || 'N/A'}
                       </Text>
-                    </Flex>
+                    </Flex>  
                     <Flex align="start" gap="4" wrap="wrap">
                       <Text fontWeight="semibold" color={textColor}>
                         Address:
@@ -423,7 +423,7 @@ export default function ServiceProviderDetails() {
                           </Button>
                         )}
                       </Flex>
-                    </Flex>
+                    </Flex> */}
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
                         Skill:
