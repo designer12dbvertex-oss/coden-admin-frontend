@@ -36,6 +36,7 @@ import {
   Select,
   List,
   ListItem,
+  Checkbox,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -95,7 +96,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
                   .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                   .join(' ')
               : 'N/A',
-            location: user.location.address || 'N/A',
+            location: user.location?.address || 'N/A',
             uniqueId: user.unique_id || 'N/A',
             mobile: user.phone || 'N/A',
             createdAt: user.createdAt
@@ -121,8 +122,14 @@ const useFetchUsers = (baseUrl, token, navigate) => {
           errorMessage.includes('Session expired') ||
           errorMessage.includes('Un-Authorized')
         ) {
-          localStorage.removeItem('token');
-          navigate('/');
+          toast.error('Session expired. Please log in again.', {
+            position: 'top-right',
+            autoClose: 2000,
+          });
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            navigate('/');
+          }, 2000);
         } else {
           setError(errorMessage);
         }
@@ -137,7 +144,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
 };
 
 // Custom hook for fetching disputes
-const useFetchDisputes = (baseUrl, token, userId) => {
+const useFetchDisputes = (baseUrl, token, userId, navigate) => {
   const [disputes, setDisputes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -156,15 +163,121 @@ const useFetchDisputes = (baseUrl, token, userId) => {
         setDisputes(response.data.disputes || []);
       } catch (error) {
         console.error('Error fetching disputes:', error);
-        setError(error.response?.data?.message || 'Failed to load disputes');
+        const errorMessage =
+          error.response?.data?.message || 'Failed to load disputes';
+        if (
+          errorMessage.includes('Session expired') ||
+          errorMessage.includes('Un-Authorized')
+        ) {
+          toast.error('Session expired. Please log in again.', {
+            position: 'top-right',
+            autoClose: 2000,
+          });
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            navigate('/');
+          }, 2000);
+        } else {
+          setError(errorMessage);
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchDisputes();
-  }, [baseUrl, token, userId]);
+  }, [baseUrl, token, userId, navigate]);
 
   return { disputes, loading, error };
+};
+
+// Custom hook for fetching categories and subcategories
+const useFetchCategories = (baseUrl, token, selectedCategoryId, navigate) => {
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [loading, setLoading] = useState({
+    categories: false,
+    subcategories: false,
+  });
+  const [error, setError] = useState(null);
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setLoading((prev) => ({ ...prev, categories: true }));
+      try {
+        const response = await axios.get(`${baseUrl}api/adminWork-category`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setCategories(response.data.data || []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        const errorMessage =
+          error.response?.data?.message || 'Failed to load categories';
+        if (
+          errorMessage.includes('Session expired') ||
+          errorMessage.includes('Un-Authorized')
+        ) {
+          toast.error('Session expired. Please log in again.', {
+            position: 'top-right',
+            autoClose: 2000,
+          });
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            navigate('/');
+          }, 2000);
+        } else {
+          setError(errorMessage);
+        }
+      } finally {
+        setLoading((prev) => ({ ...prev, categories: false }));
+      }
+    };
+    fetchCategories();
+  }, [baseUrl, token, navigate]);
+
+  // Fetch subcategories
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      setSubcategories([]);
+      return;
+    }
+    const fetchSubcategories = async () => {
+      setLoading((prev) => ({ ...prev, subcategories: true }));
+      try {
+        const response = await axios.get(
+          `${baseUrl}api/adminSubcategories/${selectedCategoryId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        setSubcategories(response.data.data || []);
+      } catch (error) {
+        console.error('Error fetching subcategories:', error);
+        const errorMessage =
+          error.response?.data?.message || 'Failed to load subcategories';
+        if (
+          errorMessage.includes('Session expired') ||
+          errorMessage.includes('Un-Authorized')
+        ) {
+          toast.error('Session expired. Please log in again.', {
+            position: 'top-right',
+            autoClose: 2000,
+          });
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            navigate('/');
+          }, 2000);
+        } else {
+          setError(errorMessage);
+        }
+      } finally {
+        setLoading((prev) => ({ ...prev, subcategories: false }));
+      }
+    };
+    fetchSubcategories();
+  }, [baseUrl, token, selectedCategoryId, navigate]);
+
+  return { categories, subcategories, loading, error };
 };
 
 // Function to toggle user status
@@ -204,18 +317,17 @@ const toggleUserStatus = async (
     }
   } catch (error) {
     console.error('Error toggling user status:', error);
-    setError(error.response?.data?.message || 'Failed to update user status');
-    toast.error(
-      error.response?.data?.message || 'Failed to update user status',
-      {
-        position: 'top-right',
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      },
-    );
+    const errorMessage =
+      error.response?.data?.message || 'Failed to update user status';
+    setError(errorMessage);
+    toast.error(errorMessage, {
+      position: 'top-right',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     return false;
   }
 };
@@ -255,22 +367,64 @@ const toggleUserVerified = async (
     }
   } catch (error) {
     console.error('Error toggling user verification:', error);
-    setError(
+    const errorMessage =
       error.response?.data?.message ||
-        'Failed to update user verification status',
+      'Failed to update user verification status';
+    setError(errorMessage);
+    toast.error(errorMessage, {
+      position: 'top-right',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+    return false;
+  }
+};
+
+// Function to update user category and subcategory
+const updateUserCategory = async (
+  baseUrl,
+  token,
+  userId,
+  categoryId,
+  subcategoryIds,
+  setData,
+  setError,
+) => {
+  try {
+    const response = await axios.put(
+      `${baseUrl}api/admin/updateUserCategoryOrSubcategory/${userId}`,
+      { category_id: categoryId, subcategory_ids: subcategoryIds },
+      { headers: { Authorization: `Bearer ${token}` } },
     );
-    toast.error(
-      error.response?.data?.message ||
-        'Failed to update user verification status',
-      {
+    if (response.data.success) {
+      toast.success('Category/Subcategory updated successfully!', {
         position: 'top-right',
         autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
-      },
-    );
+      });
+      return response.data; // Return response data for updating table
+    } else {
+      throw new Error('Failed to update category/subcategory');
+    }
+  } catch (error) {
+    console.error('Error updating category/subcategory:', error);
+    const errorMessage =
+      error.response?.data?.message || 'Failed to update category/subcategory';
+    setError(errorMessage);
+    toast.error(errorMessage, {
+      position: 'top-right',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     return false;
   }
 };
@@ -286,15 +440,18 @@ export default function ComplexTable() {
   const [expandedCategories, setExpandedCategories] = useState({});
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [isInactivationModalOpen, setIsInactivationModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [selectedInactivationInfo, setSelectedInactivationInfo] = useState(null);
   const [deactivateReason, setDeactivateReason] = useState('');
   const [disputeId, setDisputeId] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSubcategories, setSelectedSubcategories] = useState([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const itemsPerPage = 10;
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
-  const baseUrl = useMemo(() => process.env.REACT_APP_BASE_URL, []);
+  const baseUrl = useMemo(() => process.env.REACT_APP_BASE_URL || 'http://localhost:3000/', []);
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
 
@@ -307,7 +464,13 @@ export default function ComplexTable() {
     disputes,
     loading: disputesLoading,
     error: disputesError,
-  } = useFetchDisputes(baseUrl, token, selectedUserId);
+  } = useFetchDisputes(baseUrl, token, selectedUserId, navigate);
+  const {
+    categories,
+    subcategories,
+    loading: categoriesLoading,
+    error: categoriesError,
+  } = useFetchCategories(baseUrl, token, selectedCategory, navigate);
 
   // Handle search filtering
   const handleSearch = useCallback(
@@ -321,13 +484,13 @@ export default function ComplexTable() {
       const lowerQuery = query.toLowerCase();
       const filtered = data.filter(
         (item) =>
-          item.full_name.toLowerCase().includes(lowerQuery) ||
-          item.location.toLowerCase().includes(lowerQuery) ||
-          item.mobile.toLowerCase().includes(lowerQuery) ||
-          item.referral_code.toLowerCase().includes(lowerQuery) ||
-          item.createdBy.toLowerCase().includes(lowerQuery) ||
-          item.uniqueId.toLowerCase().includes(lowerQuery) ||
-          item.categoryName.toLowerCase().includes(lowerQuery),
+          item.full_name?.toLowerCase().includes(lowerQuery) ||
+          item.location?.toLowerCase().includes(lowerQuery) ||
+          item.mobile?.toLowerCase().includes(lowerQuery) ||
+          item.referral_code?.toLowerCase().includes(lowerQuery) ||
+          item.createdBy?.toLowerCase().includes(lowerQuery) ||
+          item.uniqueId?.toLowerCase().includes(lowerQuery) ||
+          item.categoryName?.toLowerCase().includes(lowerQuery),
       );
       setFilteredData(filtered);
     },
@@ -337,6 +500,11 @@ export default function ComplexTable() {
   // Initialize filteredData with all data
   useEffect(() => {
     setFilteredData(data);
+  }, [data]);
+
+  // Reset toggleLoading when data changes
+  useEffect(() => {
+    setToggleLoading({});
   }, [data]);
 
   // Toggle handler for read more/less for location
@@ -379,6 +547,23 @@ export default function ComplexTable() {
     setIsInactivationModalOpen(false);
     setSelectedUserId(null);
     setSelectedInactivationInfo(null);
+  }, []);
+
+  const openCategoryModal = useCallback(
+    (userId, currentCategoryId, currentSubcategoryIds) => {
+      setSelectedUserId(userId);
+      setSelectedCategory(currentCategoryId || '');
+      setSelectedSubcategories(currentSubcategoryIds || []);
+      setIsCategoryModalOpen(true);
+    },
+    [],
+  );
+
+  const closeCategoryModal = useCallback(() => {
+    setIsCategoryModalOpen(false);
+    setSelectedUserId(null);
+    setSelectedCategory('');
+    setSelectedSubcategories([]);
   }, []);
 
   // Toggle handler for user status
@@ -445,6 +630,86 @@ export default function ComplexTable() {
     setData,
     setError,
     closeDeactivateModal,
+  ]);
+
+  // Handle category update submission
+  const handleCategorySubmit = useCallback(async () => {
+    if (!selectedCategory) {
+      toast.error('Please select a category', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+
+    if (subcategories.length > 0 && selectedSubcategories.length === 0) {
+      toast.error('Please select at least one subcategory', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+
+    setToggleLoading((prev) => ({ ...prev, [selectedUserId]: true }));
+    const result = await updateUserCategory(
+      baseUrl,
+      token,
+      selectedUserId,
+      selectedCategory,
+      selectedSubcategories,
+      setData,
+      setError,
+    );
+
+    if (result) {
+      setData((prevData) =>
+        prevData.map((user) =>
+          user.id === selectedUserId
+            ? {
+                ...user,
+                categoryName:
+                  categories.find((cat) => cat._id === selectedCategory)?.name ||
+                  'N/A',
+                subcategoryNames:
+                  subcategories
+                    .filter((sub) => selectedSubcategories.includes(sub._id))
+                    .map((sub) => sub.name || 'N/A') || [],
+                userDetails: {
+                  ...user.userDetails,
+                  category_id: { _id: selectedCategory },
+                  subcategory_ids: selectedSubcategories.map((id) => ({
+                    _id: id,
+                    name:
+                      subcategories.find((sub) => sub._id === id)?.name ||
+                      'N/A',
+                  })),
+                },
+              }
+            : user,
+        ),
+      );
+      closeCategoryModal();
+    }
+    setToggleLoading((prev) => ({ ...prev, [selectedUserId]: false }));
+  }, [
+    baseUrl,
+    token,
+    selectedUserId,
+    selectedCategory,
+    selectedSubcategories,
+    categories,
+    subcategories,
+    setData,
+    setError,
+    closeCategoryModal,
   ]);
 
   const handleToggleVerified = useCallback(
@@ -626,7 +891,7 @@ export default function ComplexTable() {
         cell: (info) => {
           const categoryName = info.getValue();
           const userId = info.row.original.id;
-          const subcategoryNames = info.row.original.subcategoryNames;
+          const subcategoryNames = info.row.original.subcategoryNames || [];
           const isExpanded = expandedCategories[userId];
 
           return (
@@ -677,6 +942,25 @@ export default function ComplexTable() {
                   )}
                 </Box>
               )}
+              <Button
+                size="xs"
+                colorScheme="teal"
+                variant="outline"
+                mt={2}
+                onClick={() =>
+                  openCategoryModal(
+                    userId,
+                    info.row.original.userDetails.category_id?._id,
+                    info.row.original.userDetails.subcategory_ids?.map(
+                      (sub) => sub._id,
+                    ) || [],
+                  )
+                }
+                isDisabled={toggleLoading[userId]}
+                aria-label={`Update category for ${info.row.original.full_name}`}
+              >
+                Update Category
+              </Button>
             </Flex>
           );
         },
@@ -809,6 +1093,7 @@ export default function ComplexTable() {
               }
               colorScheme="teal"
               isDisabled={toggleLoading[info.row.original.id]}
+              aria-label={`Toggle active status for ${info.row.original.full_name}`}
             />
             {!info.getValue() && info.row.original.inactivationInfo && (
               <Button
@@ -849,6 +1134,7 @@ export default function ComplexTable() {
             }
             colorScheme="teal"
             isDisabled={toggleLoading[info.row.original.id]}
+            aria-label={`Toggle verified status for ${info.row.original.full_name}`}
           />
         ),
       }),
@@ -870,6 +1156,7 @@ export default function ComplexTable() {
             colorScheme="teal"
             onClick={() => navigate(`/admin/details/${info.row.original.id}`)}
             whiteSpace="nowrap"
+            aria-label={`View details for ${info.row.original.full_name}`}
           >
             View Details
           </Button>
@@ -887,6 +1174,7 @@ export default function ComplexTable() {
       expandedCategories,
       handleToggleCategory,
       openInactivationModal,
+      openCategoryModal,
       startIndex,
     ],
   );
@@ -1055,7 +1343,7 @@ export default function ComplexTable() {
         <HStack>
           <Button
             size="sm"
-						colorScheme="teal"
+            colorScheme="teal"
             onClick={() => goToPage(currentPage - 1)}
             isDisabled={currentPage === 1}
             leftIcon={<ChevronLeftIcon />}
@@ -1066,7 +1354,7 @@ export default function ComplexTable() {
             <Button
               key={page}
               size="sm"
-							colorScheme="teal"
+              colorScheme="teal"
               onClick={() => goToPage(page)}
               variant={currentPage === page ? 'solid' : 'outline'}
             >
@@ -1075,7 +1363,7 @@ export default function ComplexTable() {
           ))}
           <Button
             size="sm"
-						colorScheme="teal"
+            colorScheme="teal"
             onClick={() => goToPage(currentPage + 1)}
             isDisabled={currentPage === totalPages}
             rightIcon={<ChevronRightIcon />}
@@ -1159,9 +1447,7 @@ export default function ComplexTable() {
                           alt={`Work sample ${index + 1}`}
                           boxSize="100px"
                           objectFit="cover"
-                          onError={(e) =>
-                            (e.target.src = '/assets/img/profile/Project3.png')
-                          }
+                          onError={(e) => (e.target.src = defaultProfilePic)}
                         />
                       ))}
                     </HStack>
@@ -1194,10 +1480,7 @@ export default function ComplexTable() {
                                   alt={`Review image ${imgIndex + 1}`}
                                   boxSize="80px"
                                   objectFit="cover"
-                                  onError={(e) =>
-                                    (e.target.src =
-                                      '/assets/img/profile/Project3.png')
-                                  }
+                                  onError={(e) => (e.target.src = defaultProfilePic)}
                                 />
                               ))}
                             </HStack>
@@ -1302,6 +1585,136 @@ export default function ComplexTable() {
               _hover={{ bg: 'red.600' }}
             >
               Deactivate
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      {/* Modal for category/subcategory update */}
+      <Modal
+        isOpen={isCategoryModalOpen}
+        onClose={closeCategoryModal}
+        isCentered
+      >
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '500px' }}
+          borderRadius="16px"
+          bg={useColorModeValue('white', 'gray.800')}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            Update Category/Subcategory
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            {categoriesLoading.categories ? (
+              <Flex justify="center" align="center" py={4}>
+                <Spinner size="md" color="teal.500" />
+              </Flex>
+            ) : categoriesError ? (
+              <Alert status="error" borderRadius="8px">
+                <AlertIcon />
+                <Text color={textColor}>{categoriesError}</Text>
+              </Alert>
+            ) : (
+              <>
+                <FormControl isRequired mb={4}>
+                  <FormLabel color={textColor}>Category</FormLabel>
+                  <Select
+                    value={selectedCategory}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value);
+                      setSelectedSubcategories([]); // Reset subcategories on category change
+                    }}
+                    placeholder={
+                      categories?.length === 0
+                        ? 'No categories available'
+                        : 'Select category'
+                    }
+                    bg={useColorModeValue('gray.100', 'gray.700')}
+                    borderRadius="8px"
+                    isDisabled={categories?.length === 0}
+                    aria-label="Select category"
+                  >
+                    {categories?.map((category) => (
+                      <option key={category._id} value={category._id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl>
+                  <FormLabel color={textColor}>Subcategories</FormLabel>
+                  {categoriesLoading.subcategories ? (
+                    <Flex justify="center" align="center" py={4}>
+                      <Spinner size="md" color="teal.500" />
+                    </Flex>
+                  ) : subcategories?.length === 0 && selectedCategory ? (
+                    <Text color={textColor} fontSize="sm">
+                      No subcategories available for this category
+                    </Text>
+                  ) : (
+                    <VStack align="start" spacing={2}>
+                      {subcategories?.map((subcategory) => (
+                        <Checkbox
+                          key={subcategory._id}
+                          isChecked={selectedSubcategories.includes(
+                            subcategory._id,
+                          )}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedSubcategories((prev) => [
+                                ...prev,
+                                subcategory._id,
+                              ]);
+                            } else {
+                              setSelectedSubcategories((prev) =>
+                                prev.filter((id) => id !== subcategory._id),
+                              );
+                            }
+                          }}
+                          colorScheme="teal"
+                        >
+                          {subcategory.name}
+                        </Checkbox>
+                      ))}
+                    </VStack>
+                  )}
+                </FormControl>
+              </>
+            )}
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="gray"
+              mr={3}
+              onClick={closeCategoryModal}
+              borderRadius="12px"
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button
+              colorScheme="teal"
+              onClick={handleCategorySubmit}
+              borderRadius="12px"
+              size="sm"
+              isLoading={toggleLoading[selectedUserId]}
+              isDisabled={
+                categoriesLoading.categories ||
+                categoriesLoading.subcategories ||
+                categoriesError ||
+                !selectedCategory
+              }
+              _hover={{ bg: 'teal.600' }}
+            >
+              Update
             </Button>
           </ModalFooter>
         </ModalContent>
