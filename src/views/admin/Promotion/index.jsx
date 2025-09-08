@@ -467,7 +467,7 @@ export default function PromotionsTable() {
           Promotions
         </Text>
       </Flex>
-      <Box overflowX="auto">
+      <Box overflowX="auto" whiteSpace="nowrap">
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">
           <Thead>
             {table.getHeaderGroups().map((headerGroup) => (
