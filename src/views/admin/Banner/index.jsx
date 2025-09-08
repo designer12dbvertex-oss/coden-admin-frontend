@@ -123,6 +123,8 @@ export default function PromotionsTable() {
           userUniqueId: item.user_id?.unique_id || 'N/A',
           user: capitalizeWords(item.user_id?.full_name) || 'Unknown',
           userId: item.user_id?._id || '',
+					days:item?.days || 'N/A',
+					position:item?.position || 'N/A',
           createdAt: item.createdAt
             ? new Date(item.createdAt).toLocaleString()
             : 'N/A',
@@ -353,6 +355,48 @@ export default function PromotionsTable() {
             textTransform="uppercase"
           >
             Link
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center">
+            <Text color={textColor} fontSize="sm" fontWeight="400">
+              {info.getValue()}
+            </Text>
+          </Flex>
+        ),
+      }),
+			columnHelper.accessor('days', {
+        id: 'days',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+            textTransform="uppercase"
+          >
+            days
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center">
+            <Text color={textColor} fontSize="sm" fontWeight="400">
+              {info.getValue()}
+            </Text>
+          </Flex>
+        ),
+      }),
+			columnHelper.accessor('position', {
+        id: 'position',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+            textTransform="uppercase"
+          >
+            position
           </Text>
         ),
         cell: (info) => (

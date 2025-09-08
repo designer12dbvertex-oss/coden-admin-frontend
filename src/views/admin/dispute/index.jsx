@@ -789,7 +789,7 @@ export default function DisputesTable() {
           </Button>
         </Flex>
       </Box>
-      <Box>
+      <Box overflowX="auto">
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">
           <Thead>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -851,7 +851,7 @@ export default function DisputesTable() {
           <Button
             size="sm"
             onClick={() => goToPage(currentPage - 1)}
-						colorScheme="teal"
+            colorScheme="teal"
             isDisabled={currentPage === 1}
             leftIcon={<ChevronLeftIcon />}
           >
@@ -861,7 +861,7 @@ export default function DisputesTable() {
             <Button
               key={page}
               size="sm"
-							colorScheme="teal"
+              colorScheme="teal"
               onClick={() => goToPage(page)}
               variant={currentPage === page ? 'solid' : 'outline'}
             >
@@ -871,7 +871,7 @@ export default function DisputesTable() {
           <Button
             size="sm"
             onClick={() => goToPage(currentPage + 1)}
-						colorScheme="teal"
+            colorScheme="teal"
             isDisabled={currentPage === totalPages}
             rightIcon={<ChevronRightIcon />}
           >

@@ -20,6 +20,7 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Select from 'react-select'; // Import react-select for searchable dropdown
 import Card from 'components/card/Card';
+import { position } from 'stylis';
 
 export default function BannerForm() {
   const [formData, setFormData] = React.useState({
@@ -27,11 +28,15 @@ export default function BannerForm() {
     title: '',
     link: '',
     user_id: '',
+    days: '',
+    position: '',
   });
   const [formErrors, setFormErrors] = React.useState({
     title: '',
     link: '',
     user_id: '',
+    days: '',
+    position: '',
   });
   const [users, setUsers] = React.useState([]);
   const textColor = useColorModeValue('secondaryGray.900', 'white');
@@ -47,9 +52,12 @@ export default function BannerForm() {
       if (!baseUrl || !token) {
         throw new Error('Missing base URL or authentication token');
       }
-      const response = await axios.get(`${baseUrl}api/admin/getAllUsersForBanner`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${baseUrl}api/admin/getAllUsersForBanner`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       console.log('user response', response);
       if (response.data && Array.isArray(response.data.users)) {
         setUsers(response.data.users);
@@ -89,7 +97,10 @@ export default function BannerForm() {
 
   // Handle react-select change
   const handleSelectChange = (selectedOption) => {
-    setFormData((prev) => ({ ...prev, user_id: selectedOption ? selectedOption.value : '' }));
+    setFormData((prev) => ({
+      ...prev,
+      user_id: selectedOption ? selectedOption.value : '',
+    }));
     setFormErrors((prev) => ({ ...prev, user_id: '' }));
   };
 
@@ -116,6 +127,16 @@ export default function BannerForm() {
       hasError = true;
     }
 
+    if (!formData.days) {
+      newErrors.days = 'Days is required';
+      hasError = true;
+    }
+
+    if (!formData.position) {
+      newErrors.position = 'Position is required';
+      hasError = true;
+    }
+
     if (hasError) {
       setFormErrors(newErrors);
       return;
@@ -126,7 +147,9 @@ export default function BannerForm() {
         throw new Error('Missing base URL or authentication token');
       }
 
-      const selectedUser = users.find((user) => user.unique_id === formData.user_id);
+      const selectedUser = users.find(
+        (user) => user.unique_id === formData.user_id,
+      );
       const userIdToSend = selectedUser ? selectedUser._id : '';
 
       const formDataToSend = new FormData();
@@ -134,10 +157,19 @@ export default function BannerForm() {
       formDataToSend.append('title', formData.title);
       formDataToSend.append('link', formData.link);
       formDataToSend.append('user_id', userIdToSend);
+      formDataToSend.append('days', formData.days);
+      formDataToSend.append('position', formData.position);
 
-      const response = await axios.post(`${baseUrl}api/banner/addBanner`, formDataToSend, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
-      });
+      const response = await axios.post(
+        `${baseUrl}api/banner/addBanner`,
+        formDataToSend,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      );
 
       // console.log('Add Banner Response:', response.data);
       toast({
@@ -203,9 +235,14 @@ export default function BannerForm() {
               onChange={handleImageChange}
               borderRadius="8px"
               borderColor="gray.300"
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+              _focus={{
+                borderColor: 'blue.500',
+                boxShadow: '0 0 0 1px blue.500',
+              }}
             />
-            {formErrors.images && <FormErrorMessage>{formErrors.images}</FormErrorMessage>}
+            {formErrors.images && (
+              <FormErrorMessage>{formErrors.images}</FormErrorMessage>
+            )}
           </FormControl>
 
           {/* Display selected images */}
@@ -240,9 +277,14 @@ export default function BannerForm() {
               placeholder="Enter banner title"
               borderRadius="8px"
               borderColor="gray.300"
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+              _focus={{
+                borderColor: 'blue.500',
+                boxShadow: '0 0 0 1px blue.500',
+              }}
             />
-            {formErrors.title && <FormErrorMessage>{formErrors.title}</FormErrorMessage>}
+            {formErrors.title && (
+              <FormErrorMessage>{formErrors.title}</FormErrorMessage>
+            )}
           </FormControl>
           <FormControl isInvalid={!!formErrors.link} isRequired>
             <FormLabel fontSize="sm" fontWeight="500" color={textColor}>
@@ -255,9 +297,14 @@ export default function BannerForm() {
               placeholder="Enter link (e.g., https://example.com)"
               borderRadius="8px"
               borderColor="gray.300"
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+              _focus={{
+                borderColor: 'blue.500',
+                boxShadow: '0 0 0 1px blue.500',
+              }}
             />
-            {formErrors.link && <FormErrorMessage>{formErrors.link}</FormErrorMessage>}
+            {formErrors.link && (
+              <FormErrorMessage>{formErrors.link}</FormErrorMessage>
+            )}
           </FormControl>
           <FormControl isInvalid={!!formErrors.user_id} isRequired>
             <FormLabel fontSize="sm" fontWeight="500" color={textColor}>
@@ -265,7 +312,9 @@ export default function BannerForm() {
             </FormLabel>
             <Select
               options={userOptions}
-              value={userOptions.find((option) => option.value === formData.user_id)}
+              value={userOptions.find(
+                (option) => option.value === formData.user_id,
+              )}
               onChange={handleSelectChange}
               placeholder="Search by unique ID"
               isClearable
@@ -274,7 +323,9 @@ export default function BannerForm() {
                   ...provided,
                   borderRadius: '8px',
                   borderColor: formErrors.user_id ? 'red.500' : 'gray.300',
-                  '&:hover': { borderColor: formErrors.user_id ? 'red.500' : 'gray.400' },
+                  '&:hover': {
+                    borderColor: formErrors.user_id ? 'red.500' : 'gray.400',
+                  },
                   boxShadow: 'none',
                 }),
                 menu: (provided) => ({
@@ -283,8 +334,51 @@ export default function BannerForm() {
                 }),
               }}
             />
-            {formErrors.user_id && <FormErrorMessage>{formErrors.user_id}</FormErrorMessage>}
+            {formErrors.user_id && (
+              <FormErrorMessage>{formErrors.user_id}</FormErrorMessage>
+            )}
           </FormControl>
+          <FormControl isInvalid={!!formErrors.title} isRequired>
+            <FormLabel fontSize="sm" fontWeight="500" color={textColor}>
+              Days
+            </FormLabel>
+            <Input
+              name="days"
+              value={formData.days}
+              onChange={handleInputChange}
+              placeholder="Enter Days"
+              borderRadius="8px"
+              borderColor="gray.300"
+              _focus={{
+                borderColor: 'blue.500',
+                boxShadow: '0 0 0 1px blue.500',
+              }}
+            />
+            {formErrors.days && (
+              <FormErrorMessage>{formErrors.days}</FormErrorMessage>
+            )}
+          </FormControl>
+          <FormControl isInvalid={!!formErrors.title} isRequired>
+            <FormLabel fontSize="sm" fontWeight="500" color={textColor}>
+              Position
+            </FormLabel>
+            <Input
+              name="position"
+              value={formData.position}
+              onChange={handleInputChange}
+              placeholder="Enter Position"
+              borderRadius="8px"
+              borderColor="gray.300"
+              _focus={{
+                borderColor: 'blue.500',
+                boxShadow: '0 0 0 1px blue.500',
+              }}
+            />
+            {formErrors.position && (
+              <FormErrorMessage>{formErrors.position}</FormErrorMessage>
+            )}
+          </FormControl>
+
           <Button
             colorScheme="teal"
             onClick={submitBanner}

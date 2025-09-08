@@ -38,7 +38,6 @@ import defaultProfilePic from 'assets/img/profile/profile.webp';
 import Card from 'components/card/Card';
 import def from 'ajv/dist/vocabularies/applicator/additionalItems';
 
-
 const columnHelper = createColumnHelper();
 
 export default function PromotionsTable() {
@@ -47,8 +46,16 @@ export default function PromotionsTable() {
   const [error, setError] = React.useState(null);
   const [selectedImages, setSelectedImages] = React.useState([]);
   const [selectedImage, setSelectedImage] = React.useState(null);
-  const { isOpen: isImagesOpen, onOpen: onImagesOpen, onClose: onImagesClose } = useDisclosure();
-  const { isOpen: isImageOpen, onOpen: onImageOpen, onClose: onImageClose } = useDisclosure();
+  const {
+    isOpen: isImagesOpen,
+    onOpen: onImagesOpen,
+    onClose: onImagesClose,
+  } = useDisclosure();
+  const {
+    isOpen: isImageOpen,
+    onOpen: onImageOpen,
+    onClose: onImageClose,
+  } = useDisclosure();
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const navigate = useNavigate();
@@ -73,21 +80,27 @@ export default function PromotionsTable() {
         throw new Error('Missing base URL or authentication token');
       }
       setLoading(true);
-      const response = await axios.get(`${baseUrl}api/promotion/getAllPromotions`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${baseUrl}api/promotion/getAllPromotions`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       console.log('API Response (Promotions):', response.data);
 
       if (!response.data || !Array.isArray(response.data.data)) {
-        throw new Error('Invalid response format: Expected an array of promotions');
+        throw new Error(
+          'Invalid response format: Expected an array of promotions',
+        );
       }
 
       const formattedData = response.data.data.map((item) => {
-        const images = item.images?.map((img) => {
-          const fullImageUrl = `${baseUrl}${img}`;
-          console.log('Constructed Image URL:', fullImageUrl); // Debug image URLs
-          return fullImageUrl;
-        }) || [];
+        const images =
+          item.images?.map((img) => {
+            const fullImageUrl = `${baseUrl}${img}`;
+            console.log('Constructed Image URL:', fullImageUrl); // Debug image URLs
+            return fullImageUrl;
+          }) || [];
         return {
           id: item._id,
           title: capitalizeWords(item.title) || 'Untitled',
@@ -96,9 +109,9 @@ export default function PromotionsTable() {
           date: item.date || 'N/A',
           user: capitalizeWords(item.user_id?.full_name) || 'Unknown',
           userId: item.user_id?._id || '',
-					paymentId:item.paymentId || 'N/A',
-          amount:item.amount || 'N/A',
-					phone:item.phone || 'N/A',
+          paymentId: item.paymentId || 'N/A',
+          amount: item.amount || 'N/A',
+          phone: item.phone || 'N/A',
           createdAt: new Date(item.createdAt).toLocaleString(),
         };
       });
@@ -109,8 +122,10 @@ export default function PromotionsTable() {
       console.error('Fetch Promotions Error:', err);
       if (
         err.response?.data?.message === 'Not authorized, token failed' ||
-        err.response?.data?.message === 'Session expired or logged in on another device' ||
-        err.response?.data?.message === 'Un-Authorized, You are not authorized to access this route.' ||
+        err.response?.data?.message ===
+          'Session expired or logged in on another device' ||
+        err.response?.data?.message ===
+          'Un-Authorized, You are not authorized to access this route.' ||
         err.response?.data?.message === 'Not authorized, token failed'
       ) {
         localStorage.removeItem('token');
@@ -211,7 +226,7 @@ export default function PromotionsTable() {
           </Flex>
         ),
       }),
-			 columnHelper.accessor('phone', {
+      columnHelper.accessor('phone', {
         id: 'phone',
         header: () => (
           <Text
@@ -232,7 +247,7 @@ export default function PromotionsTable() {
           </Flex>
         ),
       }),
-			 columnHelper.accessor('amount', {
+      columnHelper.accessor('amount', {
         id: 'amount',
         header: () => (
           <Text
@@ -336,7 +351,7 @@ export default function PromotionsTable() {
           </Flex>
         ),
       }),
-			 columnHelper.accessor('paymentId', {
+      columnHelper.accessor('paymentId', {
         id: 'paymentId',
         header: () => (
           <Text
@@ -379,7 +394,7 @@ export default function PromotionsTable() {
         ),
       }),
     ],
-    [textColor]
+    [textColor],
   );
 
   const table = useReactTable({
@@ -452,7 +467,7 @@ export default function PromotionsTable() {
           Promotions
         </Text>
       </Flex>
-      <Box>
+      <Box overflowX="auto">
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">
           <Thead>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -473,7 +488,7 @@ export default function PromotionsTable() {
                     >
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext()
+                        header.getContext(),
                       )}
                     </Flex>
                   </Th>
@@ -502,8 +517,16 @@ export default function PromotionsTable() {
         {/* Pagination Controls */}
         <Flex justifyContent="space-between" alignItems="center" mt="4">
           <Text fontSize="sm" color="gray.500">
-            Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-            {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, data.length)}{' '}
+            Showing{' '}
+            {table.getState().pagination.pageIndex *
+              table.getState().pagination.pageSize +
+              1}{' '}
+            to{' '}
+            {Math.min(
+              (table.getState().pagination.pageIndex + 1) *
+                table.getState().pagination.pageSize,
+              data.length,
+            )}{' '}
             of {data.length} users
           </Text>
           <Flex gap="2" alignItems="center">
@@ -515,17 +538,23 @@ export default function PromotionsTable() {
             >
               Previous
             </Button>
-            {Array.from({ length: table.getPageCount() }, (_, i) => i).map((page) => (
-              <Button
-                key={page}
-                size="sm"
-                colorScheme="teal"
-                variant={table.getState().pagination.pageIndex === page ? 'solid' : 'outline'}
-                onClick={() => table.setPageIndex(page)}
-              >
-                {page + 1}
-              </Button>
-            ))}
+            {Array.from({ length: table.getPageCount() }, (_, i) => i).map(
+              (page) => (
+                <Button
+                  key={page}
+                  size="sm"
+                  colorScheme="teal"
+                  variant={
+                    table.getState().pagination.pageIndex === page
+                      ? 'solid'
+                      : 'outline'
+                  }
+                  onClick={() => table.setPageIndex(page)}
+                >
+                  {page + 1}
+                </Button>
+              ),
+            )}
             <Button
               size="sm"
               colorScheme="teal"
