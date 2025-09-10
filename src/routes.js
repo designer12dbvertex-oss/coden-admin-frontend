@@ -52,6 +52,9 @@ import PendingWorker from 'views/admin/PendingWorker';
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
 import { FaBullhorn, FaChartLine, FaFileContract, FaGavel, FaMoneyBillWave,} from 'react-icons/fa';
+import DirectPaymentCreate from 'views/admin/directPaymentCreate';
+import BiddingPaymentCreate from 'views/admin/biddingPaymentCreate';
+import BiddingPaymentREquest from 'views/admin/biddingPaymentRequest';
 
 const routes = [
   {
@@ -167,12 +170,34 @@ const routes = [
     component: <Emergency />,
   },
 	 {
+    name: 'Direct Payment Create',
+    layout: '/admin',
+    icon: <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />,
+    path: '/direct-payment-create',
+    component: <DirectPaymentCreate />,
+  },
+	 {
     name: 'Direct Payment Request',
     layout: '/admin',
     icon: <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />,
     path: '/direct_payment_request',
     component: <DirectPaymentRequest />,
   },
+	{
+    name: 'Bidding Payment Request',
+    layout: '/admin',
+    icon: <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />,
+    path: '/bidding_payment_request',
+    component: <BiddingPaymentREquest />,
+  },
+	 {
+    name: 'Bidding Payment Create',
+    layout: '/admin',
+    icon: <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />,
+    path: '/bidding_payment_create',
+    component: <BiddingPaymentCreate />,
+  },
+	
 	{
     name: 'Total Revenue',
     layout: '/admin',

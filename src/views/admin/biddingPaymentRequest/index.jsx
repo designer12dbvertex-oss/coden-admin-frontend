@@ -49,7 +49,7 @@ import Card from 'components/card/Card';
 
 const columnHelper = createColumnHelper();
 
-export default function OrdersTable() {
+export default function BiddingPaymentREquest() {
   const [sorting, setSorting] = React.useState([]);
   const [allData, setAllData] = React.useState([]);
   const [data, setData] = React.useState([]);
@@ -84,7 +84,7 @@ export default function OrdersTable() {
         }
         setLoading(true);
         const response = await axios.get(
-          `${baseUrl}api/admin/getReleaseRequestedDirectOrders`,
+          `${baseUrl}api/admin/getReleaseRequestedBiddingOrders`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
