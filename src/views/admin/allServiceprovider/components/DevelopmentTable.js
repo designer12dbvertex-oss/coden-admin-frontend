@@ -620,24 +620,32 @@ export default function ComplexTable() {
       setData,
       setError,
     );
-      
+
     if (success) {
       setData((prevData) =>
         prevData.map((user) =>
           user.id === selectedUserId
             ? {
                 ...user,
+                // this 4 line add
+                userDetails: {
+                  ...user.userDetails,
+                  category_id: { _id: selectedCategory },
+                  subcategory_ids: selectedSubcategories.map((id) => ({
+                    _id: id,
+                  })),
+                },
                 categoryName:
                   categories.find((cat) => cat._id === selectedCategory)
                     ?.name || 'N/A',
                 subcategoryNames: subcategories
                   .filter((sub) => selectedSubcategories.includes(sub._id))
                   .map((sub) => sub.name || 'N/A'),
-								
               }
             : user,
         ),
       );
+
       closeCategoryModal();
     }
     setToggleLoading((prev) => ({ ...prev, [selectedUserId]: false }));
@@ -1817,18 +1825,3 @@ export default function ComplexTable() {
     </Card>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -347,6 +347,8 @@ export default function ServiceProviderDetails() {
     );
   }
 
+	console.log(data.user?.rateAndReviews,"addddddddddddddddddddddddddddd")
+
   return (
     <>
       <Card
@@ -882,7 +884,7 @@ export default function ServiceProviderDetails() {
                             {review.images?.map((img, imgIndex) => (
                               <Image
                                 key={imgIndex}
-                                src={`${img}`}
+                                src={`${baseUrl}/${img}`}
                                 alt={`Review Image ${imgIndex + 1}`}
                                 boxSize="50px"
                                 objectFit="cover"

@@ -21,6 +21,8 @@ import {
   Select,
   HStack,
   Switch,
+  WrapItem,
+  Wrap,
 } from '@chakra-ui/react';
 import axios from 'axios';
 import * as React from 'react';
@@ -276,7 +278,6 @@ export default function ServiceProviderDetails() {
       </Card>
     );
   }
-
   return (
     <>
       <Card
@@ -347,7 +348,11 @@ export default function ServiceProviderDetails() {
               </ChakraCard>
 
               {/* Service Provider Details and Document Section */}
-              <Flex gap="6" align="flex-start" direction={{ base: 'column', md: 'row' }}>
+              <Flex
+                gap="6"
+                align="flex-start"
+                direction={{ base: 'column', md: 'row' }}
+              >
                 <ChakraCard
                   p="15px"
                   borderRadius="lg"
@@ -382,7 +387,7 @@ export default function ServiceProviderDetails() {
                         {data.user?.location.address || 'N/A'}
                       </Text>
                     </Flex>
-                    
+
                     {/*<Flex align="start" gap="4" wrap="wrap">
                       <Text fontWeight="semibold" color={textColor}>
                         Address:
@@ -419,7 +424,9 @@ export default function ServiceProviderDetails() {
                       <Text fontWeight="semibold" color={textColor}>
                         Category:
                       </Text>
-                      <Text color={textColor}>{data.user?.category_id?.name || 'N/A'}</Text>
+                      <Text color={textColor}>
+                        {data.user?.category_id?.name || 'N/A'}
+                      </Text>
                     </Flex>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
@@ -508,7 +515,12 @@ export default function ServiceProviderDetails() {
                         borderColor={borderColor}
                         borderRadius="8px"
                       >
-                        <Text fontSize="md" fontWeight="600" color={textColor} mb={2}>
+                        <Text
+                          fontSize="md"
+                          fontWeight="600"
+                          color={textColor}
+                          mb={2}
+                        >
                           Inactivation Details
                         </Text>
                         <Flex align="start" gap="4">
@@ -516,8 +528,12 @@ export default function ServiceProviderDetails() {
                             Inactivated By:
                           </Text>
                           <Text color={textColor}>
-                            {data.user.inactivationInfo.inactivatedBy?.full_name || 'N/A'} (
-                            {data.user.inactivationInfo.inactivatedBy?.email || 'N/A'})
+                            {data.user.inactivationInfo.inactivatedBy
+                              ?.full_name || 'N/A'}{' '}
+                            (
+                            {data.user.inactivationInfo.inactivatedBy?.email ||
+                              'N/A'}
+                            )
                           </Text>
                         </Flex>
                         <Flex align="start" gap="4" mt={2}>
@@ -533,7 +549,8 @@ export default function ServiceProviderDetails() {
                             Dispute ID:
                           </Text>
                           <Text color={textColor}>
-                            {data.user.inactivationInfo.disputeId?.unique_id || 'N/A'}
+                            {data.user.inactivationInfo.disputeId?.unique_id ||
+                              'N/A'}
                           </Text>
                         </Flex>
                         <Flex align="start" gap="4" mt={2}>
@@ -542,7 +559,9 @@ export default function ServiceProviderDetails() {
                           </Text>
                           <Text color={textColor}>
                             {data.user.inactivationInfo.inactivatedAt
-                              ? new Date(data.user.inactivationInfo.inactivatedAt).toLocaleString()
+                              ? new Date(
+                                  data.user.inactivationInfo.inactivatedAt,
+                                ).toLocaleString()
                               : 'N/A'}
                           </Text>
                         </Flex>
@@ -672,12 +691,19 @@ export default function ServiceProviderDetails() {
                             <Text fontWeight="medium" color={textColor}>
                               Monthly:
                             </Text>
-                            {Object.keys(data.payments.direct.monthly).length > 0 ? (
-                              Object.entries(data.payments.direct.monthly).map(([month, amount]) => (
-                                <Text key={month} color={textColor} fontSize="sm">
-                                  {month}: ₹{amount}
-                                </Text>
-                              ))
+                            {Object.keys(data.payments.direct.monthly).length >
+                            0 ? (
+                              Object.entries(data.payments.direct.monthly).map(
+                                ([month, amount]) => (
+                                  <Text
+                                    key={month}
+                                    color={textColor}
+                                    fontSize="sm"
+                                  >
+                                    {month}: ₹{amount}
+                                  </Text>
+                                ),
+                              )
                             ) : (
                               <Text color={textColor} fontSize="sm">
                                 N/A
@@ -688,12 +714,19 @@ export default function ServiceProviderDetails() {
                             <Text fontWeight="medium" color={textColor}>
                               Yearly:
                             </Text>
-                            {Object.keys(data.payments.direct.yearly).length > 0 ? (
-                              Object.entries(data.payments.direct.yearly).map(([year, amount]) => (
-                                <Text key={year} color={textColor} fontSize="sm">
-                                  {year}: ₹{amount}
-                                </Text>
-                              ))
+                            {Object.keys(data.payments.direct.yearly).length >
+                            0 ? (
+                              Object.entries(data.payments.direct.yearly).map(
+                                ([year, amount]) => (
+                                  <Text
+                                    key={year}
+                                    color={textColor}
+                                    fontSize="sm"
+                                  >
+                                    {year}: ₹{amount}
+                                  </Text>
+                                ),
+                              )
                             ) : (
                               <Text color={textColor} fontSize="sm">
                                 N/A
@@ -714,12 +747,19 @@ export default function ServiceProviderDetails() {
                             <Text fontWeight="medium" color={textColor}>
                               Monthly:
                             </Text>
-                            {Object.keys(data.payments.bidding.monthly).length > 0 ? (
-                              Object.entries(data.payments.bidding.monthly).map(([month, amount]) => (
-                                <Text key={month} color={textColor} fontSize="sm">
-                                  {month}: ₹{amount}
-                                </Text>
-                              ))
+                            {Object.keys(data.payments.bidding.monthly).length >
+                            0 ? (
+                              Object.entries(data.payments.bidding.monthly).map(
+                                ([month, amount]) => (
+                                  <Text
+                                    key={month}
+                                    color={textColor}
+                                    fontSize="sm"
+                                  >
+                                    {month}: ₹{amount}
+                                  </Text>
+                                ),
+                              )
                             ) : (
                               <Text color={textColor} fontSize="sm">
                                 N/A
@@ -730,12 +770,19 @@ export default function ServiceProviderDetails() {
                             <Text fontWeight="medium" color={textColor}>
                               Yearly:
                             </Text>
-                            {Object.keys(data.payments.bidding.yearly).length > 0 ? (
-                              Object.entries(data.payments.bidding.yearly).map(([year, amount]) => (
-                                <Text key={year} color={textColor} fontSize="sm">
-                                  {year}: ₹{amount}
-                                </Text>
-                              ))
+                            {Object.keys(data.payments.bidding.yearly).length >
+                            0 ? (
+                              Object.entries(data.payments.bidding.yearly).map(
+                                ([year, amount]) => (
+                                  <Text
+                                    key={year}
+                                    color={textColor}
+                                    fontSize="sm"
+                                  >
+                                    {year}: ₹{amount}
+                                  </Text>
+                                ),
+                              )
                             ) : (
                               <Text color={textColor} fontSize="sm">
                                 N/A
@@ -756,9 +803,16 @@ export default function ServiceProviderDetails() {
                             <Text fontWeight="medium" color={textColor}>
                               Monthly:
                             </Text>
-                            {Object.keys(data.payments.emergency.monthly).length > 0 ? (
-                              Object.entries(data.payments.emergency.monthly).map(([month, amount]) => (
-                                <Text key={month} color={textColor} fontSize="sm">
+                            {Object.keys(data.payments.emergency.monthly)
+                              .length > 0 ? (
+                              Object.entries(
+                                data.payments.emergency.monthly,
+                              ).map(([month, amount]) => (
+                                <Text
+                                  key={month}
+                                  color={textColor}
+                                  fontSize="sm"
+                                >
                                   {month}: ₹{amount}
                                 </Text>
                               ))
@@ -772,9 +826,16 @@ export default function ServiceProviderDetails() {
                             <Text fontWeight="medium" color={textColor}>
                               Yearly:
                             </Text>
-                            {Object.keys(data.payments.emergency.yearly).length > 0 ? (
-                              Object.entries(data.payments.emergency.yearly).map(([year, amount]) => (
-                                <Text key={year} color={textColor} fontSize="sm">
+                            {Object.keys(data.payments.emergency.yearly)
+                              .length > 0 ? (
+                              Object.entries(
+                                data.payments.emergency.yearly,
+                              ).map(([year, amount]) => (
+                                <Text
+                                  key={year}
+                                  color={textColor}
+                                  fontSize="sm"
+                                >
                                   {year}: ₹{amount}
                                 </Text>
                               ))
@@ -798,12 +859,19 @@ export default function ServiceProviderDetails() {
                           <Text fontWeight="medium" color={textColor}>
                             Monthly:
                           </Text>
-                          {Object.keys(data.payments.totals.monthly).length > 0 ? (
-                            Object.entries(data.payments.totals.monthly).map(([month, amount]) => (
-                              <Text key={month} color={textColor} fontSize="sm">
-                                {month}: ₹{amount}
-                              </Text>
-                            ))
+                          {Object.keys(data.payments.totals.monthly).length >
+                          0 ? (
+                            Object.entries(data.payments.totals.monthly).map(
+                              ([month, amount]) => (
+                                <Text
+                                  key={month}
+                                  color={textColor}
+                                  fontSize="sm"
+                                >
+                                  {month}: ₹{amount}
+                                </Text>
+                              ),
+                            )
                           ) : (
                             <Text color={textColor} fontSize="sm">
                               N/A
@@ -814,12 +882,19 @@ export default function ServiceProviderDetails() {
                           <Text fontWeight="medium" color={textColor}>
                             Yearly:
                           </Text>
-                          {Object.keys(data.payments.totals.yearly).length > 0 ? (
-                            Object.entries(data.payments.totals.yearly).map(([year, amount]) => (
-                              <Text key={year} color={textColor} fontSize="sm">
-                                {year}: ₹{amount}
-                              </Text>
-                            ))
+                          {Object.keys(data.payments.totals.yearly).length >
+                          0 ? (
+                            Object.entries(data.payments.totals.yearly).map(
+                              ([year, amount]) => (
+                                <Text
+                                  key={year}
+                                  color={textColor}
+                                  fontSize="sm"
+                                >
+                                  {year}: ₹{amount}
+                                </Text>
+                              ),
+                            )
                           ) : (
                             <Text color={textColor} fontSize="sm">
                               N/A
@@ -934,17 +1009,19 @@ export default function ServiceProviderDetails() {
                   Work Samples
                 </Text>
                 {data.user?.hiswork?.length > 0 ? (
-                  <HStack spacing="2" mt="2">
+                  <Wrap spacing="2" mt="2">
                     {data.user.hiswork.map((work, index) => (
-                      <Image
-                        key={index}
-                        src={`${work}`}
-                        alt={`Work Sample ${index + 1}`}
-                        boxSize="100px"
-                        objectFit="cover"
-                      />
+                      <WrapItem key={index}>
+                        <Image
+                          key={index}
+                          src={`${work}`}
+                          alt={`Work Sample ${index + 1}`}
+                          boxSize="100px"
+                          objectFit="cover"
+                        />
+                      </WrapItem>
                     ))}
-                  </HStack>
+                  </Wrap>
                 ) : (
                   <Text color={textColor} mt="2">
                     No work samples available
@@ -1021,7 +1098,11 @@ export default function ServiceProviderDetails() {
         size="xl"
       >
         <ModalOverlay bg="blackAlpha.600" />
-        <ModalContent borderRadius="16px" bg={cardBg} boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)">
+        <ModalContent
+          borderRadius="16px"
+          bg={cardBg}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
           <ModalHeader fontSize="lg" fontWeight="700" color={textColor}>
             Document Preview
           </ModalHeader>
@@ -1042,7 +1123,12 @@ export default function ServiceProviderDetails() {
       </Modal>
 
       {/* Address Modal */}
-      <Modal isOpen={isAddressModalOpen} onClose={closeAddressModal} isCentered size="lg">
+      <Modal
+        isOpen={isAddressModalOpen}
+        onClose={closeAddressModal}
+        isCentered
+        size="lg"
+      >
         <ModalOverlay bg="blackAlpha.600" />
         <ModalContent
           maxW={{ base: '90%', md: '600px' }}
