@@ -60,6 +60,8 @@ export default function ServiceProviderDetails() {
   const [selectedAddresses, setSelectedAddresses] = React.useState([]);
   const [isRejectionModalOpen, setIsRejectionModalOpen] = React.useState(false);
   const [rejectionReason, setRejectionReason] = React.useState('');
+  const [isWorkerRejectionModalOpen, setIsWorkerRejectionModalOpen] = React.useState(false);
+  const [workerRejectionReason, setWorkerRejectionReason] = React.useState('');
   const navigate = useNavigate();
   const { service_provider_id } = useParams();
   const baseUrl = process.env.REACT_APP_BASE_URL;
@@ -127,7 +129,7 @@ export default function ServiceProviderDetails() {
       switch (status) {
         case 'approved':
           return { bg: 'green.100', color: 'green.800' };
-					case 'verified':
+        case 'verified':
           return { bg: 'green.100', color: 'green.800' };
         case 'pending':
           return { bg: 'yellow.100', color: 'yellow.800' };
@@ -261,13 +263,25 @@ export default function ServiceProviderDetails() {
     closeRejectionModal();
   };
 
+  // Update workerRejectionReason when a worker is selected
+  React.useEffect(() => {
+    if (selectedWorker) {
+      setVerifyStatus(selectedWorker.verifyStatus || 'pending');
+      setWorkerRejectionReason(
+        selectedWorker.verifyStatus === 'rejected'
+          ? selectedWorker.rejectionReason || ''
+          : '',
+      );
+    }
+  }, [selectedWorker]);
+
   // Update verification status for Worker
   const handleWorkerVerifyStatusUpdate = async (worker) => {
     try {
       const endpoint = `${baseUrl}api/worker/verify/${worker._id}`;
       const response = await axios.put(
         endpoint,
-        { verifyStatus },
+        { verifyStatus, reason: verifyStatus === 'rejected' ? workerRejectionReason : null },
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -279,11 +293,65 @@ export default function ServiceProviderDetails() {
       setData((prevData) => ({
         ...prevData,
         workers: prevData.workers.map((w) =>
-          w._id === worker._id ? { ...w, verifyStatus } : w,
+          w._id === worker._id
+            ? { ...w, verifyStatus, rejectionReason: verifyStatus === 'rejected' ? workerRejectionReason : null }
+            : w,
         ),
       }));
+			setSelectedWorker(null);
     } catch (err) {
       console.error('Update Worker Verification Status Error:', err);
+      toast.error(
+        err.response?.data?.message ||
+          'Failed to update Worker verification status',
+        {
+          position: 'top-right',
+          autoClose: 3000,
+        },
+      );
+    }
+  };
+
+  // Handle worker rejection submission
+  const handleWorkerRejectionSubmit = async () => {
+    if (!workerRejectionReason) {
+      toast.error('Reason for rejection is required', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+
+    try {
+      const endpoint = `${baseUrl}api/worker/verify/${selectedWorker._id}`;
+      const response = await axios.put(
+        endpoint,
+        { verifyStatus: 'rejected', reason: workerRejectionReason },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      toast.success('Worker verification status updated successfully', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      setData((prevData) => ({
+        ...prevData,
+        workers: prevData.workers.map((w) =>
+          w._id === selectedWorker._id
+            ? { ...w, verifyStatus: 'rejected', rejectionReason: workerRejectionReason }
+            : w,
+        ),
+      }));
+      setIsWorkerRejectionModalOpen(false);
+      setWorkerRejectionReason('');
+      setSelectedWorker(null);
+    } catch (err) {
+      console.error('Update Worker Rejection Error:', err);
       toast.error(
         err.response?.data?.message ||
           'Failed to update Worker verification status',
@@ -1286,6 +1354,71 @@ export default function ServiceProviderDetails() {
         </ModalContent>
       </Modal>
 
+      {/* Worker Rejection Reason Modal */}
+      <Modal
+        isOpen={isWorkerRejectionModalOpen}
+        onClose={() => {
+          setIsWorkerRejectionModalOpen(false);
+          setWorkerRejectionReason('');
+        }}
+        isCentered
+      >
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '500px' }}
+          borderRadius="16px"
+          bg={cardBg}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            Worker Rejection Reason
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            <FormControl isRequired mb={4}>
+              <FormLabel color={textColor}>Reason for Rejection</FormLabel>
+              <Textarea
+                value={workerRejectionReason}
+                onChange={(e) => setWorkerRejectionReason(e.target.value)}
+                placeholder="Enter reason for worker rejection"
+                bg={textareaBg}
+                borderRadius="8px"
+              />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="gray"
+              mr={3}
+              onClick={() => {
+                setIsWorkerRejectionModalOpen(false);
+                setWorkerRejectionReason('');
+              }}
+              borderRadius="12px"
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button
+              colorScheme="red"
+              onClick={handleWorkerRejectionSubmit}
+              borderRadius="12px"
+              size="sm"
+              isLoading={toggleLoading}
+              _hover={{ bg: 'red.600' }}
+            >
+              Submit
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Worker Details Modal */}
       {selectedWorker && (
         <Modal
@@ -1404,7 +1537,7 @@ export default function ServiceProviderDetails() {
                         : 'N/A'}
                     </Text>
                   </Flex>
-                  <Flex align="start" gap="4">
+                  {/*<Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Assigned Orders:
                     </Text>
@@ -1415,14 +1548,19 @@ export default function ServiceProviderDetails() {
                             .join(', ')
                         : 'None'}
                     </Text>
-                  </Flex>
+                  </Flex> */}
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Verification Status:
                     </Text>
                     <Select
                       value={verifyStatus}
-                      onChange={(e) => setVerifyStatus(e.target.value)}
+                      onChange={(e) => {
+                        setVerifyStatus(e.target.value);
+                        if (e.target.value === 'rejected') {
+                          setIsWorkerRejectionModalOpen(true); // Open rejection modal only for rejected status
+                        }
+                      }}
                       width="150px"
                       bg={selectBg}
                       borderRadius="8px"
@@ -1432,6 +1570,16 @@ export default function ServiceProviderDetails() {
                       <option value="rejected">Rejected</option>
                     </Select>
                   </Flex>
+                  {selectedWorker.verifyStatus === 'rejected' && (
+                    <Flex align="start" gap="4">
+                      <Text fontWeight="semibold" color={textColor}>
+                        Rejection Reason:
+                      </Text>
+                      <Text color={textColor}>
+                        {selectedWorker.rejectionReason || 'N/A'}
+                      </Text>
+                    </Flex>
+                  )}
                 </VStack>
               </ChakraCard>
             </ModalBody>
