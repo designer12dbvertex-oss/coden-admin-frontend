@@ -104,7 +104,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
               : 'N/A',
             referral_code: user.referral_code || 'N/A',
             createdBy: user.createdBy?.full_name || 'Self-Registered',
-            verified: user.verified ?? false,
+            verified: user.verificationStatus ?? false,
             active: user.active ?? true,
             inactivationInfo: user.inactivationInfo || null,
             categoryName: user.category_id?.name || 'N/A',
@@ -383,20 +383,23 @@ const toggleUserVerified = async (
   baseUrl,
   token,
   userId,
-  verified,
+  status,
   setData,
   setError,
+  reason = '',
 ) => {
   try {
     const response = await axios.patch(
       `${baseUrl}api/admin/updateUserverified`,
-      { userId, verified: !verified },
+      { userId, status, reason },
       { headers: { Authorization: `Bearer ${token}` } },
     );
     if (response.data.success) {
       setData((prevData) =>
         prevData.map((user) =>
-          user.id === userId ? { ...user, verified: !verified } : user,
+          user.id === userId
+            ? { ...user, verified: status, rejectionReason: status === 'rejected' ? reason : null }
+            : user,
         ),
       );
       toast.success('User verification status updated successfully!', {
@@ -441,9 +444,11 @@ export default function ComplexTable() {
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [isInactivationModalOpen, setIsInactivationModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [selectedInactivationInfo, setSelectedInactivationInfo] = useState(null);
   const [deactivateReason, setDeactivateReason] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
   const [disputeId, setDisputeId] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategories, setSelectedSubcategories] = useState([]);
@@ -566,6 +571,18 @@ export default function ComplexTable() {
     setSelectedSubcategories([]);
   }, []);
 
+  const openRejectionModal = useCallback((userId) => {
+    setSelectedUserId(userId);
+    setRejectionReason('');
+    setIsRejectionModalOpen(true);
+  }, []);
+
+  const closeRejectionModal = useCallback(() => {
+    setIsRejectionModalOpen(false);
+    setSelectedUserId(null);
+    setRejectionReason('');
+  }, []);
+
   // Toggle handler for user status
   const handleToggleStatus = useCallback(
     async (userId, currentActive) => {
@@ -630,6 +647,45 @@ export default function ComplexTable() {
     setData,
     setError,
     closeDeactivateModal,
+  ]);
+
+  // Handle rejection reason submission
+  const handleRejectionSubmit = useCallback(async () => {
+    if (!rejectionReason) {
+      toast.error('Reason for rejection is required', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+
+    setToggleLoading((prev) => ({ ...prev, [selectedUserId]: true }));
+    const success = await toggleUserVerified(
+      baseUrl,
+      token,
+      selectedUserId,
+      'rejected',
+      setData,
+      setError,
+      rejectionReason,
+    );
+    setToggleLoading((prev) => ({ ...prev, [selectedUserId]: false }));
+
+    if (success) {
+      closeRejectionModal();
+    }
+  }, [
+    baseUrl,
+    token,
+    selectedUserId,
+    rejectionReason,
+    setData,
+    setError,
+    closeRejectionModal,
   ]);
 
   // Handle category update submission
@@ -713,21 +769,26 @@ export default function ComplexTable() {
   ]);
 
   const handleToggleVerified = useCallback(
-    async (userId, currentVerified) => {
+    async (userId, status) => {
       if (toggleLoading[userId]) return;
+      if (status === 'rejected') {
+        openRejectionModal(userId);
+        return;
+      }
+
       setToggleLoading((prev) => ({ ...prev, [userId]: true }));
       const success = await toggleUserVerified(
         baseUrl,
         token,
         userId,
-        currentVerified,
+        status,
         setData,
         setError,
       );
       setToggleLoading((prev) => ({ ...prev, [userId]: false }));
       return success;
     },
-    [baseUrl, token, setData, setError, toggleLoading],
+    [baseUrl, token, setData, setError, toggleLoading, openRejectionModal],
   );
 
   const handleViewDetails = useCallback(
@@ -1127,15 +1188,26 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Switch
-            isChecked={info.getValue()}
-            onChange={() =>
-              handleToggleVerified(info.row.original.id, info.getValue())
+          <Select
+            value={info.getValue()}
+            onChange={(e) =>
+              handleToggleVerified(
+                info.row.original.id,
+                e.target.value,
+              )
             }
+            size="sm"
             colorScheme="teal"
             isDisabled={toggleLoading[info.row.original.id]}
-            aria-label={`Toggle verified status for ${info.row.original.full_name}`}
-          />
+            aria-label={`Set verification status for ${info.row.original.full_name}`}
+            bg={useColorModeValue('gray.100', 'gray.700')}
+            borderRadius="8px"
+            width="120px"
+          >
+            <option value="pending">Pending</option>
+            <option value="verified">Verified</option>
+            <option value="rejected">Rejected</option>
+          </Select>
         ),
       }),
       columnHelper.display({
@@ -1585,6 +1657,66 @@ export default function ComplexTable() {
               _hover={{ bg: 'red.600' }}
             >
               Deactivate
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      {/* Modal for rejection reason */}
+      <Modal
+        isOpen={isRejectionModalOpen}
+        onClose={closeRejectionModal}
+        isCentered
+      >
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '500px' }}
+          borderRadius="16px"
+          bg={useColorModeValue('white', 'gray.800')}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            Rejection Reason
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            <FormControl isRequired mb={4}>
+              <FormLabel color={textColor}>
+                Reason for Rejection
+              </FormLabel>
+              <Textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Enter reason for rejection"
+                bg={useColorModeValue('gray.100', 'gray.700')}
+                borderRadius="8px"
+              />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="gray"
+              mr={3}
+              onClick={closeRejectionModal}
+              borderRadius="12px"
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button
+              colorScheme="red"
+              onClick={handleRejectionSubmit}
+              borderRadius="12px"
+              size="sm"
+              isLoading={toggleLoading[selectedUserId]}
+              _hover={{ bg: 'red.600' }}
+            >
+              Submit
             </Button>
           </ModalFooter>
         </ModalContent>

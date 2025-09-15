@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* eslint-disable react-hooks/exhaustive-deps */ // Disable specific rule with justification: useEffect dependencies are intentionally limited
 import {
   Box,
   Flex,
@@ -103,12 +103,14 @@ const useFetchUsers = (baseUrl, token, navigate) => {
               : 'N/A',
             referral_code: user.referral_code || 'N/A',
             createdBy: user.createdBy?.full_name || 'Self-Registered',
-            verified: user.verified ?? false,
+            verified: user.verificationStatus || 'pending',
             active: user.active ?? true,
             inactivationInfo: user.inactivationInfo || null,
             categoryName: user.category_id?.name || 'N/A',
-            subcategoryNames: user.subcategory_ids?.map((sub) => sub.name || 'N/A') || [],
+            subcategoryNames:
+              user.subcategory_ids?.map((sub) => sub.name || 'N/A') || [],
             userDetails: user,
+            rejectionReason: user.rejectionReason || null,
           })),
         );
       } catch (error) {
@@ -225,20 +227,27 @@ const toggleUserVerified = async (
   baseUrl,
   token,
   userId,
-  verified,
+  status,
   setData,
   setError,
+  reason = '',
 ) => {
   try {
     const response = await axios.post(
       `${baseUrl}api/admin/approveServiceProvider`,
-      { userId },
+      { userId, status, reason },
       { headers: { Authorization: `Bearer ${token}` } },
     );
     if (response.data.success) {
       setData((prevData) =>
         prevData.map((user) =>
-          user.id === userId ? { ...user, verified: !verified } : user,
+          user.id === userId
+            ? {
+                ...user,
+                verified: status,
+                rejectionReason: status === 'rejected' ? reason : null,
+              }
+            : user,
         ),
       );
       toast.success('User verification status updated successfully!', {
@@ -275,7 +284,7 @@ const toggleUserVerified = async (
   }
 };
 
-export default function ComplexTable() {
+export default function DevelopmentTable() {
   const [sorting, setSorting] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -286,14 +295,22 @@ export default function ComplexTable() {
   const [expandedCategories, setExpandedCategories] = useState({});
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [isInactivationModalOpen, setIsInactivationModalOpen] = useState(false);
+  const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
-  const [selectedInactivationInfo, setSelectedInactivationInfo] = useState(null);
+  const [selectedInactivationInfo, setSelectedInactivationInfo] =
+    useState(null);
   const [deactivateReason, setDeactivateReason] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
   const [disputeId, setDisputeId] = useState('');
+  const [verifyStatus, setVerifyStatus] = useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const itemsPerPage = 10;
+  // Define all useColorModeValue calls at the top to avoid conditional hook calls
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
+  const selectBg = useColorModeValue('gray.100', 'gray.700');
+  const textareaBg = useColorModeValue('gray.100', 'gray.700');
+  const cardBg = useColorModeValue('white', 'gray.800'); // Added for Card and Modal consistency
   const baseUrl = useMemo(() => process.env.REACT_APP_BASE_URL, []);
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
@@ -381,6 +398,23 @@ export default function ComplexTable() {
     setSelectedInactivationInfo(null);
   }, []);
 
+  const openRejectionModal = useCallback(
+    (userId, currentStatus, reason = '') => {
+      setSelectedUserId(userId);
+      setVerifyStatus(currentStatus);
+      setRejectionReason(reason);
+      setIsRejectionModalOpen(true);
+    },
+    [],
+  );
+
+  const closeRejectionModal = useCallback(() => {
+    setIsRejectionModalOpen(false);
+    setSelectedUserId(null);
+    setRejectionReason('');
+    setVerifyStatus('');
+  }, []);
+
   // Toggle handler for user status
   const handleToggleStatus = useCallback(
     async (userId, currentActive) => {
@@ -447,23 +481,65 @@ export default function ComplexTable() {
     closeDeactivateModal,
   ]);
 
+  // Handle verification status change
   const handleToggleVerified = useCallback(
-    async (userId, currentVerified) => {
+    async (userId, status) => {
       if (toggleLoading[userId]) return;
+      if (status === 'rejected') {
+        openRejectionModal(userId, status);
+        return;
+      }
       setToggleLoading((prev) => ({ ...prev, [userId]: true }));
       const success = await toggleUserVerified(
         baseUrl,
         token,
         userId,
-        currentVerified,
+        status,
         setData,
         setError,
       );
       setToggleLoading((prev) => ({ ...prev, [userId]: false }));
       return success;
     },
-    [baseUrl, token, setData, setError, toggleLoading],
+    [baseUrl, token, setData, setError, toggleLoading, openRejectionModal],
   );
+
+  // Handle rejection reason submission
+  const handleRejectionSubmit = useCallback(async () => {
+    if (!rejectionReason) {
+      toast.error('Reason for rejection is required', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+    setToggleLoading((prev) => ({ ...prev, [selectedUserId]: true }));
+    const success = await toggleUserVerified(
+      baseUrl,
+      token,
+      selectedUserId,
+      'rejected',
+      setData,
+      setError,
+      rejectionReason,
+    );
+    setToggleLoading((prev) => ({ ...prev, [selectedUserId]: false }));
+    if (success) {
+      closeRejectionModal();
+    }
+  }, [
+    baseUrl,
+    token,
+    selectedUserId,
+    rejectionReason,
+    setData,
+    setError,
+    closeRejectionModal,
+  ]);
 
   const handleViewDetails = useCallback(
     (user) => {
@@ -499,6 +575,19 @@ export default function ComplexTable() {
     }
   }, [totalPages, currentPage]);
 
+  const getStatusStyles = (status) => {
+    switch (status) {
+      case 'verified':
+        return { bg: 'green.100', color: 'green.800' };
+      case 'pending':
+        return { bg: 'yellow.100', color: 'yellow.800' };
+      case 'rejected':
+        return { bg: 'red.100', color: 'red.800' };
+      default:
+        return { bg: 'gray.100', color: 'gray.800' };
+    }
+  };
+
   const columns = useMemo(
     () => [
       columnHelper.accessor('sno', {
@@ -514,7 +603,12 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="700"
+            whiteSpace="nowrap"
+          >
             {startIndex + info.row.index + 1}
           </Text>
         ),
@@ -588,7 +682,12 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="700"
+            whiteSpace="nowrap"
+          >
             {info.getValue()}
           </Text>
         ),
@@ -606,7 +705,12 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="700"
+            whiteSpace="nowrap"
+          >
             {info.getValue()}
           </Text>
         ),
@@ -747,7 +851,12 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="700"
+            whiteSpace="nowrap"
+          >
             {info.getValue()}
           </Text>
         ),
@@ -765,7 +874,12 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="700"
+            whiteSpace="nowrap"
+          >
             {info.getValue()}
           </Text>
         ),
@@ -783,7 +897,12 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700" whiteSpace="nowrap">
+          <Text
+            color={textColor}
+            fontSize="sm"
+            fontWeight="700"
+            whiteSpace="nowrap"
+          >
             {info.getValue()}
           </Text>
         ),
@@ -842,14 +961,51 @@ export default function ComplexTable() {
           </Text>
         ),
         cell: (info) => (
-          <Switch
-            isChecked={info.getValue()}
-            onChange={() =>
-              handleToggleVerified(info.row.original.id, info.getValue())
-            }
-            colorScheme="teal"
-            isDisabled={toggleLoading[info.row.original.id]}
-          />
+          <Flex align="center" gap={2}>
+            <Select
+              value={info.getValue()}
+              onChange={(e) =>
+                handleToggleVerified(info.row.original.id, e.target.value)
+              }
+              size="sm"
+              width="120px"
+              bg={selectBg}
+              borderRadius="8px"
+              isDisabled={toggleLoading[info.row.original.id]}
+            >
+              <option value="pending">Pending</option>
+              <option value="verified">Verified</option>
+              <option value="rejected">Rejected</option>
+            </Select>
+            <Text
+              bg={getStatusStyles(info.getValue()).bg}
+              color={getStatusStyles(info.getValue()).color}
+              px="2"
+              py="1"
+              borderRadius="md"
+              fontSize="sm"
+            >
+              {info.getValue().charAt(0).toUpperCase() +
+                info.getValue().slice(1)}
+            </Text>
+            {info.getValue() === 'rejected' &&
+              info.row.original.rejectionReason && (
+                <Button
+                  size="xs"
+                  variant="link"
+                  colorScheme="red"
+                  onClick={() =>
+                    openRejectionModal(
+                      info.row.original.id,
+                      info.getValue(),
+                      info.row.original.rejectionReason,
+                    )
+                  }
+                >
+                  View Reason
+                </Button>
+              )}
+          </Flex>
         ),
       }),
       columnHelper.display({
@@ -868,7 +1024,9 @@ export default function ComplexTable() {
           <Button
             size="sm"
             colorScheme="teal"
-            onClick={() => navigate(`/admin/UserDetails/${info.row.original.id}`)}
+            onClick={() =>
+              navigate(`/admin/UserDetails/${info.row.original.id}`)
+            }
             whiteSpace="nowrap"
           >
             View Details
@@ -888,6 +1046,7 @@ export default function ComplexTable() {
       handleToggleCategory,
       openInactivationModal,
       startIndex,
+      selectBg,
     ],
   );
 
@@ -923,12 +1082,7 @@ export default function ComplexTable() {
   }
 
   return (
-    <Card
-      flexDirection="column"
-      w="100%"
-      px="0px"
-      overflowX="auto"
-    >
+    <Card flexDirection="column" w="100%" px="0px" overflowX="auto" bg={cardBg}>
       <Flex
         px="25px"
         mb="8px"
@@ -956,7 +1110,7 @@ export default function ComplexTable() {
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             borderRadius="12px"
-            bg={useColorModeValue('gray.100', 'gray.700')}
+            bg={selectBg}
             _focus={{
               borderColor: 'blue.500',
               boxShadow: '0 0 0 1px blue.500',
@@ -965,7 +1119,13 @@ export default function ComplexTable() {
         </InputGroup>
       </Flex>
       <Box overflowX="auto">
-        <Table variant="simple" color="gray.500" mb="24px" mt="12px" minWidth="1200px">
+        <Table
+          variant="simple"
+          color="gray.500"
+          mb="24px"
+          mt="12px"
+          minWidth="1200px"
+        >
           <Thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <Tr key={headerGroup.id}>
@@ -1041,7 +1201,7 @@ export default function ComplexTable() {
         <HStack>
           <Button
             size="sm"
-						colorScheme="teal"
+            colorScheme="teal"
             onClick={() => goToPage(currentPage - 1)}
             isDisabled={currentPage === 1}
             leftIcon={<ChevronLeftIcon />}
@@ -1052,7 +1212,7 @@ export default function ComplexTable() {
             <Button
               key={page}
               size="sm"
-							colorScheme="teal"
+              colorScheme="teal"
               onClick={() => goToPage(page)}
               variant={currentPage === page ? 'solid' : 'outline'}
             >
@@ -1061,7 +1221,7 @@ export default function ComplexTable() {
           ))}
           <Button
             size="sm"
-						colorScheme="teal"
+            colorScheme="teal"
             onClick={() => goToPage(currentPage + 1)}
             isDisabled={currentPage === totalPages}
             rightIcon={<ChevronRightIcon />}
@@ -1070,126 +1230,148 @@ export default function ComplexTable() {
           </Button>
         </HStack>
       </Flex>
+      {/* Modal for Service Provider Details */}
       <Modal isOpen={isOpen} onClose={onClose} size="xl">
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Service Provider Details</ModalHeader>
-          <ModalCloseButton />
+        <ModalContent bg={cardBg}>
+          <ModalHeader color={textColor}>Service Provider Details</ModalHeader>
+          <ModalCloseButton color={textColor} />
           <ModalBody>
             {selectedUser && (
               <VStack align="start" spacing={4}>
-                <Text>
+                <Text color={textColor}>
                   <strong>Full Name:</strong> {selectedUser.full_name || 'N/A'}
                 </Text>
-                <Text>
-                  <strong>Phone:</strong> {selectedUser.phone || 'N/A'}
+                <Text color={textColor}>
+                  <strong>Phone:</strong> {selectedUser.mobile || 'N/A'}
                 </Text>
-                <Text>
+                <Text color={textColor}>
                   <strong>Location:</strong> {selectedUser.location || 'N/A'}
                 </Text>
-                <Text>
+                <Text color={textColor}>
                   <strong>Current Location:</strong>{' '}
-                  {selectedUser.current_location || 'N/A'}
+                  {selectedUser.userDetails.current_location || 'N/A'}
                 </Text>
-                <Text>
-                  <strong>Address:</strong> {selectedUser.full_address || 'N/A'}
+                <Text color={textColor}>
+                  <strong>Address:</strong>{' '}
+                  {selectedUser.userDetails.full_address || 'N/A'}
                 </Text>
-                <Text>
-                  <strong>Landmark:</strong> {selectedUser.landmark || 'N/A'}
+                <Text color={textColor}>
+                  <strong>Landmark:</strong>{' '}
+                  {selectedUser.userDetails.landmark || 'N/A'}
                 </Text>
-                <Text>
+                <Text color={textColor}>
                   <strong>Colony Name:</strong>{' '}
-                  {selectedUser.colony_name || 'N/A'}
+                  {selectedUser.userDetails.colony_name || 'N/A'}
                 </Text>
-                <Text>
+                <Text color={textColor}>
                   <strong>Gali Number:</strong>{' '}
-                  {selectedUser.gali_number || 'N/A'}
+                  {selectedUser.userDetails.gali_number || 'N/A'}
                 </Text>
-                <Text>
+                <Text color={textColor}>
                   <strong>Referral Code:</strong>{' '}
                   {selectedUser.referral_code || 'N/A'}
                 </Text>
-                <Text>
-                  <strong>Skill:</strong> {selectedUser.skill || 'N/A'}
+                <Text color={textColor}>
+                  <strong>Skill:</strong>{' '}
+                  {selectedUser.userDetails.skill || 'N/A'}
                 </Text>
-                <Text>
-                  <strong>Rating:</strong> {selectedUser.rating || 'N/A'}
+                <Text color={textColor}>
+                  <strong>Rating:</strong>{' '}
+                  {selectedUser.userDetails.rating || 'N/A'}
                 </Text>
-                <Text>
+                <Text color={textColor}>
                   <strong>Total Reviews:</strong>{' '}
-                  {selectedUser.totalReview || 0}
+                  {selectedUser.userDetails.totalReview || 0}
                 </Text>
-                <Text>
+                <Text color={textColor}>
                   <strong>Verified:</strong>{' '}
-                  {selectedUser.verified ? 'Yes' : 'No'}
+                  {selectedUser.verified.charAt(0).toUpperCase() +
+                    selectedUser.verified.slice(1)}
                 </Text>
-                <Text>
+                {selectedUser.verified === 'rejected' &&
+                  selectedUser.rejectionReason && (
+                    <Text color={textColor}>
+                      <strong>Rejection Reason:</strong>{' '}
+                      {selectedUser.rejectionReason}
+                    </Text>
+                  )}
+                <Text color={textColor}>
                   <strong>Active:</strong> {selectedUser.active ? 'Yes' : 'No'}
                 </Text>
-                <Text>
+                <Text color={textColor}>
                   <strong>Created At:</strong>{' '}
                   {new Date(selectedUser.createdAt).toLocaleDateString('en-IN')}
                 </Text>
-                <Text>
+                <Text color={textColor}>
                   <strong>Updated At:</strong>{' '}
-                  {new Date(selectedUser.updatedAt).toLocaleDateString('en-IN')}
+                  {selectedUser.userDetails.updatedAt
+                    ? new Date(
+                        selectedUser.userDetails.updatedAt,
+                      ).toLocaleDateString('en-IN')
+                    : 'N/A'}
                 </Text>
-                {selectedUser.hiswork && selectedUser.hiswork.length > 0 && (
-                  <>
-                    <Text fontWeight="bold">Work Samples:</Text>
-                    <HStack spacing={4} wrap="wrap">
-                      {selectedUser.hiswork.map((work, index) => (
-                        <Image
-                          key={index}
-                          src={`${baseUrl}${work}`}
-                          alt={`Work sample ${index + 1}`}
-                          boxSize="100px"
-                          objectFit="cover"
-                          onError={(e) =>
-                            (e.target.src = '/assets/img/profile/Project3.png')
-                          }
-                        />
-                      ))}
-                    </HStack>
-                  </>
-                )}
-                {selectedUser.rateAndReviews &&
-                  selectedUser.rateAndReviews.length > 0 && (
+                {selectedUser.userDetails.hiswork &&
+                  selectedUser.userDetails.hiswork.length > 0 && (
                     <>
-                      <Text fontWeight="bold">Reviews:</Text>
-                      {selectedUser.rateAndReviews.map((review, index) => (
-                        <Box
-                          key={index}
-                          borderWidth="1px"
-                          borderRadius="md"
-                          p={3}
-                          w="100%"
-                        >
-                          <Text>
-                            <strong>Rating:</strong> {review.rating}
-                          </Text>
-                          <Text>
-                            <strong>Review:</strong> {review.review}
-                          </Text>
-                          {review.images && review.images.length > 0 && (
-                            <HStack spacing={2} mt={2}>
-                              {review.images.map((img, imgIndex) => (
-                                <Image
-                                  key={imgIndex}
-                                  src={`${baseUrl}${img}`}
-                                  alt={`Review image ${imgIndex + 1}`}
-                                  boxSize="80px"
-                                  objectFit="cover"
-                                  onError={(e) =>
-                                    (e.target.src =
-                                      '/assets/img/profile/Project3.png')
-                                  }
-                                />
-                              ))}
-                            </HStack>
-                          )}
-                        </Box>
-                      ))}
+                      <Text fontWeight="bold" color={textColor}>
+                        Work Samples:
+                      </Text>
+                      <HStack spacing={4} wrap="wrap">
+                        {selectedUser.userDetails.hiswork.map((work, index) => (
+                          <Image
+                            key={index}
+                            src={`${baseUrl}${work}`}
+                            alt={`Work sample ${index + 1}`}
+                            boxSize="100px"
+                            objectFit="cover"
+                            onError={(e) => (e.target.src = defaultProfilePic)}
+                          />
+                        ))}
+                      </HStack>
+                    </>
+                  )}
+                {selectedUser.userDetails.rateAndReviews &&
+                  selectedUser.userDetails.rateAndReviews.length > 0 && (
+                    <>
+                      <Text fontWeight="bold" color={textColor}>
+                        Reviews:
+                      </Text>
+                      {selectedUser.userDetails.rateAndReviews.map(
+                        (review, index) => (
+                          <Box
+                            key={index}
+                            borderWidth="1px"
+                            borderRadius="md"
+                            p={3}
+                            w="100%"
+                            borderColor={borderColor}
+                          >
+                            <Text color={textColor}>
+                              <strong>Rating:</strong> {review.rating}
+                            </Text>
+                            <Text color={textColor}>
+                              <strong>Review:</strong> {review.review}
+                            </Text>
+                            {review.images && review.images.length > 0 && (
+                              <HStack spacing={2} mt={2}>
+                                {review.images.map((img, imgIndex) => (
+                                  <Image
+                                    key={imgIndex}
+                                    src={`${baseUrl}${img}`}
+                                    alt={`Review image ${imgIndex + 1}`}
+                                    boxSize="80px"
+                                    objectFit="cover"
+                                    onError={(e) =>
+                                      (e.target.src = defaultProfilePic)
+                                    }
+                                  />
+                                ))}
+                              </HStack>
+                            )}
+                          </Box>
+                        ),
+                      )}
                     </>
                   )}
               </VStack>
@@ -1207,7 +1389,7 @@ export default function ComplexTable() {
         <ModalContent
           maxW={{ base: '90%', md: '500px' }}
           borderRadius="16px"
-          bg={useColorModeValue('white', 'gray.800')}
+          bg={cardBg}
           boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
         >
           <ModalHeader
@@ -1240,7 +1422,7 @@ export default function ComplexTable() {
                     value={deactivateReason}
                     onChange={(e) => setDeactivateReason(e.target.value)}
                     placeholder="Enter reason for deactivation"
-                    bg={useColorModeValue('gray.100', 'gray.700')}
+                    bg={textareaBg}
                     borderRadius="8px"
                   />
                 </FormControl>
@@ -1254,7 +1436,7 @@ export default function ComplexTable() {
                         ? 'No disputes available'
                         : 'Select dispute ID (optional)'
                     }
-                    bg={useColorModeValue('gray.100', 'gray.700')}
+                    bg={selectBg}
                     borderRadius="8px"
                     isDisabled={disputes.length === 0}
                   >
@@ -1292,6 +1474,69 @@ export default function ComplexTable() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+      {/* Modal for rejection reason */}
+      <Modal
+        isOpen={isRejectionModalOpen}
+        onClose={closeRejectionModal}
+        isCentered
+      >
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '500px' }}
+          borderRadius="16px"
+          bg={cardBg}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            {verifyStatus === 'rejected'
+              ? 'Provide Rejection Reason'
+              : 'View Rejection Reason'}
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            <FormControl isRequired={verifyStatus === 'rejected'} mb={4}>
+              <FormLabel color={textColor}>Reason for Rejection</FormLabel>
+              <Textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Enter reason for rejection"
+                bg={textareaBg}
+                borderRadius="8px"
+                isReadOnly={verifyStatus !== 'rejected'}
+              />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="gray"
+              mr={3}
+              onClick={closeRejectionModal}
+              borderRadius="12px"
+              size="sm"
+            >
+              Close
+            </Button>
+            {verifyStatus === 'rejected' && (
+              <Button
+                colorScheme="red"
+                onClick={handleRejectionSubmit}
+                borderRadius="12px"
+                size="sm"
+                isLoading={toggleLoading[selectedUserId]}
+                _hover={{ bg: 'red.600' }}
+              >
+                Submit
+              </Button>
+            )}
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       {/* Modal for inactivation details */}
       <Modal
         isOpen={isInactivationModalOpen}
@@ -1302,7 +1547,7 @@ export default function ComplexTable() {
         <ModalContent
           maxW={{ base: '90%', md: '600px' }}
           borderRadius="16px"
-          bg={useColorModeValue('white', 'gray.800')}
+          bg={cardBg}
           boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
         >
           <ModalHeader
@@ -1379,7 +1624,7 @@ export default function ComplexTable() {
         closeOnClick
         pauseOnHover
         draggable
-        theme={useColorModeValue('light', 'dark')}
+        theme="colored"
       />
     </Card>
   );

@@ -20,9 +20,11 @@ import {
   Image,
   Select,
   HStack,
-  Switch,
   WrapItem,
   Wrap,
+  FormControl,
+  FormLabel,
+  Textarea,
 } from '@chakra-ui/react';
 import axios from 'axios';
 import * as React from 'react';
@@ -34,6 +36,13 @@ import defaultProfilePic from 'assets/img/profile/profile.webp';
 import Card from 'components/card/Card';
 
 export default function ServiceProviderDetails() {
+  // Move all useColorModeValue calls to the top level
+  const textColor = useColorModeValue('secondaryGray.900', 'white');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
+  const selectBg = useColorModeValue('gray.100', 'gray.700'); // For Select component
+  const textareaBg = useColorModeValue('gray.100', 'gray.700'); // For Textarea component
+
   const [data, setData] = React.useState({
     user: null,
     workers: [],
@@ -49,9 +58,8 @@ export default function ServiceProviderDetails() {
   const [documentUrl, setDocumentUrl] = React.useState(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = React.useState(false);
   const [selectedAddresses, setSelectedAddresses] = React.useState([]);
-  const textColor = useColorModeValue('secondaryGray.900', 'white');
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
+  const [isRejectionModalOpen, setIsRejectionModalOpen] = React.useState(false);
+  const [rejectionReason, setRejectionReason] = React.useState('');
   const navigate = useNavigate();
   const { service_provider_id } = useParams();
   const baseUrl = process.env.REACT_APP_BASE_URL;
@@ -85,8 +93,11 @@ export default function ServiceProviderDetails() {
               ? response.data.user.full_address
               : [],
             inactivationInfo: response.data.user.inactivationInfo || null,
+            verificationStatus: response.data.user.verificationStatus || 'pending',
+            rejectionReason: response.data.user.rejectionReason || null,
           },
         });
+        setVerifyStatus(response.data.user.verificationStatus || 'pending');
         setLoading(false);
       } catch (err) {
         console.error('Fetch Orders Error:', err);
@@ -115,12 +126,12 @@ export default function ServiceProviderDetails() {
     if (type === 'verifyStatus') {
       switch (status) {
         case 'approved':
-        case true:
+          return { bg: 'green.100', color: 'green.800' };
+					case 'verified':
           return { bg: 'green.100', color: 'green.800' };
         case 'pending':
           return { bg: 'yellow.100', color: 'yellow.800' };
         case 'rejected':
-        case false:
           return { bg: 'red.100', color: 'red.800' };
         default:
           return { bg: 'gray.100', color: 'gray.800' };
@@ -146,6 +157,17 @@ export default function ServiceProviderDetails() {
     setSelectedAddresses([]);
   }, []);
 
+  // Handle rejection modal
+  const openRejectionModal = React.useCallback(() => {
+    setIsRejectionModalOpen(true);
+    setRejectionReason('');
+  }, []);
+
+  const closeRejectionModal = React.useCallback(() => {
+    setIsRejectionModalOpen(false);
+    setRejectionReason('');
+  }, []);
+
   // Capitalize first letter of name or status
   const capitalizeFirstLetter = (str) => {
     if (!str) return 'N/A';
@@ -157,19 +179,24 @@ export default function ServiceProviderDetails() {
   };
 
   // Update verification status for Service Provider
-  const toggleUserVerified = async (userId, verified) => {
+  const toggleUserVerified = async (userId, status, reason = '') => {
     setToggleLoading(true);
     try {
       const response = await axios.patch(
         `${baseUrl}api/admin/updateUserverified`,
-        { userId, verified: !verified },
+        { userId, status, reason },
         { headers: { Authorization: `Bearer ${token}` } },
       );
       if (response.data.success) {
         setData((prevData) => ({
           ...prevData,
-          user: { ...prevData.user, verified: !verified },
+          user: {
+            ...prevData.user,
+            verificationStatus: status,
+            rejectionReason: status === 'rejected' ? reason : null,
+          },
         }));
+        setVerifyStatus(status);
         toast.success(
           'Service Provider verification status updated successfully!',
           {
@@ -205,6 +232,33 @@ export default function ServiceProviderDetails() {
     } finally {
       setToggleLoading(false);
     }
+  };
+
+  // Handle verification status change
+  const handleToggleVerified = async (status) => {
+    if (toggleLoading) return;
+    if (status === 'rejected') {
+      openRejectionModal();
+      return;
+    }
+    await toggleUserVerified(data.user._id, status);
+  };
+
+  // Handle rejection reason submission
+  const handleRejectionSubmit = async () => {
+    if (!rejectionReason) {
+      toast.error('Reason for rejection is required', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+    await toggleUserVerified(data.user._id, 'rejected', rejectionReason);
+    closeRejectionModal();
   };
 
   // Update verification status for Worker
@@ -278,6 +332,7 @@ export default function ServiceProviderDetails() {
       </Card>
     );
   }
+
   return (
     <>
       <Card
@@ -387,33 +442,6 @@ export default function ServiceProviderDetails() {
                         {data.user?.location.address || 'N/A'}
                       </Text>
                     </Flex>
-
-                    {/*<Flex align="start" gap="4" wrap="wrap">
-                      <Text fontWeight="semibold" color={textColor}>
-                        Address:
-                      </Text>
-                      <Flex align="center" wrap="wrap" gap="2">
-                        <Text
-                          color={textColor}
-                          maxW={{ base: '200px', md: '300px' }}
-                          isTruncated
-                        >
-                          {data.user?.full_address?.length > 0
-                            ? data.user.full_address[0].address
-                            : 'N/A'}
-                        </Text>
-                        {data.user?.full_address?.length > 0 && (
-                          <Button
-                            size="xs"
-                            variant="link"
-                            colorScheme="teal"
-                            onClick={() => openAddressModal(data.user.full_address)}
-                          >
-                            Show More
-                          </Button>
-                        )}
-                      </Flex>
-                    </Flex> */}
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
                         Skill:
@@ -477,36 +505,41 @@ export default function ServiceProviderDetails() {
                         Verification Status:
                       </Text>
                       <HStack>
-                        <Switch
-                          isChecked={data.user?.verified}
-                          onChange={() =>
-                            toggleUserVerified(
-                              data.user._id,
-                              data.user.verified,
-                            )
-                          }
+                        <Select
+                          value={verifyStatus}
+                          onChange={(e) => handleToggleVerified(e.target.value)}
+                          size="sm"
                           colorScheme="teal"
                           isDisabled={toggleLoading}
-                        />
+                          bg={selectBg}
+                          borderRadius="8px"
+                          width="150px"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="verified">Verified</option>
+                          <option value="rejected">Rejected</option>
+                        </Select>
                         <Text
-                          bg={
-                            getStatusStyles(data.user?.verified, 'verifyStatus')
-                              .bg
-                          }
-                          color={
-                            getStatusStyles(data.user?.verified, 'verifyStatus')
-                              .color
-                          }
+                          bg={getStatusStyles(verifyStatus, 'verifyStatus').bg}
+                          color={getStatusStyles(verifyStatus, 'verifyStatus').color}
                           px="2"
                           py="1"
                           borderRadius="md"
                         >
-                          {capitalizeFirstLetter(
-                            data.user?.verified ? 'approved' : 'rejected',
-                          )}
+                          {capitalizeFirstLetter(verifyStatus || 'Pending')}
                         </Text>
                       </HStack>
                     </Flex>
+                    {data.user?.verificationStatus === 'rejected' && (
+                      <Flex align="start" gap="4">
+                        <Text fontWeight="semibold" color={textColor}>
+                          Rejection Reason:
+                        </Text>
+                        <Text color={textColor}>
+                          {data.user?.rejectionReason || 'N/A'}
+                        </Text>
+                      </Flex>
+                    )}
                     {data.user?.inactivationInfo && (
                       <Box
                         mt={4}
@@ -1194,6 +1227,65 @@ export default function ServiceProviderDetails() {
         </ModalContent>
       </Modal>
 
+      {/* Rejection Reason Modal */}
+      <Modal
+        isOpen={isRejectionModalOpen}
+        onClose={closeRejectionModal}
+        isCentered
+      >
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '500px' }}
+          borderRadius="16px"
+          bg={cardBg}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            Rejection Reason
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px">
+            <FormControl isRequired mb={4}>
+              <FormLabel color={textColor}>Reason for Rejection</FormLabel>
+              <Textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Enter reason for rejection"
+                bg={textareaBg}
+                borderRadius="8px"
+              />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="gray"
+              mr={3}
+              onClick={closeRejectionModal}
+              borderRadius="12px"
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button
+              colorScheme="red"
+              onClick={handleRejectionSubmit}
+              borderRadius="12px"
+              size="sm"
+              isLoading={toggleLoading}
+              _hover={{ bg: 'red.600' }}
+            >
+              Submit
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Worker Details Modal */}
       {selectedWorker && (
         <Modal
@@ -1332,6 +1424,8 @@ export default function ServiceProviderDetails() {
                       value={verifyStatus}
                       onChange={(e) => setVerifyStatus(e.target.value)}
                       width="150px"
+                      bg={selectBg}
+                      borderRadius="8px"
                     >
                       <option value="approved">Approved</option>
                       <option value="pending">Pending</option>
