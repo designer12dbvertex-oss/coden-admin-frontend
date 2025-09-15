@@ -275,42 +275,48 @@ export default function ServiceProviderDetails() {
     }
   }, [selectedWorker]);
 
-  // Update verification status for Worker
   const handleWorkerVerifyStatusUpdate = async (worker) => {
-    try {
-      const endpoint = `${baseUrl}api/worker/verify/${worker._id}`;
-      const response = await axios.put(
-        endpoint,
-        { verifyStatus, reason: verifyStatus === 'rejected' ? workerRejectionReason : null },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      toast.success('Worker verification status updated successfully', {
+  try {
+    const endpoint = `${baseUrl}api/worker/verify/${worker._id}`;
+    const response = await axios.put(
+      endpoint,
+      {
+        verifyStatus,
+        reason: verifyStatus === 'rejected' ? workerRejectionReason : null,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    toast.success('Worker verification status updated successfully', {
+      position: 'top-right',
+      autoClose: 3000,
+    });
+    setData((prevData) => ({
+      ...prevData,
+      workers: prevData.workers.map((w) =>
+        w._id === worker._id
+          ? {
+              ...w,
+              verifyStatus,
+              rejectionReason: verifyStatus === 'rejected' ? workerRejectionReason : null,
+            }
+          : w,
+      ),
+    }));
+    setWorkerRejectionReason(''); // Clear reason after update
+    setSelectedWorker(null);
+  } catch (err) {
+    console.error('Update Worker Verification Status Error:', err);
+    toast.error(
+      err.response?.data?.message || 'Failed to update Worker verification status',
+      {
         position: 'top-right',
         autoClose: 3000,
-      });
-      setData((prevData) => ({
-        ...prevData,
-        workers: prevData.workers.map((w) =>
-          w._id === worker._id
-            ? { ...w, verifyStatus, rejectionReason: verifyStatus === 'rejected' ? workerRejectionReason : null }
-            : w,
-        ),
-      }));
-			setSelectedWorker(null);
-    } catch (err) {
-      console.error('Update Worker Verification Status Error:', err);
-      toast.error(
-        err.response?.data?.message ||
-          'Failed to update Worker verification status',
-        {
-          position: 'top-right',
-          autoClose: 3000,
-        },
-      );
-    }
-  };
+      },
+    );
+  }
+};
 
   // Handle worker rejection submission
   const handleWorkerRejectionSubmit = async () => {
