@@ -569,7 +569,7 @@ export default function ComplexTable() {
             color="gray.500"
             textTransform="uppercase"
           >
-            Current Address
+            Saved Address
           </Text>
         ),
         cell: (info) => {
