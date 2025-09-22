@@ -104,7 +104,7 @@ export default function OrdersTable() {
   const fetchSubcategories = async (categoryId) => {
     try {
       const response = await axios.get(
-        `${baseUrl}api/adminSubcategories/${categoryId}`,
+        `${baseUrl}api/emergency/adminSubcategories/${categoryId}`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       if (!response.data || !Array.isArray(response.data.data)) {
@@ -346,7 +346,7 @@ export default function OrdersTable() {
         formData.append('image', newSubcategory.image);
       }
       const response = await axios.post(
-        `${baseUrl}api/sub-category`,
+        `${baseUrl}api/emergency/sub-category`,
         formData,
         {
           headers: {
@@ -355,7 +355,7 @@ export default function OrdersTable() {
           },
         },
       );
-      console.log('Create Subcategory Response:', response.data);
+      // console.log('Create Subcategory Response:', response.data);
       const updatedSubcategories = await fetchSubcategories(editCategory.id);
       setModalSubcategories(updatedSubcategories);
       setSubcategoryCounts((prev) => ({
@@ -387,7 +387,7 @@ export default function OrdersTable() {
         formData.append('image', editSubcategory.image);
       }
       const response = await axios.put(
-        `${baseUrl}api/subcategories/${editSubcategory._id}`,
+        `${baseUrl}api/emergency/subcategories/${editSubcategory._id}`,
         formData,
         {
           headers: {
@@ -396,7 +396,7 @@ export default function OrdersTable() {
           },
         },
       );
-      console.log('Update Subcategory Response:', response.data);
+      // console.log('Update Subcategory Response:', response.data);
       const updatedSubcategories = await fetchSubcategories(editCategory.id);
       setModalSubcategories(updatedSubcategories);
       setEditSubcategory(null);
@@ -419,7 +419,7 @@ export default function OrdersTable() {
   // Modified handleDeleteSubcategory to open confirmation modal
   const handleDeleteSubcategory = async () => {
     try {
-      await axios.delete(`${baseUrl}api/subcategories/${deleteItem.id}`, {
+      await axios.delete(`${baseUrl}api/emergency/subcategories/${deleteItem.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const updatedSubcategories = await fetchSubcategories(editCategory.id);

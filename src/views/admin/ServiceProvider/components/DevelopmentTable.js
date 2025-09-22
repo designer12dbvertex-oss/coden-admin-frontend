@@ -1302,7 +1302,7 @@ export default function ComplexTable() {
 					fontWeight="700"
 					lineHeight="100%"
 				>
-					Unverified Service Provider List
+					Verified Service Provider List
 				</Text>
 				<InputGroup
 					maxW={{ base: '100%', md: '300px' }}

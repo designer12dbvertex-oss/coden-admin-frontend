@@ -22,6 +22,9 @@ import {
   useDisclosure,
   Link,
   Button,
+  Input,
+  InputGroup,
+  InputLeftElement,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -33,19 +36,21 @@ import {
 import axios from 'axios';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { SearchIcon } from '@chakra-ui/icons';
 import defaultProfilePic from 'assets/img/profile/profile.webp';
 // Custom components
 import Card from 'components/card/Card';
-import def from 'ajv/dist/vocabularies/applicator/additionalItems';
 
 const columnHelper = createColumnHelper();
 
 export default function PromotionsTable() {
   const [data, setData] = React.useState([]);
+  const [filteredData, setFilteredData] = React.useState([]); // New state for filtered data
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [selectedImages, setSelectedImages] = React.useState([]);
   const [selectedImage, setSelectedImage] = React.useState(null);
+  const [searchTerm, setSearchTerm] = React.useState(''); // New search state
   const {
     isOpen: isImagesOpen,
     onOpen: onImagesOpen,
@@ -73,6 +78,33 @@ export default function PromotionsTable() {
       .join(' ');
   };
 
+  // Search function
+  const handleSearch = (searchValue) => {
+    setSearchTerm(searchValue);
+    
+    if (!searchValue.trim()) {
+      // If search is empty, show all data
+      setFilteredData(data);
+      return;
+    }
+
+    // Filter data based on multiple fields
+    const filtered = data.filter((item) =>
+      item.uniqueId?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item.title?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item.user?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item.phone?.toLowerCase().includes(searchValue.toLowerCase())
+    );
+    
+    setFilteredData(filtered);
+  };
+
+  // Clear search function
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setFilteredData(data);
+  };
+
   // Fetch promotions
   const fetchPromotions = async () => {
     try {
@@ -98,12 +130,13 @@ export default function PromotionsTable() {
         const images =
           item.images?.map((img) => {
             const fullImageUrl = `${baseUrl}${img}`;
-            console.log('Constructed Image URL:', fullImageUrl); // Debug image URLs
+            console.log('Constructed Image URL:', fullImageUrl);
             return fullImageUrl;
           }) || [];
         return {
           id: item._id,
           title: capitalizeWords(item.title) || 'Untitled',
+          uniqueId: item.unique_id || 'N/A',
           description: item.description || 'No description',
           images,
           date: item.date || 'N/A',
@@ -117,6 +150,7 @@ export default function PromotionsTable() {
       });
 
       setData(formattedData);
+      setFilteredData(formattedData); // Initialize filtered data with all data
       setLoading(false);
     } catch (err) {
       console.error('Fetch Promotions Error:', err);
@@ -139,18 +173,24 @@ export default function PromotionsTable() {
 
   // Handle image modal
   const handleViewImages = (images) => {
-    console.log('Selected Images for Modal:', images); // Debug selected images
+    console.log('Selected Images for Modal:', images);
     setSelectedImages(images);
     onImagesOpen();
   };
 
   // Handle single image click
   const handleImageClick = (image) => {
-    console.log('Clicked Image:', image); // Debug clicked image
+    console.log('Clicked Image:', image);
     setSelectedImage(image);
     onImageOpen();
   };
 
+  // Update filtered data when search term changes
+  React.useEffect(() => {
+    handleSearch(searchTerm);
+  }, [searchTerm]);
+
+  // Initial data fetch
   React.useEffect(() => {
     fetchPromotions();
   }, [navigate]);
@@ -174,6 +214,27 @@ export default function PromotionsTable() {
           <Flex align="center">
             <Text color={textColor} fontSize="sm" fontWeight="400">
               {info.row.index + 1}
+            </Text>
+          </Flex>
+        ),
+      }),
+      columnHelper.accessor('uniqueId', {
+        id: 'uniqueId',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+            textTransform="uppercase"
+          >
+            Unique ID
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center">
+            <Text color={textColor} fontSize="sm" fontWeight="400">
+              {info.getValue()}
             </Text>
           </Flex>
         ),
@@ -209,7 +270,7 @@ export default function PromotionsTable() {
             color="gray.400"
             textTransform="uppercase"
           >
-            User
+            Username
           </Text>
         ),
         cell: (info) => (
@@ -236,7 +297,7 @@ export default function PromotionsTable() {
             color="gray.400"
             textTransform="uppercase"
           >
-            phone
+            Phone
           </Text>
         ),
         cell: (info) => (
@@ -293,7 +354,7 @@ export default function PromotionsTable() {
                 cursor="pointer"
                 onClick={() => handleImageClick(info.getValue()[0])}
                 onError={(e) => {
-                  console.error('Image Load Error:', info.getValue()[0]); // Debug image load error
+                  console.error('Image Load Error:', info.getValue()[0]);
                   e.target.src = defaultProfilePic;
                 }}
               />
@@ -398,13 +459,13 @@ export default function PromotionsTable() {
   );
 
   const table = useReactTable({
-    data,
+    data: filteredData, // Use filtered data instead of raw data
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageSize: 10, // Fixed 10 users per page
+        pageSize: 10,
       },
     },
   });
@@ -457,7 +518,8 @@ export default function PromotionsTable() {
       boxShadow="lg"
       style={{ marginTop: '80px' }}
     >
-      <Flex px="0px" mb="20px" justifyContent="space-between" align="center">
+      {/* Header with Search */}
+      <Flex px="0px" mb="20px" justifyContent="space-between" align="center" flexWrap="wrap" gap="4">
         <Text
           color={textColor}
           fontSize="22px"
@@ -466,7 +528,56 @@ export default function PromotionsTable() {
         >
           Promotions
         </Text>
+        
+        {/* Search Input */}
+        <Flex gap="2" flex="1" maxW="400px" align="center">
+          <InputGroup>
+            <InputLeftElement pointerEvents="none">
+              <SearchIcon color="gray.300" />
+            </InputLeftElement>
+            <Input
+              placeholder="Search by Unique ID, Title, Username, or Phone..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              borderRadius="md"
+              _focus={{
+                borderColor: 'teal.500',
+                boxShadow: '0 0 0 1px teal.500',
+              }}
+            />
+          </InputGroup>
+          
+          {searchTerm && (
+            <Button
+              size="sm"
+              colorScheme="gray"
+              variant="outline"
+              onClick={handleClearSearch}
+              leftIcon={<SearchIcon />}
+            >
+              Clear
+            </Button>
+          )}
+        </Flex>
       </Flex>
+
+      {/* Search Results Info */}
+      {searchTerm && (
+        <Flex mb="4" align="center" justifyContent="space-between" flexWrap="wrap">
+          <Text fontSize="sm" color="gray.500">
+            Found {filteredData.length} of {data.length} promotions
+          </Text>
+          <Button
+            size="sm"
+            colorScheme="teal"
+            variant="outline"
+            onClick={handleClearSearch}
+          >
+            Show All ({data.length})
+          </Button>
+        </Flex>
+      )}
+
       <Box overflowX="auto" whiteSpace="nowrap">
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">
           <Thead>
@@ -514,6 +625,7 @@ export default function PromotionsTable() {
             ))}
           </Tbody>
         </Table>
+        
         {/* Pagination Controls */}
         <Flex justifyContent="space-between" alignItems="center" mt="4">
           <Text fontSize="sm" color="gray.500">
@@ -525,9 +637,9 @@ export default function PromotionsTable() {
             {Math.min(
               (table.getState().pagination.pageIndex + 1) *
                 table.getState().pagination.pageSize,
-              data.length,
+              filteredData.length, // Use filtered data length
             )}{' '}
-            of {data.length} users
+            of {filteredData.length} promotions
           </Text>
           <Flex gap="2" alignItems="center">
             <Button
@@ -586,7 +698,7 @@ export default function PromotionsTable() {
                   cursor="pointer"
                   onClick={() => handleImageClick(image)}
                   onError={(e) => {
-                    console.error('Modal Image Load Error:', image); // Debug modal image load error
+                    console.error('Modal Image Load Error:', image);
                     e.target.src = defaultProfilePic;
                   }}
                 />
@@ -611,7 +723,7 @@ export default function PromotionsTable() {
               objectFit="contain"
               borderRadius="8px"
               onError={(e) => {
-                console.error('Enlarged Image Load Error:', selectedImage); // Debug enlarged image load error
+                console.error('Enlarged Image Load Error:', selectedImage);
                 e.target.src = '/default-image.jpg';
               }}
             />

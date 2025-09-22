@@ -53,7 +53,6 @@ import {
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import defaultProfilePic from 'assets/img/profile/profile.webp';
-import { uniqueId } from 'lodash';
 
 const columnHelper = createColumnHelper();
 
@@ -91,9 +90,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
             location: user.location?.address || 'N/A',
             uniqueId: user.unique_id || 'N/A',
             mobile: user.phone || 'N/A',
-            full_address: Array.isArray(user.full_address)
-              ? user.full_address
-              : [],
+            full_address: Array.isArray(user.full_address) ? user.full_address : [],
             createdAt: user.createdAt
               ? new Date(user.createdAt).toISOString().split('T')[0]
               : 'N/A',
@@ -225,7 +222,8 @@ export default function ComplexTable() {
   const [selectedInactivationInfo, setSelectedInactivationInfo] = useState(null);
   const [deactivateReason, setDeactivateReason] = useState('');
   const [disputeId, setDisputeId] = useState('');
-  const itemsPerPage = 10;
+  const itemsPerPage = 10; // 10 items per page
+  const maxVisiblePages = 5; // Show only 5 page numbers
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const headerBg = useColorModeValue('gray.100', 'gray.700');
@@ -260,7 +258,13 @@ export default function ComplexTable() {
           item.full_name.toLowerCase().includes(lowerQuery) ||
           item.location.toLowerCase().includes(lowerQuery) ||
           item.mobile.toLowerCase().includes(lowerQuery) ||
-          item.referral_code.toLowerCase().includes(lowerQuery),
+          item.referral_code.toLowerCase().includes(lowerQuery) ||
+          // Search in full addresses
+          item.full_address.some((addr) =>
+            (addr.address?.toLowerCase().includes(lowerQuery) ?? false) ||
+            (addr.title?.toLowerCase().includes(lowerQuery) ?? false) ||
+            (addr.landmark?.toLowerCase().includes(lowerQuery) ?? false)
+          )
       );
       setFilteredData(filtered);
     },
@@ -387,8 +391,46 @@ export default function ComplexTable() {
     [filteredData, startIndex, endIndex],
   );
 
+  // Calculate visible page numbers (show only 5 pages)
+  const getVisiblePageNumbers = useCallback(() => {
+    const pages = [];
+    const halfWindow = Math.floor(maxVisiblePages / 2);
+    
+    let startPage = Math.max(1, currentPage - halfWindow);
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // Adjust startPage if endPage is at the end
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    // Add ellipsis for start
+    if (startPage > 1) {
+      pages.push(1);
+      if (startPage > 2) {
+        pages.push('...');
+      }
+    }
+    
+    // Add visible page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    // Add ellipsis for end
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        pages.push('...');
+      }
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  }, [currentPage, totalPages]);
+
   const goToPage = useCallback(
     (page) => {
+      if (page === '...' || page === undefined) return;
       const newPage = Math.min(Math.max(1, page), totalPages);
       if (newPage !== currentPage) {
         setCurrentPage(newPage);
@@ -515,6 +557,7 @@ export default function ComplexTable() {
           </Text>
         ),
       }),
+      // Current Address Column with Read More functionality for full addresses
       columnHelper.accessor('location', {
         id: 'location',
         header: () => (
@@ -526,68 +569,49 @@ export default function ComplexTable() {
             color="gray.500"
             textTransform="uppercase"
           >
-            Saved Address
+            Current Address
           </Text>
         ),
-        cell: (info) => (
-          <Text
-            color={textColor}
-            fontSize="sm"
-            fontWeight="600"
-            textAlign="center"
-            whiteSpace="nowrap"
-          >
-            {info.getValue()}
-          </Text>
-        ),
-      }),
-      // columnHelper.accessor('full_address', {
-      //   id: 'full_address',
-      //   header: () => (
-      //     <Text
-      //       justifyContent="center"
-      //       align="center"
-      //       fontSize={{ sm: '12px', lg: '14px' }}
-      //       fontWeight="bold"
-      //       color="gray.500"
-      //       textTransform="uppercase"
-      //     >
-      //       Permanent Address
-      //     </Text>
-      //   ),
-      //   cell: (info) => {
-      //     const addresses = info.getValue();
-      //     const preview = addresses.length > 0 ? addresses[0].address : 'N/A';
-      //     const isMultiple = addresses.length > 0;
+        cell: (info) => {
+          const row = info.row.original;
+          const addresses = row.full_address || [];
+          const hasMultipleAddresses = addresses.length > 0;
+          const currentAddress = info.getValue() || 'N/A';
 
-      //     return (
-      //       <Flex justify="center" align="center" wrap="nowrap">
-      //         <Text
-      //           color={textColor}
-      //           fontSize="sm"
-      //           fontWeight="600"
-      //           textAlign="center"
-      //           whiteSpace="nowrap"
-      //           maxW="200px"
-      //           isTruncated
-      //         >
-      //           {preview}
-      //         </Text>
-      //         {isMultiple && (
-      //           <Button
-      //             size="xs"
-      //             variant="link"
-      //             colorScheme="teal"
-      //             ml="1"
-      //             onClick={() => openModal(addresses)}
-      //           >
-      //             Show More
-      //           </Button>
-      //         )}
-      //       </Flex>
-      //     );
-      //   },
-      // }),
+          return (
+            <Flex justify="center" align="center" wrap="nowrap" gap={1}>
+              <Text
+                color={textColor}
+                fontSize="sm"
+                fontWeight="600"
+                textAlign="center"
+                whiteSpace="nowrap"
+                maxW="200px"
+                isTruncated
+                title={currentAddress}
+              >
+                {currentAddress}
+              </Text>
+              {hasMultipleAddresses && (
+                <Button
+                  size="xs"
+                  variant="link"
+                  colorScheme="teal"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openModal(addresses);
+                  }}
+                  fontSize="xs"
+                  _hover={{ textDecoration: 'underline' }}
+                  ml={1}
+                >
+                  Read More
+                </Button>
+              )}
+            </Flex>
+          );
+        },
+      }),
       columnHelper.accessor('mobile', {
         id: 'mobile',
         header: () => (
@@ -937,7 +961,7 @@ export default function ComplexTable() {
             Showing {totalItems === 0 ? 0 : startIndex + 1} to{' '}
             {Math.min(endIndex, totalItems)} of {totalItems} users
           </Text>
-          <HStack spacing={2}>
+          <HStack spacing={1}>
             <Button
               size="sm"
               colorScheme="teal"
@@ -948,18 +972,34 @@ export default function ComplexTable() {
             >
               Previous
             </Button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                size="sm"
-                colorScheme="teal"
-                variant={currentPage === page ? 'solid' : 'outline'}
-                onClick={() => goToPage(page)}
-                _hover={{ bg: 'teal.600', color: 'white' }}
-              >
-                {page}
-              </Button>
+            
+            {/* Render visible page numbers with ellipsis */}
+            {getVisiblePageNumbers().map((page, index) => (
+              <React.Fragment key={index}>
+                {page === '...' ? (
+                  <Text
+                    fontSize="sm"
+                    color="gray.500"
+                    minW="40px"
+                    textAlign="center"
+                  >
+                    ...
+                  </Text>
+                ) : (
+                  <Button
+                    size="sm"
+                    colorScheme="teal"
+                    variant={currentPage === page ? 'solid' : 'outline'}
+                    onClick={() => goToPage(page)}
+                    minW="40px"
+                    _hover={{ bg: 'teal.600', color: 'white' }}
+                  >
+                    {page}
+                  </Button>
+                )}
+              </React.Fragment>
             ))}
+            
             <Button
               size="sm"
               colorScheme="teal"
@@ -975,10 +1015,10 @@ export default function ComplexTable() {
       </Card>
 
       {/* Modal for full addresses */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} isCentered>
+      <Modal isOpen={isModalOpen} onClose={closeModal} isCentered size="lg">
         <ModalOverlay bg="blackAlpha.600" />
         <ModalContent
-          maxW={{ base: '90%', md: '600px' }}
+          maxW={{ base: '90%', md: '800px' }}
           borderRadius="16px"
           bg={useColorModeValue('white', 'gray.800')}
           boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
@@ -990,35 +1030,78 @@ export default function ComplexTable() {
             borderBottom="1px"
             borderColor={borderColor}
           >
-            User Addresses
+            All User Addresses
           </ModalHeader>
           <ModalCloseButton color={textColor} />
-          <ModalBody py="20px">
+          <ModalBody py="20px" maxH="500px" overflowY="auto">
             {selectedAddresses.length === 0 ? (
-              <Text color={textColor} fontSize="sm">
-                No addresses available.
-              </Text>
+              <Alert status="info" borderRadius="8px">
+                <AlertIcon />
+                <Text color={textColor} fontSize="sm">
+                  No addresses available for this user.
+                </Text>
+              </Alert>
             ) : (
-              selectedAddresses.map((addr, index) => (
-                <Box
-                  key={addr.id}
-                  mb={4}
-                  p={4}
-                  border="1px"
-                  borderColor={borderColor}
-                  borderRadius="8px"
-                >
-                  <Text fontSize="sm" fontWeight="600" color={textColor}>
-                    {index + 1}. {addr.title}
-                  </Text>
-                  <Text fontSize="sm" color={textColor} mt={1}>
-                    <strong>Address:</strong> {addr.address || 'N/A'}
-                  </Text>
-                  <Text fontSize="sm" color={textColor} mt={1}>
-                    <strong>Landmark:</strong> {addr.landmark || 'N/A'}
-                  </Text>
-                </Box>
-              ))
+              <Box>
+                <Text fontSize="sm" color="gray.500" mb={4}>
+                  Total Addresses: {selectedAddresses.length}
+                </Text>
+                {selectedAddresses.map((address, index) => (
+                  <Box
+                    key={address._id || index}
+                    mb={4}
+                    p={4}
+                    border="1px"
+                    borderColor={borderColor}
+                    borderRadius="12px"
+                    bg={useColorModeValue('gray.50', 'gray.700')}
+                    _hover={{
+                      borderColor: 'teal.300',
+                      boxShadow: '0px 2px 8px rgba(0, 128, 128, 0.15)',
+                    }}
+                    transition="all 0.2s ease"
+                  >
+                    <Flex justify="space-between" align="center" mb={2}>
+                      <Text 
+                        fontSize="md" 
+                        fontWeight="600" 
+                        color={textColor}
+                      >
+                        {index + 1}. {address.title || `Address ${index + 1}`}
+                      </Text>
+                      {address.latitude && address.longitude && (
+                        <Text 
+                          fontSize="xs" 
+                          color="gray.500"
+                          bg={useColorModeValue('gray.200', 'gray.600')}
+                          px={2} 
+                          py={1} 
+                          borderRadius="4px"
+                        >
+                          📍 {address.latitude.toFixed(4)}, {address.longitude.toFixed(4)}
+                        </Text>
+                      )}
+                    </Flex>
+                    
+                    <Box mt={2} pl={4} borderLeft="3px solid" borderLeftColor="teal.300">
+                      <Text fontSize="sm" color={textColor} mb={1}>
+                        <strong>📍 Address:</strong> {address.address || 'N/A'}
+                      </Text>
+                      <Text fontSize="sm" color={textColor} mb={1}>
+                        <strong>🏷️ Title:</strong> {address.title || 'N/A'}
+                      </Text>
+                      <Text fontSize="sm" color={textColor} mb={1}>
+                        <strong>📌 Landmark:</strong> {address.landmark || 'N/A'}
+                      </Text>
+                      {address._id && (
+                        <Text fontSize="xs" color="gray.500">
+                          <strong>ID:</strong> {address._id}
+                        </Text>
+                      )}
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
             )}
           </ModalBody>
           <ModalFooter borderTop="1px" borderColor={borderColor}>

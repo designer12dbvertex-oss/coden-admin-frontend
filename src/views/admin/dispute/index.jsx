@@ -24,6 +24,18 @@ import {
   InputGroup,
   InputLeftElement,
   Icon,
+  Textarea,
+  Badge,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
+  VStack,
+  Divider,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -38,6 +50,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   SearchIcon,
+  EditIcon,
 } from '@chakra-ui/icons';
 
 // Custom components
@@ -52,13 +65,14 @@ export default function DisputesTable() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
-  const [updateForm, setUpdateForm] = React.useState({
-    disputeId: '',
-    status: '',
-  });
-  const [formErrors, setFormErrors] = React.useState({ status: '' });
   const [currentPage, setCurrentPage] = React.useState(1);
   const [activeFilter, setActiveFilter] = React.useState('all'); // 'all', 'direct', 'bidding', 'emergency'
+  const [currentStatus, setCurrentStatus] = React.useState(''); // Track current status in status modal
+  const [reason, setReason] = React.useState(''); // Track reason in status modal
+  const [isStatusModalOpen, setIsStatusModalOpen] = React.useState(false); // Status modal state
+  const [selectedDispute, setSelectedDispute] = React.useState(null); // Track selected dispute for status modal
+  const [isDescriptionModalOpen, setIsDescriptionModalOpen] = React.useState(false); // Description modal state
+  const [selectedDescription, setSelectedDescription] = React.useState(null); // Track selected description for modal
   const itemsPerPage = 10;
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
@@ -181,12 +195,32 @@ export default function DisputesTable() {
     [data, activeFilter],
   );
 
-  // Update dispute status
-  const updateDisputeStatus = async () => {
-    setFormErrors({ status: '' });
+  // Update dispute status with reason
+  const updateDisputeStatus = async (disputeId, status, reason) => {
+    console.log("Updating dispute:", { disputeId, status, reason });
+    
+    if (!disputeId || !status) {
+      toast({
+        title: 'Error',
+        description: 'Dispute ID and status are required',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+        position: 'top-right',
+      });
+      return;
+    }
 
-    if (!updateForm.disputeId || !updateForm.status) {
-      setFormErrors({ status: 'Please select a dispute and status' });
+    // Make reason required for resolved and rejected statuses
+    if ((status === 'resolved' || status === 'rejected') && !reason?.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Reason is required for Resolved or Rejected status',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+        position: 'top-right',
+      });
       return;
     }
 
@@ -195,15 +229,42 @@ export default function DisputesTable() {
         throw new Error('Missing base URL or authentication token');
       }
 
+      const payload = {
+        status: status,
+      };
+
+      // Only include reason if it's not empty
+      if (reason?.trim()) {
+        payload.reason = reason.trim();
+      }
+
       const response = await axios.patch(
-        `${baseUrl}api/dispute/updateDisputeStatus/${updateForm.disputeId}`,
-        { status: updateForm.status },
+        `${baseUrl}api/dispute/updateDisputeStatus/${disputeId}`,
+        payload,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
 
       console.log('Update Dispute Status Response:', response.data);
+      
+      // Update the local data
+      const updateStatus = status.charAt(0).toUpperCase() + status.slice(1);
+      setData(prevData => 
+        prevData.map(item => 
+          item.id === disputeId 
+            ? { ...item, status: updateStatus }
+            : item
+        )
+      );
+      setFilteredData(prevData => 
+        prevData.map(item => 
+          item.id === disputeId 
+            ? { ...item, status: updateStatus }
+            : item
+        )
+      );
+
       toast({
         title: 'Success',
         description: 'Dispute status updated successfully!',
@@ -212,8 +273,12 @@ export default function DisputesTable() {
         isClosable: true,
         position: 'top-right',
       });
-      await fetchDisputes();
-      setUpdateForm({ disputeId: '', status: '' });
+
+      // Close status modal and reset states
+      setIsStatusModalOpen(false);
+      setSelectedDispute(null);
+      setCurrentStatus('');
+      setReason('');
     } catch (err) {
       console.error('Update Dispute Status Error:', err);
       toast({
@@ -231,17 +296,47 @@ export default function DisputesTable() {
     }
   };
 
-  // Handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setUpdateForm((prev) => ({ ...prev, [name]: value }));
-    setFormErrors((prev) => ({ ...prev, [name]: '' }));
+  // Handle status change - opens status modal directly
+  const handleEditStatus = (dispute) => {
+    setSelectedDispute(dispute);
+    setCurrentStatus(dispute.status?.toLowerCase() || 'pending');
+    setReason('');
+    setIsStatusModalOpen(true);
   };
 
-  // Handle dispute selection for status update
-  const handleDisputeSelect = (disputeId) => {
-    setUpdateForm((prev) => ({ ...prev, disputeId }));
-    setFormErrors((prev) => ({ ...prev, status: '' }));
+  // Handle status modal close
+  const handleStatusModalClose = () => {
+    setIsStatusModalOpen(false);
+    setSelectedDispute(null);
+    setCurrentStatus('');
+    setReason('');
+  };
+
+  // Handle description modal open
+  const handleReadMore = (description, dispute) => {
+    setSelectedDescription({
+      description,
+      disputeId: dispute.uniqueId,
+      projectId: dispute.project_id,
+      raisedBy: dispute.raised_by,
+      against: dispute.against,
+      status: dispute.status
+    });
+    setIsDescriptionModalOpen(true);
+  };
+
+  // Handle description modal close
+  const handleDescriptionModalClose = () => {
+    setIsDescriptionModalOpen(false);
+    setSelectedDescription(null);
+  };
+
+  // Truncate text
+  const truncateText = (text, maxLength = 50) => {
+    if (text && text.length > maxLength) {
+      return text.substring(0, maxLength) + '...';
+    }
+    return text;
   };
 
   // Handle filter button click
@@ -286,6 +381,20 @@ export default function DisputesTable() {
   React.useEffect(() => {
     fetchDisputes();
   }, [navigate]);
+
+  // Status badge component
+  const getStatusBadge = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return <Badge colorScheme="yellow" variant="solid">Pending</Badge>;
+      case 'resolved':
+        return <Badge colorScheme="green" variant="solid">Resolved</Badge>;
+      case 'rejected':
+        return <Badge colorScheme="red" variant="solid">Rejected</Badge>;
+      default:
+        return <Badge colorScheme="gray" variant="solid">{status}</Badge>;
+    }
+  };
 
   const columns = React.useMemo(
     () => [
@@ -525,13 +634,41 @@ export default function DisputesTable() {
             Description
           </Text>
         ),
-        cell: (info) => (
-          <Flex align="center">
-            <Text color={textColor} fontSize="sm" fontWeight="400">
-              {info.getValue()}
-            </Text>
-          </Flex>
-        ),
+        cell: (info) => {
+          const description = info.getValue();
+          const dispute = info.row.original;
+          
+          return (
+            <Flex align="center" direction="column" gap="1">
+              <Text 
+                color={textColor} 
+                fontSize="sm" 
+                fontWeight="400"
+                textAlign="left"
+                noOfLines={2}
+                maxW="200px"
+              >
+                {truncateText(description, 50)}
+              </Text>
+              {description && description.length > 50 && (
+                <Button
+                  size="xs"
+                  variant="link"
+                  color="blue.500"
+                  fontSize="xs"
+                  fontWeight="500"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleReadMore(description, dispute);
+                  }}
+                  _hover={{ textDecoration: 'underline' }}
+                >
+                  Read More
+                </Button>
+              )}
+            </Flex>
+          );
+        },
       }),
       columnHelper.accessor('requirement', {
         id: 'requirement',
@@ -569,9 +706,7 @@ export default function DisputesTable() {
         ),
         cell: (info) => (
           <Flex align="center">
-            <Text color={textColor} fontSize="sm" fontWeight="400">
-              {info.getValue()}
-            </Text>
+            {getStatusBadge(info.getValue())}
           </Flex>
         ),
       }),
@@ -609,15 +744,21 @@ export default function DisputesTable() {
             Actions
           </Text>
         ),
-        cell: (info) => (
-          <Button
-            size="sm"
-            colorScheme="teal"
-            onClick={() => handleDisputeSelect(info.row.original.id)}
-          >
-            Update Status
-          </Button>
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          return (
+            <Flex align="center" gap="2">
+              <Button
+                size="sm"
+                colorScheme="teal"
+                leftIcon={<EditIcon />}
+                onClick={() => handleEditStatus(row)}
+              >
+                Edit Status
+              </Button>
+            </Flex>
+          );
+        },
       }),
     ],
     [textColor],
@@ -667,218 +808,346 @@ export default function DisputesTable() {
   }
 
   return (
-    <Card
-      flexDirection="column"
-      w="100%"
-      px="25px"
-      py="25px"
-      overflowX={{ sm: 'scroll', lg: 'hidden' }}
-      borderRadius="20px"
-      boxShadow="lg"
-      style={{ marginTop: '80px' }}
-    >
-      <Flex
-        px="0px"
-        mb="20px"
-        justifyContent="space-between"
-        align="center"
-        direction={{ base: 'column', md: 'row' }}
-        gap={{ base: '10px', md: '0' }}
+    <>
+      <Card
+        flexDirection="column"
+        w="100%"
+        px="25px"
+        py="25px"
+        overflowX={{ sm: 'scroll', lg: 'hidden' }}
+        borderRadius="20px"
+        boxShadow="lg"
+        style={{ marginTop: '80px' }}
       >
-        <Text
-          color={textColor}
-          fontSize={{ base: 'xl', md: '22px' }}
-          fontWeight="700"
-          lineHeight="100%"
-        >
-          Disputes
-        </Text>
         <Flex
+          px="0px"
+          mb="20px"
+          justifyContent="space-between"
           align="center"
-          gap={{ base: '10px', md: '20px' }}
           direction={{ base: 'column', md: 'row' }}
+          gap={{ base: '10px', md: '0' }}
         >
-          <InputGroup maxW={{ base: '100%', md: '300px' }}>
-            <InputLeftElement pointerEvents="none">
-              <Icon as={SearchIcon} color="gray.400" />
-            </InputLeftElement>
-            <Input
-              placeholder="Search by ID, title, type, names, or status"
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              borderRadius="12px"
-              bg={useColorModeValue('gray.100', 'gray.700')}
-              _focus={{
-                borderColor: 'blue.500',
-                boxShadow: '0 0 0 1px blue.500',
-              }}
-            />
-          </InputGroup>
-          <HStack spacing="2">
+          <Text
+            color={textColor}
+            fontSize={{ base: 'xl', md: '22px' }}
+            fontWeight="700"
+            lineHeight="100%"
+          >
+            Disputes
+          </Text>
+          <Flex
+            align="center"
+            gap={{ base: '10px', md: '20px' }}
+            direction={{ base: 'column', md: 'row' }}
+          >
+            <InputGroup maxW={{ base: '100%', md: '300px' }}>
+              <InputLeftElement pointerEvents="none">
+                <Icon as={SearchIcon} color="gray.400" />
+              </InputLeftElement>
+              <Input
+                placeholder="Search by ID, title, type, names, or status"
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                borderRadius="12px"
+                bg={useColorModeValue('gray.100', 'gray.700')}
+                _focus={{
+                  borderColor: 'blue.500',
+                  boxShadow: '0 0 0 1px blue.500',
+                }}
+              />
+            </InputGroup>
+            <HStack spacing="2">
+              <Button
+                size="sm"
+                colorScheme={activeFilter === 'all' ? 'teal' : 'gray'}
+                onClick={() => handleFilterClick('all')}
+              >
+                All
+              </Button>
+              <Button
+                size="sm"
+                colorScheme={activeFilter === 'direct' ? 'teal' : 'gray'}
+                onClick={() => handleFilterClick('direct')}
+              >
+                Direct
+              </Button>
+              <Button
+                size="sm"
+                colorScheme={activeFilter === 'bidding' ? 'teal' : 'gray'}
+                onClick={() => handleFilterClick('bidding')}
+              >
+                Bidding
+              </Button>
+              <Button
+                size="sm"
+                colorScheme={activeFilter === 'emergency' ? 'teal' : 'gray'}
+                onClick={() => handleFilterClick('emergency')}
+              >
+                Emergency
+              </Button>
+            </HStack>
+          </Flex>
+        </Flex>
+
+        <Box overflowX="auto">
+          <Table variant="simple" color="gray.500" mb="24px" mt="12px">
+            <Thead>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <Tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <Th
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      pe="10px"
+                      borderColor={borderColor}
+                      py="12px"
+                    >
+                      <Flex
+                        justifyContent="space-between"
+                        align="center"
+                        fontSize={{ sm: '10px', lg: '12px' }}
+                        color="gray.400"
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                      </Flex>
+                    </Th>
+                  ))}
+                </Tr>
+              ))}
+            </Thead>
+            <Tbody>
+              {table.getRowModel().rows.map((row) => (
+                <Tr 
+                  key={row.id} 
+                  _hover={{ bg: 'gray.25' }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <Td
+                      key={cell.id}
+                      fontSize={{ sm: '14px' }}
+                      minW={{ sm: '150px', md: '200px', lg: 'auto' }}
+                      borderColor="transparent"
+                      py="12px"
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </Td>
+                  ))}
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </Box>
+        
+        <Flex
+          justifyContent="space-between"
+          alignItems="center"
+          px="25px"
+          py="10px"
+        >
+          <Text fontSize="sm" color={textColor}>
+            Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
+            {totalItems} disputes
+          </Text>
+          <HStack>
             <Button
               size="sm"
-              colorScheme={activeFilter === 'all' ? 'teal' : 'gray'}
-              onClick={() => handleFilterClick('all')}
+              onClick={() => goToPage(currentPage - 1)}
+              colorScheme="teal"
+              isDisabled={currentPage === 1}
+              leftIcon={<ChevronLeftIcon />}
             >
-              All
+              Previous
             </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                size="sm"
+                colorScheme="teal"
+                onClick={() => goToPage(page)}
+                variant={currentPage === page ? 'solid' : 'outline'}
+              >
+                {page}
+              </Button>
+            ))}
             <Button
               size="sm"
-              colorScheme={activeFilter === 'direct' ? 'teal' : 'gray'}
-              onClick={() => handleFilterClick('direct')}
+              onClick={() => goToPage(currentPage + 1)}
+              colorScheme="teal"
+              isDisabled={currentPage === totalPages}
+              rightIcon={<ChevronRightIcon />}
             >
-              Direct
-            </Button>
-            <Button
-              size="sm"
-              colorScheme={activeFilter === 'bidding' ? 'teal' : 'gray'}
-              onClick={() => handleFilterClick('bidding')}
-            >
-              Bidding
-            </Button>
-            <Button
-              size="sm"
-              colorScheme={activeFilter === 'emergency' ? 'teal' : 'gray'}
-              onClick={() => handleFilterClick('emergency')}
-            >
-              Emergency
+              Next
             </Button>
           </HStack>
         </Flex>
-      </Flex>
-      <Box mb="30px">
-        <Flex direction="column" gap="4">
-          <FormControl isInvalid={!!formErrors.status}>
-            <FormLabel fontSize="sm" fontWeight="500" color={textColor}>
-              Update Dispute Status
-            </FormLabel>
-            <Select
-              name="status"
-              value={updateForm.status}
-              onChange={handleInputChange}
-              placeholder="Select status"
-              borderRadius="8px"
-              borderColor="gray.300"
-              _focus={{
-                borderColor: 'blue.500',
-                boxShadow: '0 0 0 1px blue.500',
-              }}
-              isDisabled={!updateForm.disputeId}
-            >
-              <option value="pending">Pending</option>
-              <option value="resolved">Resolved</option>
-              <option value="rejected">Rejected</option>
-            </Select>
-            {formErrors.status && (
-              <FormErrorMessage>{formErrors.status}</FormErrorMessage>
-            )}
-          </FormControl>
-          <Button
-            colorScheme="teal"
-            onClick={updateDisputeStatus}
-            borderRadius="12px"
-            fontSize="sm"
-            fontWeight="600"
-            textTransform="uppercase"
-            bg="teal.600"
-            _hover={{ bg: 'teal.700' }}
-            _active={{ bg: 'teal.800' }}
-            isDisabled={!updateForm.disputeId}
-          >
-            Update Status
-          </Button>
-        </Flex>
-      </Box>
-      <Box overflowX="auto">
-        <Table variant="simple" color="gray.500" mb="24px" mt="12px">
-          <Thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <Tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <Th
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    pe="10px"
-                    borderColor={borderColor}
-                    py="12px"
+      </Card>
+
+      {/* Status Update Modal */}
+      <Modal isOpen={isStatusModalOpen} onClose={handleStatusModalClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Update Dispute Status</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {selectedDispute && (
+              <VStack spacing={4} align="stretch">
+                <Box>
+                  <Text fontSize="sm" mb="1" fontWeight="semibold">
+                    Dispute ID: {selectedDispute.uniqueId}
+                  </Text>
+                  <Text fontSize="sm" mb="1">
+                    <strong>Project:</strong> {selectedDispute.project_id}
+                  </Text>
+                  <Text fontSize="sm" mb="1">
+                    <strong>Current Status:</strong>{' '}
+                    {getStatusBadge(selectedDispute.status)}
+                  </Text>
+                </Box>
+                
+                <Divider />
+                
+                <FormControl>
+                  <FormLabel fontSize="sm">New Status</FormLabel>
+                  <Select
+                    value={currentStatus}
+                    onChange={(e) => setCurrentStatus(e.target.value)}
+                    placeholder="Select new status"
                   >
-                    <Flex
-                      justifyContent="space-between"
-                      align="center"
-                      fontSize={{ sm: '10px', lg: '12px' }}
-                      color="gray.400"
+                    <option value="pending">Pending</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="rejected">Rejected</option>
+                  </Select>
+                </FormControl>
+
+                {(currentStatus === 'resolved' || currentStatus === 'rejected') && (
+                  <>
+                    <Divider />
+                    <FormControl 
+                      isRequired
+                      isInvalid={!reason.trim()}
                     >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
+                      <FormLabel fontSize="sm">
+                        Reason <span style={{ color: 'red' }}>*</span>
+                      </FormLabel>
+                      <Textarea
+                        placeholder="Enter detailed reason for status change (required)..."
+                        rows={4}
+                        borderRadius="md"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                      />
+                      {!reason.trim() && (
+                        <FormErrorMessage fontSize="xs">
+                          Reason is required for Resolved or Rejected status
+                        </FormErrorMessage>
                       )}
-                    </Flex>
-                  </Th>
-                ))}
-              </Tr>
-            ))}
-          </Thead>
-          <Tbody>
-            {table.getRowModel().rows.map((row) => (
-              <Tr key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <Td
-                    key={cell.id}
-                    fontSize={{ sm: '14px' }}
-                    minW={{ sm: '150px', md: '200px', lg: 'auto' }}
-                    borderColor="transparent"
-                    py="12px"
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </Td>
-                ))}
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </Box>
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        px="25px"
-        py="10px"
-      >
-        <Text fontSize="sm" color={textColor}>
-          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
-          {totalItems} disputes
-        </Text>
-        <HStack>
-          <Button
-            size="sm"
-            onClick={() => goToPage(currentPage - 1)}
-            colorScheme="teal"
-            isDisabled={currentPage === 1}
-            leftIcon={<ChevronLeftIcon />}
-          >
-            Previous
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    </FormControl>
+                  </>
+                )}
+
+                {currentStatus === 'pending' && (
+                  <Text fontSize="sm" color="gray.500" textAlign="center">
+                    No reason required for Pending status
+                  </Text>
+                )}
+              </VStack>
+            )}
+          </ModalBody>
+          <ModalFooter>
             <Button
-              key={page}
-              size="sm"
-              colorScheme="teal"
-              onClick={() => goToPage(page)}
-              variant={currentPage === page ? 'solid' : 'outline'}
+              variant="ghost"
+              mr={3}
+              onClick={handleStatusModalClose}
             >
-              {page}
+              Cancel
             </Button>
-          ))}
-          <Button
-            size="sm"
-            onClick={() => goToPage(currentPage + 1)}
-            colorScheme="teal"
-            isDisabled={currentPage === totalPages}
-            rightIcon={<ChevronRightIcon />}
-          >
-            Next
-          </Button>
-        </HStack>
-      </Flex>
-    </Card>
+            <Button
+              colorScheme="teal"
+              onClick={() => {
+                if (selectedDispute && currentStatus) {
+                  updateDisputeStatus(selectedDispute.id, currentStatus, reason);
+                }
+              }}
+              isDisabled={!currentStatus || 
+                ((currentStatus === 'resolved' || currentStatus === 'rejected') && 
+                 !reason.trim())
+              }
+            >
+              Update Status
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Description Modal */}
+      <Modal isOpen={isDescriptionModalOpen} onClose={handleDescriptionModalClose} size="xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Dispute Description</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {selectedDescription && (
+              <VStack spacing={4} align="stretch">
+                <Box p={4} bg="gray.50" borderRadius="md">
+                  <Text fontSize="sm" mb="1" fontWeight="semibold">
+                    Dispute ID: {selectedDescription.disputeId}
+                  </Text>
+                  <Text fontSize="sm" mb="1">
+                    <strong>Project:</strong> {selectedDescription.projectId}
+                  </Text>
+                  <Text fontSize="sm" mb="1">
+                    <strong>Raised By:</strong> {selectedDescription.raisedBy}
+                  </Text>
+                  <Text fontSize="sm" mb="1">
+                    <strong>Against:</strong> {selectedDescription.against}
+                  </Text>
+                  <Text fontSize="sm" mb="1">
+                    <strong>Status:</strong>{' '}
+                    {getStatusBadge(selectedDescription.status)}
+                  </Text>
+                </Box>
+                
+                <Divider />
+                
+                <Box>
+                  <Text fontSize="md" fontWeight="semibold" mb="2">
+                    Full Description
+                  </Text>
+                  <Box
+                    p={4}
+                    bg="gray.50"
+                    borderRadius="md"
+                    border="1px"
+                    borderColor="gray.200"
+                    maxH="400px"
+                    overflowY="auto"
+                  >
+                    <Text 
+                      fontSize="sm" 
+                      lineHeight="tall"
+                      whiteSpace="pre-wrap"
+                      color={textColor}
+                    >
+                      {selectedDescription.description}
+                    </Text>
+                  </Box>
+                </Box>
+              </VStack>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              colorScheme="teal"
+              onClick={handleDescriptionModalClose}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
   );
 }
