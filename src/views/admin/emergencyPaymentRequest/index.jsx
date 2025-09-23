@@ -84,7 +84,7 @@ export default function OrdersTable() {
         }
         setLoading(true);
         const response = await axios.get(
-          `${baseUrl}api/admin/getReleaseRequestedBiddingOrders`,
+          `${baseUrl}api/admin/getReleaseRequestedEmergencyOrders`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -181,7 +181,7 @@ export default function OrdersTable() {
     console.log(paymentId, orderId, index, releaseStatus);
     try {
       await axios.post(
-        `${baseUrl}api/bidding-order/admin/approve-release/${orderId}/${paymentId}`,
+        `${baseUrl}api/emergency-order/admin/approve-release/${orderId}/${paymentId}`,
         { release_status: releaseStatus },
         {
           headers: { Authorization: `Bearer ${token}` },

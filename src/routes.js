@@ -61,7 +61,8 @@ import {
 import DirectPaymentCreate from 'views/admin/directPaymentCreate';
 import BiddingPaymentCreate from 'views/admin/biddingPaymentCreate';
 import BiddingPaymentREquest from 'views/admin/biddingPaymentRequest';
-
+import EmergencyPaymentCreate from 'views/admin/emergencyPaymentCreate';
+import EmergencyPaymentREquest from 'views/admin/emergencyPaymentRequest';
 const routes = [
   {
     name: 'Main Dashboard',
@@ -196,6 +197,24 @@ const routes = [
     component: <DirectPaymentCreate />,
   },
   {
+    name: 'Bidding Payment Create',
+    layout: '/admin',
+    icon: (
+      <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />
+    ),
+    path: '/bidding_payment_create',
+    component: <BiddingPaymentCreate />,
+  },
+	{
+    name: 'Emergency Payment Create',
+    layout: '/admin',
+    icon: (
+      <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />
+    ),
+    path: '/emergency_payment_create',
+    component: <EmergencyPaymentCreate />,
+  },
+  {
     name: 'Direct Payment Request',
     layout: '/admin',
     icon: (
@@ -213,16 +232,15 @@ const routes = [
     path: '/bidding_payment_request',
     component: <BiddingPaymentREquest />,
   },
-  {
-    name: 'Bidding Payment Create',
+	{
+    name: 'Emergency Payment Request',
     layout: '/admin',
     icon: (
       <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />
     ),
-    path: '/bidding_payment_create',
-    component: <BiddingPaymentCreate />,
+    path: '/emergency_payment_request',
+    component: <EmergencyPaymentREquest />,
   },
-
   {
     name: 'Total Revenue',
     layout: '/admin',
