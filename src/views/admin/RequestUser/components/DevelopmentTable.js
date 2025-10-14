@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */ // Disable specific rule with justification: useEffect dependencies are intentionally limited
+/* eslint-disable react-hooks/exhaustive-deps */
 import {
   Box,
   Flex,
@@ -95,7 +95,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
                   .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                   .join(' ')
               : 'N/A',
-            location: user.location.address || 'N/A',
+            location: user.location?.address || 'N/A',
             uniqueId: user.unique_id || 'N/A',
             mobile: user.phone || 'N/A',
             createdAt: user.createdAt
@@ -123,8 +123,14 @@ const useFetchUsers = (baseUrl, token, navigate) => {
           errorMessage.includes('Session expired') ||
           errorMessage.includes('Un-Authorized')
         ) {
-          localStorage.removeItem('token');
-          navigate('/');
+          toast.error('Session expired. Please log in again.', {
+            position: 'top-right',
+            autoClose: 2000,
+          });
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            navigate('/');
+          }, 2000);
         } else {
           setError(errorMessage);
         }
@@ -139,7 +145,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
 };
 
 // Custom hook for fetching disputes
-const useFetchDisputes = (baseUrl, token, userId) => {
+const useFetchDisputes = (baseUrl, token, userId, navigate) => {
   const [disputes, setDisputes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -158,13 +164,29 @@ const useFetchDisputes = (baseUrl, token, userId) => {
         setDisputes(response.data.disputes || []);
       } catch (error) {
         console.error('Error fetching disputes:', error);
-        setError(error.response?.data?.message || 'Failed to load disputes');
+        const errorMessage =
+          error.response?.data?.message || 'Failed to load disputes';
+        if (
+          errorMessage.includes('Session expired') ||
+          errorMessage.includes('Un-Authorized')
+        ) {
+          toast.error('Session expired. Please log in again.', {
+            position: 'top-right',
+            autoClose: 2000,
+          });
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            navigate('/');
+          }, 2000);
+        } else {
+          setError(errorMessage);
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchDisputes();
-  }, [baseUrl, token, userId]);
+  }, [baseUrl, token, userId, navigate]);
 
   return { disputes, loading, error };
 };
@@ -206,18 +228,17 @@ const toggleUserStatus = async (
     }
   } catch (error) {
     console.error('Error toggling user status:', error);
-    setError(error.response?.data?.message || 'Failed to update user status');
-    toast.error(
-      error.response?.data?.message || 'Failed to update user status',
-      {
-        position: 'top-right',
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      },
-    );
+    const errorMessage =
+      error.response?.data?.message || 'Failed to update user status';
+    setError(errorMessage);
+    toast.error(errorMessage, {
+      position: 'top-right',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     return false;
   }
 };
@@ -233,6 +254,7 @@ const toggleUserVerified = async (
   reason = '',
 ) => {
   try {
+    console.log('API Payload:', { userId, status, reason });
     const response = await axios.post(
       `${baseUrl}api/admin/approveServiceProvider`,
       { userId, status, reason },
@@ -264,22 +286,18 @@ const toggleUserVerified = async (
     }
   } catch (error) {
     console.error('Error toggling user verification:', error);
-    setError(
+    const errorMessage =
       error.response?.data?.message ||
-        'Failed to update user verification status',
-    );
-    toast.error(
-      error.response?.data?.message ||
-        'Failed to update user verification status',
-      {
-        position: 'top-right',
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      },
-    );
+      'Failed to update user verification status';
+    setError(errorMessage);
+    toast.error(errorMessage, {
+      position: 'top-right',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     return false;
   }
 };
@@ -297,21 +315,18 @@ export default function DevelopmentTable() {
   const [isInactivationModalOpen, setIsInactivationModalOpen] = useState(false);
   const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
-  const [selectedInactivationInfo, setSelectedInactivationInfo] =
-    useState(null);
+  const [selectedInactivationInfo, setSelectedInactivationInfo] = useState(null);
   const [deactivateReason, setDeactivateReason] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [disputeId, setDisputeId] = useState('');
-  const [verifyStatus, setVerifyStatus] = useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const itemsPerPage = 10;
-  // Define all useColorModeValue calls at the top to avoid conditional hook calls
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const selectBg = useColorModeValue('gray.100', 'gray.700');
   const textareaBg = useColorModeValue('gray.100', 'gray.700');
-  const cardBg = useColorModeValue('white', 'gray.800'); // Added for Card and Modal consistency
-  const baseUrl = useMemo(() => process.env.REACT_APP_BASE_URL, []);
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const baseUrl = useMemo(() => process.env.REACT_APP_BASE_URL || 'http://localhost:3000/', []);
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
 
@@ -324,9 +339,8 @@ export default function DevelopmentTable() {
     disputes,
     loading: disputesLoading,
     error: disputesError,
-  } = useFetchDisputes(baseUrl, token, selectedUserId);
+  } = useFetchDisputes(baseUrl, token, selectedUserId, navigate);
 
-  // Handle search filtering
   const handleSearch = useCallback(
     (query) => {
       setSearchQuery(query);
@@ -338,25 +352,23 @@ export default function DevelopmentTable() {
       const lowerQuery = query.toLowerCase();
       const filtered = data.filter(
         (item) =>
-          item.full_name.toLowerCase().includes(lowerQuery) ||
-          item.location.toLowerCase().includes(lowerQuery) ||
-          item.mobile.toLowerCase().includes(lowerQuery) ||
-          item.referral_code.toLowerCase().includes(lowerQuery) ||
-          item.createdBy.toLowerCase().includes(lowerQuery) ||
-          item.uniqueId.toLowerCase().includes(lowerQuery) ||
-          item.categoryName.toLowerCase().includes(lowerQuery),
+          item.full_name?.toLowerCase().includes(lowerQuery) ||
+          item.location?.toLowerCase().includes(lowerQuery) ||
+          item.mobile?.toLowerCase().includes(lowerQuery) ||
+          item.referral_code?.toLowerCase().includes(lowerQuery) ||
+          item.createdBy?.toLowerCase().includes(lowerQuery) ||
+          item.uniqueId?.toLowerCase().includes(lowerQuery) ||
+          item.categoryName?.toLowerCase().includes(lowerQuery),
       );
       setFilteredData(filtered);
     },
     [data],
   );
 
-  // Initialize filteredData with all data
   useEffect(() => {
     setFilteredData(data);
   }, [data]);
 
-  // Toggle handler for read more/less for location
   const handleToggleLocation = useCallback((userId) => {
     setExpandedLocations((prev) => ({
       ...prev,
@@ -364,7 +376,6 @@ export default function DevelopmentTable() {
     }));
   }, []);
 
-  // Toggle handler for category subcategories
   const handleToggleCategory = useCallback((userId) => {
     setExpandedCategories((prev) => ({
       ...prev,
@@ -398,24 +409,18 @@ export default function DevelopmentTable() {
     setSelectedInactivationInfo(null);
   }, []);
 
-  const openRejectionModal = useCallback(
-    (userId, currentStatus, reason = '') => {
-      setSelectedUserId(userId);
-      setVerifyStatus(currentStatus);
-      setRejectionReason(reason);
-      setIsRejectionModalOpen(true);
-    },
-    [],
-  );
+  const openRejectionModal = useCallback((userId) => {
+    setSelectedUserId(userId);
+    setRejectionReason('');
+    setIsRejectionModalOpen(true);
+  }, []);
 
   const closeRejectionModal = useCallback(() => {
     setIsRejectionModalOpen(false);
     setSelectedUserId(null);
     setRejectionReason('');
-    setVerifyStatus('');
   }, []);
 
-  // Toggle handler for user status
   const handleToggleStatus = useCallback(
     async (userId, currentActive) => {
       if (toggleLoading[userId]) return;
@@ -440,9 +445,8 @@ export default function DevelopmentTable() {
     [baseUrl, token, setData, setError, toggleLoading, openDeactivateModal],
   );
 
-  // Handle deactivation submission
   const handleDeactivateSubmit = useCallback(async () => {
-    if (!deactivateReason) {
+    if (!deactivateReason.trim()) {
       toast.error('Reason for deactivation is required', {
         position: 'top-right',
         autoClose: 3000,
@@ -462,7 +466,7 @@ export default function DevelopmentTable() {
       false,
       setData,
       setError,
-      deactivateReason,
+      deactivateReason.trim(),
       disputeId,
     );
     setToggleLoading((prev) => ({ ...prev, [selectedUserId]: false }));
@@ -481,12 +485,12 @@ export default function DevelopmentTable() {
     closeDeactivateModal,
   ]);
 
-  // Handle verification status change
   const handleToggleVerified = useCallback(
     async (userId, status) => {
       if (toggleLoading[userId]) return;
+      console.log('handleToggleVerified called with userId:', userId, 'status:', status);
       if (status === 'rejected') {
-        openRejectionModal(userId, status);
+        openRejectionModal(userId);
         return;
       }
       setToggleLoading((prev) => ({ ...prev, [userId]: true }));
@@ -504,9 +508,8 @@ export default function DevelopmentTable() {
     [baseUrl, token, setData, setError, toggleLoading, openRejectionModal],
   );
 
-  // Handle rejection reason submission
   const handleRejectionSubmit = useCallback(async () => {
-    if (!rejectionReason) {
+    if (!rejectionReason.trim()) {
       toast.error('Reason for rejection is required', {
         position: 'top-right',
         autoClose: 3000,
@@ -517,6 +520,7 @@ export default function DevelopmentTable() {
       });
       return;
     }
+    console.log('Submitting rejection with reason:', rejectionReason);
     setToggleLoading((prev) => ({ ...prev, [selectedUserId]: true }));
     const success = await toggleUserVerified(
       baseUrl,
@@ -525,21 +529,14 @@ export default function DevelopmentTable() {
       'rejected',
       setData,
       setError,
-      rejectionReason,
+      rejectionReason.trim(),
     );
     setToggleLoading((prev) => ({ ...prev, [selectedUserId]: false }));
+
     if (success) {
       closeRejectionModal();
     }
-  }, [
-    baseUrl,
-    token,
-    selectedUserId,
-    rejectionReason,
-    setData,
-    setError,
-    closeRejectionModal,
-  ]);
+  }, [baseUrl, token, selectedUserId, rejectionReason, setData, setError, closeRejectionModal]);
 
   const handleViewDetails = useCallback(
     (user) => {
@@ -549,7 +546,6 @@ export default function DevelopmentTable() {
     [onOpen],
   );
 
-  // Pagination logic
   const totalItems = filteredData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -928,6 +924,7 @@ export default function DevelopmentTable() {
               }
               colorScheme="teal"
               isDisabled={toggleLoading[info.row.original.id]}
+              aria-label={`Toggle active status for ${info.row.original.full_name}`}
             />
             {!info.getValue() && info.row.original.inactivationInfo && (
               <Button
@@ -972,6 +969,7 @@ export default function DevelopmentTable() {
               bg={selectBg}
               borderRadius="8px"
               isDisabled={toggleLoading[info.row.original.id]}
+              aria-label={`Set verification status for ${info.row.original.full_name}`}
             >
               <option value="pending">Pending</option>
               <option value="verified">Verified</option>
@@ -988,23 +986,6 @@ export default function DevelopmentTable() {
               {info.getValue().charAt(0).toUpperCase() +
                 info.getValue().slice(1)}
             </Text>
-            {info.getValue() === 'rejected' &&
-              info.row.original.rejectionReason && (
-                <Button
-                  size="xs"
-                  variant="link"
-                  colorScheme="red"
-                  onClick={() =>
-                    openRejectionModal(
-                      info.row.original.id,
-                      info.getValue(),
-                      info.row.original.rejectionReason,
-                    )
-                  }
-                >
-                  View Reason
-                </Button>
-              )}
           </Flex>
         ),
       }),
@@ -1028,6 +1009,7 @@ export default function DevelopmentTable() {
               navigate(`/admin/UserDetails/${info.row.original.id}`)
             }
             whiteSpace="nowrap"
+            aria-label={`View details for ${info.row.original.full_name}`}
           >
             View Details
           </Button>
@@ -1230,7 +1212,6 @@ export default function DevelopmentTable() {
           </Button>
         </HStack>
       </Flex>
-      {/* Modal for Service Provider Details */}
       <Modal isOpen={isOpen} onClose={onClose} size="xl">
         <ModalOverlay />
         <ModalContent bg={cardBg}>
@@ -1379,7 +1360,6 @@ export default function DevelopmentTable() {
           </ModalBody>
         </ModalContent>
       </Modal>
-      {/* Modal for deactivation reason */}
       <Modal
         isOpen={isDeactivateModalOpen}
         onClose={closeDeactivateModal}
@@ -1474,7 +1454,6 @@ export default function DevelopmentTable() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      {/* Modal for rejection reason */}
       <Modal
         isOpen={isRejectionModalOpen}
         onClose={closeRejectionModal}
@@ -1494,13 +1473,11 @@ export default function DevelopmentTable() {
             borderBottom="1px"
             borderColor={borderColor}
           >
-            {verifyStatus === 'rejected'
-              ? 'Provide Rejection Reason'
-              : 'View Rejection Reason'}
+            Rejection Reason
           </ModalHeader>
           <ModalCloseButton color={textColor} />
           <ModalBody py="20px">
-            <FormControl isRequired={verifyStatus === 'rejected'} mb={4}>
+            <FormControl isRequired mb={4}>
               <FormLabel color={textColor}>Reason for Rejection</FormLabel>
               <Textarea
                 value={rejectionReason}
@@ -1508,7 +1485,6 @@ export default function DevelopmentTable() {
                 placeholder="Enter reason for rejection"
                 bg={textareaBg}
                 borderRadius="8px"
-                isReadOnly={verifyStatus !== 'rejected'}
               />
             </FormControl>
           </ModalBody>
@@ -1520,24 +1496,21 @@ export default function DevelopmentTable() {
               borderRadius="12px"
               size="sm"
             >
-              Close
+              Cancel
             </Button>
-            {verifyStatus === 'rejected' && (
-              <Button
-                colorScheme="red"
-                onClick={handleRejectionSubmit}
-                borderRadius="12px"
-                size="sm"
-                isLoading={toggleLoading[selectedUserId]}
-                _hover={{ bg: 'red.600' }}
-              >
-                Submit
-              </Button>
-            )}
+            <Button
+              colorScheme="red"
+              onClick={handleRejectionSubmit}
+              borderRadius="12px"
+              size="sm"
+              isLoading={toggleLoading[selectedUserId]}
+              _hover={{ bg: 'red.600' }}
+            >
+              Submit
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
-      {/* Modal for inactivation details */}
       <Modal
         isOpen={isInactivationModalOpen}
         onClose={closeInactivationModal}
@@ -1624,7 +1597,7 @@ export default function DevelopmentTable() {
         closeOnClick
         pauseOnHover
         draggable
-        theme="colored"
+
       />
     </Card>
   );
