@@ -17,6 +17,7 @@ import {
   ModalCloseButton,
   Stack,
   useDisclosure,
+  Spinner,
 } from '@chakra-ui/react';
 import axios from 'axios';
 import * as React from 'react';
@@ -40,7 +41,6 @@ export default function ConversationsTable() {
 
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
-
   const { isOpen: isImageModalOpen, onOpen: onImageModalOpen, onClose: onImageModalClose } = useDisclosure();
 
   // Fetch all conversations
@@ -58,6 +58,13 @@ export default function ConversationsTable() {
       if (!response.data || !Array.isArray(response.data.conversations)) {
         throw new Error('Invalid response format: Expected an array of conversations');
       }
+
+      response.data.conversations.forEach((conv, index) => {
+        console.log(`Conversation ${index + 1} (ID: ${conv._id}):`, {
+          members: conv.members,
+          isMembersValid: Array.isArray(conv.members) && conv.members.length >= 2 && conv.members[0] && conv.members[1],
+        });
+      });
 
       setConversations(response.data.conversations);
       setLoading(false);
@@ -78,7 +85,7 @@ export default function ConversationsTable() {
   };
 
   // Fetch messages for a specific conversation
-  const fetchConversationMessages = async (conversationId) => {
+  const fetchConversationMessages = React.useCallback(async (conversationId) => {
     try {
       if (!baseUrl || !token) {
         throw new Error('Missing base URL or authentication token');
@@ -110,7 +117,7 @@ export default function ConversationsTable() {
       setError(err.message || 'Failed to fetch messages');
       setLoading(false);
     }
-  };
+  }, [baseUrl, token, toast]);
 
   React.useEffect(() => {
     fetchConversations();
@@ -127,9 +134,9 @@ export default function ConversationsTable() {
         borderRadius="20px"
         boxShadow="lg"
       >
-        <Text color={textColor} fontSize="22px" fontWeight="700" p="25px">
-          Loading...
-        </Text>
+        <Flex justifyContent="center" alignItems="center" minH="200px">
+          <Spinner size="xl" color="teal.500" />
+        </Flex>
       </Card>
     );
   }
@@ -195,46 +202,59 @@ export default function ConversationsTable() {
           <Text w="150px" textAlign="center">Last Message Date</Text>
           <Text w="100px" textAlign="center">Action</Text>
         </Flex>
-        {conversations.map((conv) => {
-          const [user1, user2] = conv.members;
-          return (
-            <Flex
-              key={conv._id}
-              p="10px"
-              mb="5px"
-              borderBottom={`1px solid ${borderColor}`}
-              justifyContent="space-between"
-              alignItems="center"
-              minW="700px"
-            >
-              <Text color={textColor} fontSize="sm" fontWeight="400" w="150px" textAlign="center">
-                {user1.full_name} - {user1.unique_id}
-              </Text>
-
-              <Text color={textColor} fontSize="sm" fontWeight="400" w="150px" textAlign="center">
-                {user2.full_name} - {user2.unique_id}
-              </Text>
-              <Text color={textColor} fontSize="sm" fontWeight="400" w="200px" textAlign="center">
-                {conv.lastMessage || 'No message'}
-              </Text>
-              <Text color="gray.500" fontSize="xs" w="150px" textAlign="center">
-                {new Date(conv.lastMessageTime || conv.updatedAt).toLocaleString('en-IN', {
-                  timeZone: 'Asia/Kolkata',
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                })}
-              </Text>
-              <Button
-                colorScheme="teal"
-                size="sm"
-                onClick={() => fetchConversationMessages(conv._id)}
-              >
-                View Message
-              </Button>
-            </Flex>
-          );
-        })}
+        {conversations.length === 0 ? (
+          <Text color={textColor} fontSize="lg" textAlign="center" py="20px">
+            No conversations found.
+          </Text>
+        ) : (
+          conversations
+            .filter((conv) => {
+              const isValid = Array.isArray(conv.members) && conv.members.length >= 2 && conv.members[0] && conv.members[1];
+              if (!isValid) {
+                console.warn(`Invalid members for conversation ${conv._id}:`, conv.members);
+              }
+              return isValid;
+            })
+            .map((conv) => {
+              const [user1, user2] = conv.members;
+              return (
+                <Flex
+                  key={conv._id}
+                  p="10px"
+                  mb="5px"
+                  borderBottom={`1px solid ${borderColor}`}
+                  justifyContent="space-between"
+                  alignItems="center"
+                  minW="700px"
+                >
+                  <Text color={textColor} fontSize="sm" fontWeight="400" w="150px" textAlign="center">
+                    {(user1.full_name || 'Unknown')} - {(user1.unique_id || 'N/A')}
+                  </Text>
+                  <Text color={textColor} fontSize="sm" fontWeight="400" w="150px" textAlign="center">
+                    {(user2.full_name || 'Unknown')} - {(user2.unique_id || 'N/A')}
+                  </Text>
+                  <Text color={textColor} fontSize="sm" fontWeight="400" w="200px" textAlign="center">
+                    {conv.lastMessage || 'No message'}
+                  </Text>
+                  <Text color="gray.500" fontSize="xs" w="150px" textAlign="center">
+                    {new Date(conv.lastMessageTime || conv.updatedAt).toLocaleString('en-IN', {
+                      timeZone: 'Asia/Kolkata',
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                  <Button
+                    colorScheme="teal"
+                    size="sm"
+                    onClick={() => fetchConversationMessages(conv._id)}
+                  >
+                    View Message
+                  </Button>
+                </Flex>
+              );
+            })
+        )}
       </Box>
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="xl" maxH="50vh">
         <ModalOverlay />
@@ -277,6 +297,7 @@ export default function ConversationsTable() {
                                 setSelectedImage(`${baseUrl}${img}`);
                                 onImageModalOpen();
                               }}
+                              onError={() => console.error(`Failed to load image: ${baseUrl}${img}`)}
                             />
                           ))}
                         </Flex>
@@ -300,15 +321,22 @@ export default function ConversationsTable() {
           </ModalBody>
         </ModalContent>
       </Modal>
-      <Modal isOpen={isImageModalOpen} onClose={onImageModalClose} size="xl">
+      <Modal isOpen={isImageModalOpen} onClose={onImageModalClose} size="full">
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent bg="transparent" boxShadow="none">
           <ModalHeader bg="teal.500" color="white" borderTopRadius="md">
             Image Preview
           </ModalHeader>
           <ModalCloseButton color="white" />
-          <ModalBody p="20px" display="flex" justifyContent="center" alignItems="center">
-            <Image src={selectedImage} alt="Enlarged image" maxH="80vh" objectFit="contain" />
+          <ModalBody p="0" display="flex" justifyContent="center" alignItems="center" bg="blackAlpha.800">
+            <Image
+              src={selectedImage}
+              alt="Enlarged image"
+              maxH="100vh"
+              maxW="100vw"
+              objectFit="contain"
+              borderRadius="md"
+            />
           </ModalBody>
         </ModalContent>
       </Modal>

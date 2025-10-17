@@ -15,6 +15,7 @@ import {
   MdReportProblem,
   MdChat,
   MdCampaign,
+	MdCardGiftcard,
 } from 'react-icons/md';
 
 // Admin Imports
@@ -63,6 +64,7 @@ import BiddingPaymentCreate from 'views/admin/biddingPaymentCreate';
 import BiddingPaymentREquest from 'views/admin/biddingPaymentRequest';
 import EmergencyPaymentCreate from 'views/admin/emergencyPaymentCreate';
 import EmergencyPaymentREquest from 'views/admin/emergencyPaymentRequest';
+import RefferalSetting from 'views/admin/Refferal'
 const routes = [
   {
     name: 'Main Dashboard',
@@ -270,6 +272,15 @@ const routes = [
     ),
     path: '/dispute',
     component: <Dispute />,
+  },
+	{
+    name: 'Refferal Settings',
+    layout: '/admin',
+    icon: (
+      <Icon as={MdCardGiftcard} width="20px" height="20px" color="inherit" />
+    ),
+    path: '/refferal',
+    component: <RefferalSetting />,
   },
   {
     name: 'Contact Us',

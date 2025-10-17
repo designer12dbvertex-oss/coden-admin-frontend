@@ -25,12 +25,6 @@ import {
   FormControl,
   FormLabel,
   Textarea,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
 } from '@chakra-ui/react';
 import axios from 'axios';
 import * as React from 'react';
@@ -54,7 +48,6 @@ export default function ServiceProviderDetails() {
     workers: [],
     workerCount: 0,
     payments: null,
-    referralDetails: null,
   });
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -104,14 +97,7 @@ export default function ServiceProviderDetails() {
             inactivationInfo: response.data.user.inactivationInfo || null,
             verificationStatus: response.data.user.verificationStatus || 'pending',
             rejectionReason: response.data.user.rejectionReason || null,
-            documents: Array.isArray(response.data.user.documents)
-              ? response.data.user.documents
-              : [],
-            businessImage: Array.isArray(response.data.user.businessImage)
-              ? response.data.user.businessImage
-              : [],
           },
-          referralDetails: response.data.referralDetails || null,
         });
         setVerifyStatus(response.data.user.verificationStatus || 'pending');
         setLoading(false);
@@ -142,6 +128,7 @@ export default function ServiceProviderDetails() {
     if (type === 'verifyStatus') {
       switch (status) {
         case 'approved':
+          return { bg: 'green.100', color: 'green.800' };
         case 'verified':
           return { bg: 'green.100', color: 'green.800' };
         case 'pending':
@@ -289,47 +276,47 @@ export default function ServiceProviderDetails() {
   }, [selectedWorker]);
 
   const handleWorkerVerifyStatusUpdate = async (worker) => {
-    try {
-      const endpoint = `${baseUrl}api/worker/verify/${worker._id}`;
-      const response = await axios.put(
-        endpoint,
-        {
-          verifyStatus,
-          reason: verifyStatus === 'rejected' ? workerRejectionReason : null,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      toast.success('Worker verification status updated successfully', {
+  try {
+    const endpoint = `${baseUrl}api/worker/verify/${worker._id}`;
+    const response = await axios.put(
+      endpoint,
+      {
+        verifyStatus,
+        reason: verifyStatus === 'rejected' ? workerRejectionReason : null,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    toast.success('Worker verification status updated successfully', {
+      position: 'top-right',
+      autoClose: 3000,
+    });
+    setData((prevData) => ({
+      ...prevData,
+      workers: prevData.workers.map((w) =>
+        w._id === worker._id
+          ? {
+              ...w,
+              verifyStatus,
+              rejectionReason: verifyStatus === 'rejected' ? workerRejectionReason : null,
+            }
+          : w,
+      ),
+    }));
+    setWorkerRejectionReason(''); // Clear reason after update
+    setSelectedWorker(null);
+  } catch (err) {
+    console.error('Update Worker Verification Status Error:', err);
+    toast.error(
+      err.response?.data?.message || 'Failed to update Worker verification status',
+      {
         position: 'top-right',
         autoClose: 3000,
-      });
-      setData((prevData) => ({
-        ...prevData,
-        workers: prevData.workers.map((w) =>
-          w._id === worker._id
-            ? {
-                ...w,
-                verifyStatus,
-                rejectionReason: verifyStatus === 'rejected' ? workerRejectionReason : null,
-              }
-            : w,
-        ),
-      }));
-      setWorkerRejectionReason('');
-      setSelectedWorker(null);
-    } catch (err) {
-      console.error('Update Worker Verification Status Error:', err);
-      toast.error(
-        err.response?.data?.message || 'Failed to update Worker verification status',
-        {
-          position: 'top-right',
-          autoClose: 3000,
-        },
-      );
-    }
-  };
+      },
+    );
+  }
+};
 
   // Handle worker rejection submission
   const handleWorkerRejectionSubmit = async () => {
@@ -531,34 +518,6 @@ export default function ServiceProviderDetails() {
                     </Flex>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
-                        Business Address:
-                      </Text>
-                      <Text color={textColor}>
-                        {data.user?.businessAddress?.address || 'N/A'}
-                      </Text>
-                    </Flex>
-                    <Flex align="start" gap="4">
-                      <Text fontWeight="semibold" color={textColor}>
-                        Gender:
-                      </Text>
-                      <Text color={textColor}>
-                        {capitalizeFirstLetter(data.user?.gender || 'N/A')}
-                      </Text>
-                    </Flex>
-                    <Flex align="start" gap="4">
-                      <Text fontWeight="semibold" color={textColor}>
-                        Age:
-                      </Text>
-                      <Text color={textColor}>{data.user?.age || 'N/A'}</Text>
-                    </Flex>
-                    <Flex align="start" gap="4">
-                      <Text fontWeight="semibold" color={textColor}>
-                        About Us:
-                      </Text>
-                      <Text color={textColor}>{data.user?.aboutUs || 'N/A'}</Text>
-                    </Flex>
-                    <Flex align="start" gap="4">
-                      <Text fontWeight="semibold" color={textColor}>
                         Skill:
                       </Text>
                       <Text color={textColor}>{data.user?.skill || 'N/A'}</Text>
@@ -583,28 +542,10 @@ export default function ServiceProviderDetails() {
                     </Flex>
                     <Flex align="start" gap="4">
                       <Text fontWeight="semibold" color={textColor}>
-                        Emergency Subcategories:
-                      </Text>
-                      <Text color={textColor}>
-                        {data.user?.emergencysubcategory_ids
-                          ?.map((sub) => sub.name)
-                          .join(', ') || 'N/A'}
-                      </Text>
-                    </Flex>
-                    <Flex align="start" gap="4">
-                      <Text fontWeight="semibold" color={textColor}>
                         Referral Code:
                       </Text>
                       <Text color={textColor}>
                         {data.user?.referral_code || 'N/A'}
-                      </Text>
-                    </Flex>
-                    <Flex align="start" gap="4">
-                      <Text fontWeight="semibold" color={textColor}>
-                        Wallet Balance:
-                      </Text>
-                      <Text color={textColor}>
-                        ₹{data.user?.wallet_balance || 0}
                       </Text>
                     </Flex>
                     <Flex align="start" gap="4">
@@ -733,81 +674,6 @@ export default function ServiceProviderDetails() {
                         </Flex>
                       </Box>
                     )}
-                    {/* Subscription Details */}
-                    {data.user?.subscription && (
-                      <Box
-                        mt={4}
-                        p={4}
-                        border="1px"
-                        borderColor={borderColor}
-                        borderRadius="8px"
-                      >
-                        <Text
-                          fontSize="md"
-                          fontWeight="600"
-                          color={textColor}
-                          mb={2}
-                        >
-                          Subscription Details
-                        </Text>
-                        <Flex align="start" gap="4">
-                          <Text fontWeight="semibold" color={textColor}>
-                            Auto Renew:
-                          </Text>
-                          <Text color={textColor}>
-                            {data.user.subscription.autoRenew ? 'Yes' : 'No'}
-                          </Text>
-                        </Flex>
-                        <Flex align="start" gap="4" mt={2}>
-                          <Text fontWeight="semibold" color={textColor}>
-                            Tasks This Month:
-                          </Text>
-                          <Text color={textColor}>
-                            {data.user.subscription.tasksThisMonth || 0}
-                          </Text>
-                        </Flex>
-                        <Flex align="start" gap="4" mt={2}>
-                          <Text fontWeight="semibold" color={textColor}>
-                            Emergency Tasks This Month:
-                          </Text>
-                          <Text color={textColor}>
-                            {data.user.subscription.emergencyTasksThisMonth || 0}
-                          </Text>
-                        </Flex>
-                        <Flex align="start" gap="4" mt={2}>
-                          <Text fontWeight="semibold" color={textColor}>
-                            Leads This Month:
-                          </Text>
-                          <Text color={textColor}>
-                            {data.user.subscription.leadsThisMonth || 0}
-                          </Text>
-                        </Flex>
-                        <Flex align="start" gap="4" mt={2}>
-                          <Text fontWeight="semibold" color={textColor}>
-                            Start Date:
-                          </Text>
-                          <Text color={textColor}>
-                            {data.user.subscription.startDate
-                              ? new Date(
-                                  data.user.subscription.startDate,
-                                ).toLocaleDateString()
-                              : 'N/A'}
-                          </Text>
-                        </Flex>
-                        <Flex align="start" gap="4" mt={2}>
-                          <Text fontWeight="semibold" color={textColor}>
-                            End Date:
-                          </Text>
-                          <Text color={textColor}>
-                            {data.user.subscription.endDate
-                              ? new Date(
-                                  data.user.subscription.endDate,
-                                ).toLocaleDateString()
-                              : 'N/A'}
-                          </Text>
-                        </Flex>
-                      </Box>
-                    )}
                   </VStack>
                 </ChakraCard>
 
@@ -821,74 +687,32 @@ export default function ServiceProviderDetails() {
                   w={{ base: '100%', md: '200px' }}
                 >
                   <Text fontWeight="bold" fontSize="lg" color={textColor}>
-                    Documents
+                    Document
                   </Text>
-                  {data.user?.documents?.length > 0 ? (
-                    <VStack spacing={2} mt="2">
-                      {data.user.documents.map((doc, index) => (
-                        <Box key={index}>
-                          <Text fontWeight="semibold" color={textColor}>
-                            {doc.documentName || 'Document'}
-                          </Text>
-                          <Wrap spacing="2">
-                            {doc.images.map((img, imgIndex) => (
-                              <WrapItem key={imgIndex}>
-                                <Image
-                                  src={img}
-                                  alt={`${doc.documentName} ${imgIndex + 1}`}
-                                  boxSize="100px"
-                                  objectFit="cover"
-                                  borderRadius="md"
-                                  cursor="pointer"
-                                  onClick={() => handleDocumentClick(img)}
-                                  onError={(e) => (e.target.src = defaultProfilePic)}
-                                />
-                              </WrapItem>
-                            ))}
-                          </Wrap>
-                        </Box>
-                      ))}
-                    </VStack>
+                  {data.user?.documents ? (
+                    <Flex justify="center" mt="2">
+                      <Image
+                        src={`${baseUrl}/${data.user.documents}`}
+                        alt="Document Preview"
+                        boxSize="150px"
+                        objectFit="cover"
+                        borderRadius="md"
+                        cursor="pointer"
+                        onClick={() =>
+                          handleDocumentClick(
+                            `${baseUrl}/${data.user.documents}`,
+                          )
+                        }
+                        onError={(e) => (e.target.src = defaultProfilePic)}
+                      />
+                    </Flex>
                   ) : (
                     <Text color={textColor} mt="2">
-                      No documents available
+                      No document available
                     </Text>
                   )}
                 </ChakraCard>
               </Flex>
-
-              {/* Business Images Section */}
-              <ChakraCard
-                p="15px"
-                borderRadius="lg"
-                border="1px solid"
-                borderColor={borderColor}
-                bg={cardBg}
-              >
-                <Text fontWeight="bold" fontSize="lg" color={textColor}>
-                  Business Images
-                </Text>
-                {data.user?.businessImage?.length > 0 ? (
-                  <Wrap spacing="2" mt="2">
-                    {data.user.businessImage.map((img, index) => (
-                      <WrapItem key={index}>
-                        <Image
-                          src={`${baseUrl}/${img}`}
-                          alt={`Business Image ${index + 1}`}
-                          boxSize="100px"
-                          objectFit="cover"
-                          borderRadius="md"
-                          onError={(e) => (e.target.src = defaultProfilePic)}
-                        />
-                      </WrapItem>
-                    ))}
-                  </Wrap>
-                ) : (
-                  <Text color={textColor} mt="2">
-                    No business images available
-                  </Text>
-                )}
-              </ChakraCard>
 
               {/* Bank Details Section */}
               <ChakraCard
@@ -903,15 +727,15 @@ export default function ServiceProviderDetails() {
                   <Text fontWeight="bold" fontSize="lg" color={textColor}>
                     Bank Details
                   </Text>
-									<Flex align="start" gap="4">
+                  <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
-                      Bank Name:
+                      Account Number:
                     </Text>
                     <Text color={textColor}>
-                      {data.user?.bankdetails?.bankName || 'N/A'}
+                      {data.user?.bankdetails?.accountNumber || 'N/A'}
                     </Text>
                   </Flex>
-									<Flex align="start" gap="4">
+                  <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Account Holder Name:
                     </Text>
@@ -921,10 +745,10 @@ export default function ServiceProviderDetails() {
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
-                      Account Number:
+                      Bank Name:
                     </Text>
                     <Text color={textColor}>
-                      {data.user?.bankdetails?.accountNumber || 'N/A'}
+                      {data.user?.bankdetails?.bankName || 'N/A'}
                     </Text>
                   </Flex>
                   <Flex align="start" gap="4">
@@ -1194,94 +1018,6 @@ export default function ServiceProviderDetails() {
                 </VStack>
               </ChakraCard>
 
-              {/* Referral Details Section */}
-              <ChakraCard
-                p="15px"
-                borderRadius="lg"
-                border="1px solid"
-                borderColor={borderColor}
-                bg={cardBg}
-              >
-                <Text fontWeight="bold" fontSize="lg" color={textColor}>
-                  Referral Details
-                </Text>
-                {data.referralDetails ? (
-                  <VStack spacing={4} align="stretch" mt="2">
-                    <Flex align="start" gap="4">
-                      <Text fontWeight="semibold" color={textColor}>
-                        Referral Code:
-                      </Text>
-                      <Text color={textColor}>
-                        {data.referralDetails.code || 'N/A'}
-                      </Text>
-                    </Flex>
-                    <Flex align="start" gap="4">
-                      <Text fontWeight="semibold" color={textColor}>
-                        Total Referred:
-                      </Text>
-                      <Text color={textColor}>
-                        {data.referralDetails.totalReferred || 0}
-                      </Text>
-                    </Flex>
-                    <Flex align="start" gap="4">
-                      <Text fontWeight="semibold" color={textColor}>
-                        Remaining Referrals:
-                      </Text>
-                      <Text color={textColor}>
-                        {data.referralDetails.remainingReferrals || 0}
-                      </Text>
-                    </Flex>
-                    <Flex align="start" gap="4">
-                      <Text fontWeight="semibold" color={textColor}>
-                        Max Referrals:
-                      </Text>
-                      <Text color={textColor}>
-                        {data.referralDetails.maxReferrals || 'N/A'}
-                      </Text>
-                    </Flex>
-                    <Box>
-                      <Text fontWeight="semibold" color={textColor} mb="2">
-                        Referred Users:
-                      </Text>
-                      {data.referralDetails.referredUsers?.length > 0 ? (
-                        <Table variant="simple" colorScheme="gray">
-                          <Thead>
-                            <Tr>
-                              <Th color={textColor}>Name</Th>
-                              <Th color={textColor}>Phone</Th>
-                              <Th color={textColor}>Wallet Balance</Th>
-                              <Th color={textColor}>Created At</Th>
-                            </Tr>
-                          </Thead>
-                          <Tbody>
-                            {data.referralDetails.referredUsers.map((user) => (
-                              <Tr key={user._id}>
-                                <Td>{capitalizeFirstLetter(user.full_name || 'N/A')}</Td>
-                                <Td>{user.phone || 'N/A'}</Td>
-                                <Td>₹{user.wallet_balance || 0}</Td>
-                                <Td>
-                                  {user.createdAt
-                                    ? new Date(user.createdAt).toLocaleDateString()
-                                    : 'N/A'}
-                                </Td>
-                              </Tr>
-                            ))}
-                          </Tbody>
-                        </Table>
-                      ) : (
-                        <Text color={textColor} mt="2">
-                          No referred users
-                        </Text>
-                      )}
-                    </Box>
-                  </VStack>
-                ) : (
-                  <Text color={textColor} mt="2">
-                    No referral details available
-                  </Text>
-                )}
-              </ChakraCard>
-
               {/* Workers Section */}
               <ChakraCard
                 p="15px"
@@ -1525,7 +1261,7 @@ export default function ServiceProviderDetails() {
             ) : (
               selectedAddresses.map((addr, index) => (
                 <Box
-                  key={addr._id}
+                  key={addr.id}
                   mb={4}
                   p={4}
                   border="1px"
@@ -1540,18 +1276,6 @@ export default function ServiceProviderDetails() {
                   </Text>
                   <Text fontSize="sm" color={textColor} mt={1}>
                     <strong>Landmark:</strong> {addr.landmark || 'N/A'}
-                  </Text>
-                  <Text fontSize="sm" color={textColor} mt={1}>
-                    <strong>House No:</strong> {addr.houseno || 'N/A'}
-                  </Text>
-                  <Text fontSize="sm" color={textColor} mt={1}>
-                    <strong>Street:</strong> {addr.street || 'N/A'}
-                  </Text>
-                  <Text fontSize="sm" color={textColor} mt={1}>
-                    <strong>Area:</strong> {addr.area || 'N/A'}
-                  </Text>
-                  <Text fontSize="sm" color={textColor} mt={1}>
-                    <strong>Pincode:</strong> {addr.pincode || 'N/A'}
                   </Text>
                   <Text fontSize="sm" color={textColor} mt={1}>
                     <strong>Latitude:</strong> {addr.latitude || 'N/A'}
@@ -1804,7 +1528,7 @@ export default function ServiceProviderDetails() {
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
-                      Created At:
+                      createdAt:
                     </Text>
                     <Text color={textColor}>
                       {selectedWorker?.createdAt
@@ -1819,6 +1543,18 @@ export default function ServiceProviderDetails() {
                         : 'N/A'}
                     </Text>
                   </Flex>
+                  {/*<Flex align="start" gap="4">
+                    <Text fontWeight="semibold" color={textColor}>
+                      Assigned Orders:
+                    </Text>
+                    <Text color={textColor}>
+                      {selectedWorker.assignOrders?.length > 0
+                        ? selectedWorker.assignOrders
+                            .map((order) => order.order_id)
+                            .join(', ')
+                        : 'None'}
+                    </Text>
+                  </Flex> */}
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Verification Status:
@@ -1828,7 +1564,7 @@ export default function ServiceProviderDetails() {
                       onChange={(e) => {
                         setVerifyStatus(e.target.value);
                         if (e.target.value === 'rejected') {
-                          setIsWorkerRejectionModalOpen(true);
+                          setIsWorkerRejectionModalOpen(true); // Open rejection modal only for rejected status
                         }
                       }}
                       width="150px"
