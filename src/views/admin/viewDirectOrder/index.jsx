@@ -61,7 +61,7 @@ export default function OrdersTable() {
           throw new Error('Missing order ID');
         }
         const response = await axios.get(
-          `${baseUrl}api/direct-order/getDirectOrderWithWorker/${orderId}`,
+          `${baseUrl}api/direct-order/getAdminDirectOrderWithWorker/${orderId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
