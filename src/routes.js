@@ -49,6 +49,7 @@ import Banner from 'views/admin/Banner';
 import Worker from 'views/admin/Worker';
 import PendingWorker from 'views/admin/PendingWorker';
 import EmergencyWorkCategory from 'views/admin/emergencyWorkCategory';
+import DirectHiringRefundPaymentRequest from 'views/admin/directHiringRefundRequest';
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
@@ -242,6 +243,15 @@ const routes = [
     ),
     path: '/emergency_payment_request',
     component: <EmergencyPaymentREquest />,
+  },
+	{
+    name: 'Direct Hiring Refund Payment Requests',
+    layout: '/admin',
+    icon: (
+      <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />
+    ),
+    path: '/direct_hiring_refund_payment_request',
+    component: <DirectHiringRefundPaymentRequest />,
   },
   {
     name: 'Total Revenue',
