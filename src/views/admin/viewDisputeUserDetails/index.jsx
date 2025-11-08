@@ -1114,7 +1114,7 @@ export default function ServiceProviderDetails() {
 											<WrapItem key={index}>
 												<Image
 													key={index}
-													src={`${work}`}
+													src={`${baseUrl}/${work}`}
 													alt={`Work Sample ${index + 1}`}
 													boxSize="100px"
 													objectFit="cover"
