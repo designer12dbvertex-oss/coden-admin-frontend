@@ -15,7 +15,9 @@ import {
   MdReportProblem,
   MdChat,
   MdCampaign,
-	MdCardGiftcard,
+  MdCardGiftcard,
+  MdPeople,
+	MdDescription,
 } from 'react-icons/md';
 
 // Admin Imports
@@ -50,22 +52,27 @@ import Worker from 'views/admin/Worker';
 import PendingWorker from 'views/admin/PendingWorker';
 import EmergencyWorkCategory from 'views/admin/emergencyWorkCategory';
 import DirectHiringRefundPaymentRequest from 'views/admin/directHiringRefundRequest';
-
+import EmergencyHiringRefundPaymentRequest from 'views/admin/emergencyRefundRequest';
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
 import {
   FaBullhorn,
   FaChartLine,
+  FaCreditCard,
   FaFileContract,
   FaGavel,
   FaMoneyBillWave,
+  FaUndoAlt,
+  FaUsers,
+  FaUsersCog,
+  FaWallet,
 } from 'react-icons/fa';
 import DirectPaymentCreate from 'views/admin/directPaymentCreate';
 import BiddingPaymentCreate from 'views/admin/biddingPaymentCreate';
 import BiddingPaymentREquest from 'views/admin/biddingPaymentRequest';
 import EmergencyPaymentCreate from 'views/admin/emergencyPaymentCreate';
 import EmergencyPaymentREquest from 'views/admin/emergencyPaymentRequest';
-import RefferalSetting from 'views/admin/Refferal'
+import RefferalSetting from 'views/admin/Refferal';
 const routes = [
   {
     name: 'Main Dashboard',
@@ -75,61 +82,71 @@ const routes = [
     component: <MainDashboard />,
   },
   {
-    name: 'Users',
+    name: 'User Management',
     layout: '/admin',
-    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
-    path: '/users',
-    component: <Users />,
+    icon: <Icon as={MdPeople} width="20px" height="20px" color="inherit" />,
+    collapse: true,
+    items: [
+      {
+        name: 'Users',
+        layout: '/admin',
+        path: '/users',
+        component: <Users />,
+      },
+      {
+        name: 'Verified Service Provider',
+        layout: '/admin',
+        path: '/service_provider',
+        component: <ServiceProvider />,
+      },
+      {
+        name: 'Unverified Service Provider',
+        layout: '/admin',
+        path: '/unverified_service_provider',
+        component: <UnverifiedServiceProvider />,
+      },
+      {
+        name: 'Both',
+        layout: '/admin',
+        path: '/both',
+        component: <Both />,
+      },
+      {
+        name: 'All Service Provider',
+        layout: '/admin',
+        path: '/all_service_provider',
+        component: <AllServiceProvider />,
+      },
+      {
+        name: 'Requested User',
+        layout: '/admin',
+        path: '/requests',
+        component: <RequestUser />,
+      },
+    ],
   },
   {
-    name: 'Verified Service Provider',
+    name: 'Co-Workers',
     layout: '/admin',
-    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
-    path: '/service_provider',
-    component: <ServiceProvider />,
+    icon: <Icon as={FaUsers} width="20px" height="20px" color="inherit" />,
+    collapse: true,
+    path: '/co-workers', // parent placeholder path
+    items: [
+      {
+        name: 'All Co-Worker',
+        layout: '/admin',
+        path: '/worker',
+        component: <Worker />,
+      },
+      {
+        name: 'Pending Co-Worker',
+        layout: '/admin',
+        path: '/pending-worker',
+        component: <PendingWorker />,
+      },
+    ],
   },
-  {
-    name: 'Unverified Service Provider',
-    layout: '/admin',
-    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
-    path: '/unverified_service_provider',
-    component: <UnverifiedServiceProvider />,
-  },
-  {
-    name: 'Both',
-    layout: '/admin',
-    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
-    path: '/both',
-    component: <Both />,
-  },
-  {
-    name: 'All Service Provider',
-    layout: '/admin',
-    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
-    path: '/all_service_provider',
-    component: <AllServiceProvider />,
-  },
-  {
-    name: 'Requested User',
-    layout: '/admin',
-    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
-    path: '/requests',
-    component: <RequestUser />,
-  },
-  {
-    name: 'All Co-Worker',
-    layout: '/admin',
-    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
-    path: '/worker',
-    component: <Worker />,
-  },
-  {
-    name: 'Pending Co-worker',
-    layout: '/admin',
-    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
-    path: '/pending-worker',
-    component: <PendingWorker />,
-  },
+
   {
     name: 'Sub Admins',
     layout: '/admin',
@@ -168,91 +185,107 @@ const routes = [
     component: <ChatMonitor />,
   },
   {
-    name: 'Biding Hiring',
+    name: 'Hiring',
     layout: '/admin',
-    icon: <Icon as={FaGavel} width="20px" height="20px" color="inherit" />,
-    path: '/biding',
-    component: <Biding />,
+    icon: <Icon as={FaUsersCog} width="20px" height="20px" color="inherit" />,
+    collapse: true,
+    path: '/hiring', // parent (not a real page)
+    items: [
+      {
+        name: 'Biding Hiring',
+        layout: '/admin',
+        path: '/biding',
+        component: <Biding />,
+      },
+      {
+        name: 'Direct Hiring',
+        layout: '/admin',
+        path: '/direct-hiring',
+        component: <DirectHiring />,
+      },
+      {
+        name: 'Emergency Hiring',
+        layout: '/admin',
+        path: '/emergency-hiring',
+        component: <Emergency />,
+      },
+    ],
   },
   {
-    name: 'Direct Hiring',
+    name: 'Payment Create',
     layout: '/admin',
-    icon: (
-      <Icon as={MdPersonAddAlt1} width="20px" height="20px" color="inherit" />
-    ),
-    path: '/direct-hiring',
-    component: <DirectHiring />,
+    icon: <Icon as={FaWallet} width="20px" height="20px" color="inherit" />,
+    collapse: true,
+    path: '/payment-create', // parent path (not a real page)
+    items: [
+      {
+        name: 'Direct Payment Create',
+        layout: '/admin',
+        path: '/direct-payment-create',
+        component: <DirectPaymentCreate />,
+      },
+      {
+        name: 'Bidding Payment Create',
+        layout: '/admin',
+        path: '/bidding_payment_create',
+        component: <BiddingPaymentCreate />,
+      },
+      {
+        name: 'Emergency Payment Create',
+        layout: '/admin',
+        path: '/emergency_payment_create',
+        component: <EmergencyPaymentCreate />,
+      },
+    ],
   },
   {
-    name: 'Emergency Hiring',
+    name: 'Payment Requests', // 👈 Dropdown title
+    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+    collapse: true, // enables dropdown
     layout: '/admin',
-    icon: <Icon as={MdEmergency} width="20px" height="20px" color="inherit" />,
-    path: '/emergency-hiring',
-    component: <Emergency />,
+    items: [
+      {
+        name: 'Direct Payment Request',
+        layout: '/admin',
+        path: '/direct_payment_request',
+        component: <DirectPaymentRequest />,
+      },
+      {
+        name: 'Bidding Payment Request',
+        layout: '/admin',
+        path: '/bidding_payment_request',
+        component: <BiddingPaymentREquest />,
+      },
+      {
+        name: 'Emergency Payment Request',
+        layout: '/admin',
+        path: '/emergency_payment_request',
+        component: <EmergencyPaymentREquest />,
+      },
+    ],
   },
+
   {
-    name: 'Direct Payment Create',
+    name: 'Refund Management',
+    icon: <Icon as={FaUndoAlt} width="20px" height="20px" color="inherit" />,
+    collapse: true,
     layout: '/admin',
-    icon: (
-      <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />
-    ),
-    path: '/direct-payment-create',
-    component: <DirectPaymentCreate />,
+    items: [
+      {
+        name: 'Direct Hiring Refunds',
+        layout: '/admin',
+        path: '/direct_hiring_refund_payment_request', // ✅ fixed
+        component: <DirectHiringRefundPaymentRequest />,
+      },
+      {
+        name: 'Emergency Hiring Refunds',
+        layout: '/admin',
+        path: '/emergency_hiring_refund_payment_request', // ✅ fixed
+        component: <EmergencyHiringRefundPaymentRequest />,
+      },
+    ],
   },
-  {
-    name: 'Bidding Payment Create',
-    layout: '/admin',
-    icon: (
-      <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />
-    ),
-    path: '/bidding_payment_create',
-    component: <BiddingPaymentCreate />,
-  },
-	{
-    name: 'Emergency Payment Create',
-    layout: '/admin',
-    icon: (
-      <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />
-    ),
-    path: '/emergency_payment_create',
-    component: <EmergencyPaymentCreate />,
-  },
-  {
-    name: 'Direct Payment Request',
-    layout: '/admin',
-    icon: (
-      <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />
-    ),
-    path: '/direct_payment_request',
-    component: <DirectPaymentRequest />,
-  },
-  {
-    name: 'Bidding Payment Request',
-    layout: '/admin',
-    icon: (
-      <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />
-    ),
-    path: '/bidding_payment_request',
-    component: <BiddingPaymentREquest />,
-  },
-	{
-    name: 'Emergency Payment Request',
-    layout: '/admin',
-    icon: (
-      <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />
-    ),
-    path: '/emergency_payment_request',
-    component: <EmergencyPaymentREquest />,
-  },
-	{
-    name: 'Direct Hiring Refund Payment Requests',
-    layout: '/admin',
-    icon: (
-      <Icon as={FaMoneyBillWave} width="20px" height="20px" color="inherit" />
-    ),
-    path: '/direct_hiring_refund_payment_request',
-    component: <DirectHiringRefundPaymentRequest />,
-  },
+
   {
     name: 'Total Revenue',
     layout: '/admin',
@@ -283,7 +316,7 @@ const routes = [
     path: '/dispute',
     component: <Dispute />,
   },
-	{
+  {
     name: 'Refferal Settings',
     layout: '/admin',
     icon: (
@@ -307,27 +340,32 @@ const routes = [
     component: <EmailUs />,
   },
   {
-    name: 'About Us',
-    layout: '/admin',
-    icon: <Icon as={MdInfo} width="20px" height="20px" color="inherit" />,
-    path: '/add-aboutus',
-    component: <AddAboutus />,
-  },
-  {
-    name: 'Terms&Conditions',
+    name: 'CMS Pages',
     layout: '/admin',
     icon: (
-      <Icon as={FaFileContract} width="20px" height="20px" color="inherit" />
+      <Icon as={MdDescription} width="20px" height="20px" color="inherit" />
     ),
-    path: '/add-terms-conditions',
-    component: <AddTermsConditions />,
-  },
-  {
-    name: 'Privacy Policy',
-    layout: '/admin',
-    icon: <Icon as={MdPrivacyTip} width="20px" height="20px" color="inherit" />,
-    path: '/add-privacypolicy',
-    component: <AddPrivacyPolicy />,
+    collapse: true,
+    items: [
+      {
+        name: 'About Us',
+        layout: '/admin',
+        path: '/add-aboutus',
+        component: <AddAboutus />,
+      },
+      {
+        name: 'Terms & Conditions',
+        layout: '/admin',
+        path: '/add-terms-conditions',
+        component: <AddTermsConditions />,
+      },
+      {
+        name: 'Privacy Policy',
+        layout: '/admin',
+        path: '/add-privacypolicy',
+        component: <AddPrivacyPolicy />,
+      },
+    ],
   },
   {
     name: 'Sign In',

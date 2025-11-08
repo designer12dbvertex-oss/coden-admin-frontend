@@ -262,6 +262,11 @@ export default function OrdersTable() {
     return { bg: 'gray.100', color: 'gray.800' };
   };
 
+  const releaseStatusOptions = [
+    { label: 'Paid to Provider', value: 'release_requested' },
+    { label: 'Paid', value: 'released' },
+    { label: 'Rejected', value: 'rejected' },
+  ];
   const columns = [
     columnHelper.display({
       id: 'sno',
@@ -347,7 +352,7 @@ export default function OrdersTable() {
         </Flex>
       ),
     }),
-		  columnHelper.accessor('serviceProvider', {
+    columnHelper.accessor('serviceProvider', {
       id: 'serviceProvider',
       header: () => (
         <Text
@@ -780,23 +785,18 @@ export default function OrdersTable() {
                                     : payment.release_status
                                 }
                                 onChange={(e) => {
-                                  setReleaseStatus(e.target.value);
+                                  setReleaseStatus(e.target.value); // backend value stored
                                   setSelectedPaymentIndex(index);
                                 }}
                                 placeholder="Select release status"
                               >
-                                {[
-                                  'pending',
-                                  'release_requested',
-                                  'released',
-                                  'refunded',
-                                ].map((status) => (
-                                  <option key={status} value={status}>
-                                    {status.charAt(0).toUpperCase() +
-                                      status.slice(1).replace(/_/g, ' ')}
+                                {releaseStatusOptions.map((item) => (
+                                  <option key={item.value} value={item.value}>
+                                    {item.label}
                                   </option>
                                 ))}
                               </Select>
+
                               <Button
                                 mt={2}
                                 colorScheme="blue"

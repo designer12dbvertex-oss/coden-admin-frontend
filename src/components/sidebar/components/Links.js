@@ -1,134 +1,116 @@
 /* eslint-disable */
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-// chakra imports
-import { Box, Flex, HStack, Text, useColorModeValue } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  HStack,
+  Text,
+  Collapse,
+  Icon,
+  useColorModeValue,
+} from "@chakra-ui/react";
+import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 
-export function SidebarLinks(props) {
-  //   Chakra color mode
-  let location = useLocation();
-  let activeColor = useColorModeValue("gray.700", "white");
-  let inactiveColor = useColorModeValue(
-    "secondaryGray.600",
-    "secondaryGray.600"
-  );
-  let activeIcon = useColorModeValue("#045e14", "white");
-  let textColor = useColorModeValue("secondaryGray.500", "white");
-  let brandColor = useColorModeValue("#045e14", "#045e14");
+export function SidebarLinks({ routes }) {
+  const location = useLocation();
 
-  const { routes } = props;
+  const activeColor = useColorModeValue("gray.700", "white");
+  const inactiveColor = useColorModeValue("secondaryGray.600", "secondaryGray.600");
+  const activeIcon = useColorModeValue("#045e14", "white");
+  const textColor = useColorModeValue("secondaryGray.500", "white");
+  const brandColor = useColorModeValue("#045e14", "#045e14");
 
-  // verifies if routeName is the one active (in browser input)
-  const activeRoute = (routeName) => {
-    return location.pathname.includes(routeName);
+  const activeRoute = (routeName) => location.pathname.includes(routeName);
+
+  const [openDropdown, setOpenDropdown] = useState(null);
+
+  const handleToggle = (name) => {
+    setOpenDropdown(openDropdown === name ? null : name);
   };
 
-  // this function creates the links from the secondary accordions (for example auth -> sign-in -> default)
-  const createLinks = (routes) => {
-    return routes.map((route, index) => {
-      if (route.category) {
+  // Recursive function to create sidebar links
+  const createLinks = (routes) =>
+    routes.map((route, index) => {
+      // Dropdown parent (with collapse and items)
+      if (route.collapse && route.items) {
         return (
-          <>
-            <Text
-              fontSize={"md"}
-              color={activeColor}
-              fontWeight='bold'
-              mx='auto'
-              ps={{
-                sm: "10px",
-                xl: "16px",
-              }}
-              pt='18px'
-              pb='12px'
-              key={index}>
-              {route.name}
-            </Text>
-            {createLinks(route.items)}
-          </>
-        );
-      } else if (
-        route.layout === "/admin" ||
-        route.layout === "/auth" ||
-        route.layout === "/rtl"
-      ) {
-        return (
-          <NavLink key={index} to={route.layout + route.path}>
-            {route.icon ? (
-              <Box>
-                <HStack
-                  spacing={
-                    activeRoute(route.path.toLowerCase()) ? "22px" : "26px"
-                  }
-                  py='5px'
-                  ps='10px'>
-                  <Flex w='100%' alignItems='center' justifyContent='center'>
-                    <Box
-                      color={
-                        activeRoute(route.path.toLowerCase())
-                          ? activeIcon
-                          : textColor
-                      }
-                      me='18px'>
-                      {route.icon}
-                    </Box>
-                    <Text
-                      me='auto'
-                      color={
-                        activeRoute(route.path.toLowerCase())
-                          ? activeColor
-                          : textColor
-                      }
-                      fontWeight={
-                        activeRoute(route.path.toLowerCase())
-                          ? "bold"
-                          : "normal"
-                      }>
-                      {route.name}
-                    </Text>
-                  </Flex>
-                  <Box
-                    h='36px'
-                    w='4px'
-                    bg={
-                      activeRoute(route.path.toLowerCase())
-                        ? brandColor
-                        : "transparent"
-                    }
-                    borderRadius='5px'
-                  />
-                </HStack>
+          <Box key={index}>
+            <Flex
+              align="center"
+              justify="space-between"
+              px="10px"
+              py="8px"
+              cursor="pointer"
+              onClick={() => handleToggle(route.name)}
+              _hover={{ bg: "gray.50" }}
+            >
+              <HStack>
+                {route.icon && (
+                  <Box color={textColor} me="10px">
+                    {route.icon}
+                  </Box>
+                )}
+                <Text color={activeColor} fontWeight="bold">
+                  {route.name}
+                </Text>
+              </HStack>
+              <Icon
+                as={openDropdown === route.name ? ChevronDownIcon : ChevronRightIcon}
+                color={textColor}
+              />
+            </Flex>
+
+            <Collapse in={openDropdown === route.name} animateOpacity>
+              <Box pl="6">
+                {createLinks(route.items)} {/* render nested links */}
               </Box>
-            ) : (
-              <Box>
-                <HStack
-                  spacing={
-                    activeRoute(route.path.toLowerCase()) ? "22px" : "26px"
-                  }
-                  py='5px'
-                  ps='10px'>
-                  <Text
-                    me='auto'
-                    color={
-                      activeRoute(route.path.toLowerCase())
-                        ? activeColor
-                        : inactiveColor
-                    }
-                    fontWeight={
-                      activeRoute(route.path.toLowerCase()) ? "bold" : "normal"
-                    }>
-                    {route.name}
-                  </Text>
-                  <Box h='36px' w='4px' bg='brand.400' borderRadius='5px' />
-                </HStack>
-              </Box>
-            )}
-          </NavLink>
+            </Collapse>
+          </Box>
         );
       }
+
+      // Normal route link (skip invalid)
+      const to =
+        route.layout && route.path ? `${route.layout}${route.path}` : null;
+      if (!to || to === "//") return null;
+
+      return (
+        <NavLink key={index} to={to}>
+          <HStack
+            spacing={activeRoute(route.path) ? "22px" : "26px"}
+            py="6px"
+            ps="10px"
+          >
+            <Flex w="100%" alignItems="center" justifyContent="center">
+              {route.icon && (
+                <Box
+                  color={activeRoute(route.path) ? activeIcon : textColor}
+                  me="18px"
+                >
+                  {route.icon}
+                </Box>
+              )}
+              <Text
+                me="auto"
+                color={activeRoute(route.path) ? activeColor : textColor}
+                fontWeight={activeRoute(route.path) ? "bold" : "normal"}
+              >
+                {route.name}
+              </Text>
+            </Flex>
+            <Box
+              h="36px"
+              w="4px"
+              bg={activeRoute(route.path) ? brandColor : "transparent"}
+              borderRadius="5px"
+            />
+          </HStack>
+        </NavLink>
+      );
     });
-  };
-  //  BRAND
-  return createLinks(routes);
+
+  return <>{createLinks(routes)}</>;
 }
 
 export default SidebarLinks;
