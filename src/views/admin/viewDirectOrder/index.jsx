@@ -506,16 +506,31 @@ export default function OrdersTable() {
                           </VStack>
                           <Flex align="center" gap="2">
                             <Text
+                              ml="2"
                               color={
-                                payment.status === 'success'
+                                payment.release_status === 'pending'
+                                  ? 'orange.500'
+                                  : payment.release_status ===
+                                    'release_requested'
+                                  ? 'blue.500'
+                                  : payment.release_status === 'released'
                                   ? 'green.600'
-                                  : 'gray.600'
+                                  : payment.release_status === 'rejected'
+                                  ? 'red.600'
+                                  : 'gray.700'
                               }
                             >
-                              {payment.status === 'success'
-                                ? 'Paid'
-                                : 'Pending'}
+                              {payment.release_status === 'pending'
+                                ? 'Pay to App'
+                                : payment.release_status === 'release_requested'
+                                ? 'Paid to User'
+                                : payment.release_status === 'released'
+                                ? 'Admin Paid to User'
+                                : payment.release_status === 'rejected'
+                                ? 'Admin Rejected Payment'
+                                : ''}
                             </Text>
+
                             <Text>₹{payment.amount}</Text>
                           </Flex>
                         </Flex>

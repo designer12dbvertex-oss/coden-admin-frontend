@@ -248,7 +248,8 @@ export default function OrdersTable() {
                       />
                       <Box>
                         <Text fontWeight="bold" color={textColor}>
-                          {data.data.service_provider_id?.full_name || 'Not Assigned'}
+                          {data.data.service_provider_id?.full_name ||
+                            'Not Assigned'}
                         </Text>
                         <Text fontSize="sm" color="gray.600">
                           Receive - ₹{data.data?.service_payment?.amount || 0}/-
@@ -259,7 +260,9 @@ export default function OrdersTable() {
                       <Button
                         colorScheme="teal"
                         size="sm"
-                        onClick={() => handleViewDetails(data.data.service_provider_id)}
+                        onClick={() =>
+                          handleViewDetails(data.data.service_provider_id)
+                        }
                       >
                         View Details
                       </Button>
@@ -328,20 +331,26 @@ export default function OrdersTable() {
                     <Text fontWeight="semibold" color={textColor}>
                       Project ID:
                     </Text>
-                    <Text color={textColor}>{data.data?.project_id || 'N/A'}</Text>
+                    <Text color={textColor}>
+                      {data.data?.project_id || 'N/A'}
+                    </Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Category:
                     </Text>
-                    <Text color={textColor}>{data.data?.category_id?.name || 'N/A'}</Text>
+                    <Text color={textColor}>
+                      {data.data?.category_id?.name || 'N/A'}
+                    </Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Subcategories:
                     </Text>
                     <Text color={textColor}>
-                      {data.data?.sub_category_ids?.map((sub) => sub.name).join(', ') || 'N/A'}
+                      {data.data?.sub_category_ids
+                        ?.map((sub) => sub.name)
+                        .join(', ') || 'N/A'}
                     </Text>
                   </Flex>
                   <Flex align="start" gap="4">
@@ -349,14 +358,18 @@ export default function OrdersTable() {
                       Address:
                     </Text>
                     <Text color={textColor}>
-                      {data.data?.google_address || data.data?.detailed_address || 'N/A'}
+                      {data.data?.google_address ||
+                        data.data?.detailed_address ||
+                        'N/A'}
                     </Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Detailed Address:
                     </Text>
-                    <Text color={textColor}>{data.data?.detailed_address || 'N/A'}</Text>
+                    <Text color={textColor}>
+                      {data.data?.detailed_address || 'N/A'}
+                    </Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
@@ -408,15 +421,22 @@ export default function OrdersTable() {
                     <Text fontWeight="semibold" color={textColor}>
                       Platform Fee:
                     </Text>
-                    <Text color={textColor}>₹{data.data?.platform_fee || 0}</Text>
+                    <Text color={textColor}>
+                      ₹{data.data?.platform_fee || 0}
+                    </Text>
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       User Status:
                     </Text>
                     <Text
-                      bg={getStatusStyles(data.data?.user_status, 'userStatus').bg}
-                      color={getStatusStyles(data.data?.user_status, 'userStatus').color}
+                      bg={
+                        getStatusStyles(data.data?.user_status, 'userStatus').bg
+                      }
+                      color={
+                        getStatusStyles(data.data?.user_status, 'userStatus')
+                          .color
+                      }
                       px="2"
                       py="1"
                       borderRadius="md"
@@ -431,8 +451,13 @@ export default function OrdersTable() {
                       Service Provider Status:
                     </Text>
                     <Text
-                      bg={getStatusStyles(data.data?.hire_status, 'hireStatus').bg}
-                      color={getStatusStyles(data.data?.hire_status, 'hireStatus').color}
+                      bg={
+                        getStatusStyles(data.data?.hire_status, 'hireStatus').bg
+                      }
+                      color={
+                        getStatusStyles(data.data?.hire_status, 'hireStatus')
+                          .color
+                      }
                       px="2"
                       py="1"
                       borderRadius="md"
@@ -481,7 +506,8 @@ export default function OrdersTable() {
                             {payment.method === 'cod' && (
                               <Text fontSize="sm" color="gray.600">
                                 Collected By:{' '}
-                                {payment.collected_by === data.data?.service_provider_id?._id
+                                {payment.collected_by ===
+                                data.data?.service_provider_id?._id
                                   ? data.data?.service_provider_id?.full_name
                                   : payment.collected_by || 'N/A'}
                               </Text>
@@ -489,16 +515,31 @@ export default function OrdersTable() {
                           </VStack>
                           <Flex align="center" gap="2">
                             <Text
+                              ml="2"
                               color={
-                                payment.status === 'success'
+                                payment.release_status === 'pending'
+                                  ? 'orange.500'
+                                  : payment.release_status ===
+                                    'release_requested'
+                                  ? 'blue.500'
+                                  : payment.release_status === 'released'
                                   ? 'green.600'
-                                  : 'gray.600'
+                                  : payment.release_status === 'rejected'
+                                  ? 'red.600'
+                                  : 'gray.700'
                               }
                             >
-                              {payment.status === 'success'
-                                ? 'Paid'
-                                : 'Pending'}
+                              {payment.release_status === 'pending'
+                                ? 'Pay to App'
+                                : payment.release_status === 'release_requested'
+                                ? 'Paid to User'
+                                : payment.release_status === 'released'
+                                ? 'Admin Paid to User'
+                                : payment.release_status === 'rejected'
+                                ? 'Admin Rejected Payment'
+                                : ''}
                             </Text>
+
                             <Text>₹{payment.amount}</Text>
                           </Flex>
                         </Flex>
@@ -527,7 +568,9 @@ export default function OrdersTable() {
               color={textColor}
               textAlign="center"
             >
-              {selectedWorker.aadharNumber ? 'Worker Details' : 'Service Provider Details'}
+              {selectedWorker.aadharNumber
+                ? 'Worker Details'
+                : 'Service Provider Details'}
             </ModalHeader>
             <ModalCloseButton
               size="lg"
@@ -546,10 +589,16 @@ export default function OrdersTable() {
                     <Image
                       src={
                         selectedWorker.profile_pic || selectedWorker.image
-                          ? `${selectedWorker.profile_pic || selectedWorker.image}`
+                          ? `${
+                              selectedWorker.profile_pic || selectedWorker.image
+                            }`
                           : defaultProfilePic
                       }
-                      alt={selectedWorker.aadharNumber ? 'Worker' : 'Service Provider'}
+                      alt={
+                        selectedWorker.aadharNumber
+                          ? 'Worker'
+                          : 'Service Provider'
+                      }
                       boxSize="100px"
                       borderRadius="full"
                       objectFit="cover"
@@ -557,7 +606,9 @@ export default function OrdersTable() {
                     />
                     <Box>
                       <Text fontWeight="bold" fontSize="xl" color={textColor}>
-                        {selectedWorker.full_name || selectedWorker.name || 'N/A'}
+                        {selectedWorker.full_name ||
+                          selectedWorker.name ||
+                          'N/A'}
                       </Text>
                       <Text color="gray.600">
                         ID: {selectedWorker._id || 'N/A'}
@@ -568,7 +619,9 @@ export default function OrdersTable() {
                     <Text fontWeight="semibold" color={textColor}>
                       Phone:
                     </Text>
-                    <Text color={textColor}>{selectedWorker.phone || 'N/A'}</Text>
+                    <Text color={textColor}>
+                      {selectedWorker.phone || 'N/A'}
+                    </Text>
                   </Flex>
                   {selectedWorker.aadharNumber && (
                     <>
@@ -576,7 +629,9 @@ export default function OrdersTable() {
                         <Text fontWeight="semibold" color={textColor}>
                           Aadhar Number:
                         </Text>
-                        <Text color={textColor}>{selectedWorker.aadharNumber || 'N/A'}</Text>
+                        <Text color={textColor}>
+                          {selectedWorker.aadharNumber || 'N/A'}
+                        </Text>
                       </Flex>
                       <Flex align="start" gap="4">
                         <Text fontWeight="semibold" color={textColor}>
@@ -592,13 +647,17 @@ export default function OrdersTable() {
                         <Text fontWeight="semibold" color={textColor}>
                           Address:
                         </Text>
-                        <Text color={textColor}>{selectedWorker.address || 'N/A'}</Text>
+                        <Text color={textColor}>
+                          {selectedWorker.address || 'N/A'}
+                        </Text>
                       </Flex>
                       <Flex align="start" gap="4">
                         <Text fontWeight="semibold" color={textColor}>
                           Verification Status:
                         </Text>
-                        <Text color={textColor}>{selectedWorker.verifyStatus || 'N/A'}</Text>
+                        <Text color={textColor}>
+                          {selectedWorker.verifyStatus || 'N/A'}
+                        </Text>
                       </Flex>
                     </>
                   )}
