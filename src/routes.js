@@ -191,17 +191,17 @@ const routes = [
     collapse: true,
     path: '/hiring', // parent (not a real page)
     items: [
+			{
+        name: 'Direct Hiring',
+        layout: '/admin',
+        path: '/direct-hiring',
+        component: <DirectHiring />,
+      },
       {
         name: 'Biding Hiring',
         layout: '/admin',
         path: '/biding',
         component: <Biding />,
-      },
-      {
-        name: 'Direct Hiring',
-        layout: '/admin',
-        path: '/direct-hiring',
-        component: <DirectHiring />,
       },
       {
         name: 'Emergency Hiring',

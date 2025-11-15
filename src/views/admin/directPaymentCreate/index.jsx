@@ -60,6 +60,7 @@ export default function OrdersTable() {
     pageIndex: 0,
     pageSize: 10,
   });
+	console.log("data",selectedOrder);
   const {
     isOpen: isDetailsOpen,
     onOpen: onDetailsOpen,
@@ -98,10 +99,10 @@ export default function OrdersTable() {
           customerName: item.user_id?.full_name || 'Unknown',
           serviceProvider: item.service_provider_id?.full_name || 'N/A',
           serviceProviderId: item.service_provider_id?._id || 'N/A',
-          totalAmount: item.service_payment?.total_expected || 0,
-          paidAmount: item.service_payment?.amount || 0,
-          remainingAmount: item.service_payment?.remaining_amount || 0,
-          totalTax: item.service_payment?.total_tax || 0,
+          totalAmount: item.service_payment?.total_expected  || 0,
+          paidAmount: item.payment_history?.amount || 0,
+          remainingAmount: item.payment_history?.amount || 0,
+          totalTax: item.payment_history?.tax || 0,
           paymentStatus: item.payment_status
             ? item.payment_status
                 .split('_')
@@ -117,7 +118,7 @@ export default function OrdersTable() {
           deadline: item.deadline
             ? new Date(item.deadline).toLocaleDateString()
             : 'N/A',
-          paymentHistory: item.service_payment?.payment_history || [],
+          paymentHistory: item.payment_history ? [item.payment_history] : [],
           customerBankDetails: item.user_id?.bankdetails || {},
           serviceProviderBankDetails:
             item.service_provider_id?.bankdetails || {},
@@ -318,7 +319,7 @@ export default function OrdersTable() {
           fontSize={{ sm: '10px', lg: '12px' }}
           color="gray.400"
         >
-          AMOUNT TO BE PAID
+          USER PAID
         </Text>
       ),
       cell: (info) => (

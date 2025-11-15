@@ -24,7 +24,7 @@ import {
 } from '@chakra-ui/react';
 import axios from 'axios';
 import * as React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import defaultProfilePic from 'assets/img/profile/profile.webp';
@@ -36,6 +36,8 @@ export default function OrdersTable() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [selectedWorker, setSelectedWorker] = React.useState(null);
+  const [disputeInfo, setDisputeInfo] = React.useState(null);
+  // console.log('Dispute Info:', disputeInfo);
   const {
     isOpen: isDetailsOpen,
     onOpen: onDetailsOpen,
@@ -72,6 +74,8 @@ export default function OrdersTable() {
         }
 
         setData(response.data.data);
+        // console.log('Dispute Info Fetched:', response.data.data.DisputeInfo);
+        setDisputeInfo(response.data.data.DisputeInfo || null);
         setLoading(false);
       } catch (err) {
         console.error('Fetch Orders Error:', err);
@@ -382,7 +386,7 @@ export default function OrdersTable() {
                           : `${baseUrl}/${
                               url.startsWith('/') ? url.slice(1) : url
                             }`;
-                        console.log(`Image ${index + 1} URL:`, imageUrl);
+                        // console.log(`Image ${index + 1} URL:`, imageUrl);
                         return (
                           <Image
                             key={index}
@@ -450,16 +454,31 @@ export default function OrdersTable() {
                       py="1"
                       borderRadius="md"
                     >
-                      {data.order?.hire_status === 'cancelledDispute'
-                        ? 'Service provider raised a dispute'
-                        : data.order?.hire_status
-                            .toLowerCase()
-                            .split(' ')
-                            .map(
-                              (word) =>
-                                word.charAt(0).toUpperCase() + word.slice(1),
-                            )
-                            .join(' ')}
+                      {data.order?.hire_status === 'cancelledDispute' ? (
+                        <>
+                          Dispute Raised{' '}
+                          {disputeInfo && disputeInfo.unique_id && (
+                            <>
+                              - ID:{' '}
+                              <Link
+                                to={`/admin/dispute`}
+                                style={{ color: 'blue', textDecoration: 'underline' }}
+                              >
+                                {disputeInfo.unique_id}
+                              </Link>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        data.order?.hire_status
+                          .toLowerCase()
+                          .split(' ')
+                          .map(
+                            (word) =>
+                              word.charAt(0).toUpperCase() + word.slice(1),
+                          )
+                          .join(' ')
+                      )}
                     </Text>
                   </Flex>
                 </VStack>
@@ -494,9 +513,19 @@ export default function OrdersTable() {
                               Method: {payment.method || 'N/A'}
                             </Text>
                             {payment.method === 'online' && (
-                              <Text fontSize="sm" color="gray.600">
-                                Payment ID: {payment.payment_id || 'N/A'}
-                              </Text>
+                              <>
+                                <Text fontSize="sm" color="gray.600">
+                                  Payment ID: {payment.payment_id || 'N/A'}
+                                </Text>
+                                <Text fontSize="sm" color="gray.600">
+                                  Admin Payment ID:{' '}
+                                  {payment.adminPaymentId || 'N/A'}
+                                </Text>
+                                <Text fontSize="sm" color="gray.600">
+                                  Admin Transaction ID:{' '}
+                                  {payment.adminTransactionId || 'N/A'}
+                                </Text>
+                              </>
                             )}
                             {payment.method === 'cod' && (
                               <Text fontSize="sm" color="gray.600">

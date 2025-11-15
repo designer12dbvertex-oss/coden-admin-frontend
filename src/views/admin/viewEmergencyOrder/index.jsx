@@ -24,7 +24,7 @@ import {
 } from '@chakra-ui/react';
 import axios from 'axios';
 import * as React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import defaultProfilePic from 'assets/img/profile/profile.webp';
@@ -46,6 +46,7 @@ export default function OrdersTable() {
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const navigate = useNavigate();
   const { orderId } = useParams();
+	const [disputeInfo, setDisputeInfo] = React.useState(null);
 
   // Fetch order from API
   const baseUrl = process.env.REACT_APP_BASE_URL;
@@ -72,6 +73,7 @@ export default function OrdersTable() {
         }
 
         setData(response.data);
+				setDisputeInfo(response.data.DisputeInfo || null);
         setLoading(false);
       } catch (err) {
         console.error('Fetch Orders Error:', err);
@@ -98,7 +100,7 @@ export default function OrdersTable() {
   const getStatusStyles = (status, type) => {
     if (type === 'hireStatus' || type === 'userStatus') {
       switch (status?.toLowerCase()) {
-        case 'accepted':
+        case 'assigned':
         case 'completed':
           return { bg: 'green.100', color: 'green.800' };
         case 'pending':
@@ -425,7 +427,7 @@ export default function OrdersTable() {
                       ₹{data.data?.platform_fee || 0}
                     </Text>
                   </Flex>
-                  <Flex align="start" gap="4">
+                  {/*<Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       User Status:
                     </Text>
@@ -445,10 +447,10 @@ export default function OrdersTable() {
                         ? 'User raised a dispute'
                         : data.data?.user_status || 'N/A'}
                     </Text>
-                  </Flex>
+                  </Flex>*/}
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
-                      Service Provider Status:
+                      Hire Status:
                     </Text>
                     <Text
                       bg={
@@ -462,9 +464,35 @@ export default function OrdersTable() {
                       py="1"
                       borderRadius="md"
                     >
-                      {data.data?.hire_status === 'cancelledDispute'
-                        ? 'Service provider raised a dispute'
-                        : data.data?.hire_status || 'N/A'}
+                      {data.data?.hire_status === 'cancelledDispute' ? (
+                        <>
+                          Dispute Raised{' '}
+                          {disputeInfo && disputeInfo.unique_id && (
+                            <>
+                              - ID:{' '}
+                              <Link
+                                color="blue.500"
+                                textDecoration="underline"
+                                to={`/admin/dispute`}
+                                style={{
+                                  color: 'blue',
+                                  textDecoration: 'underline',
+                                }}
+                              >
+                                {disputeInfo.unique_id}
+                              </Link>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        data.data?.hire_status
+                          .split(' ')
+                          .map(
+                            (word) =>
+                              word.charAt(0).toUpperCase() + word.slice(1),
+                          )
+                          .join(' ') || 'N/A'
+                      )}
                     </Text>
                   </Flex>
                 </VStack>
@@ -499,9 +527,19 @@ export default function OrdersTable() {
                               Method: {payment.method || 'N/A'}
                             </Text>
                             {payment.method === 'online' && (
-                              <Text fontSize="sm" color="gray.600">
-                                Payment ID: {payment.payment_id || 'N/A'}
-                              </Text>
+                              <>
+                                <Text fontSize="sm" color="gray.600">
+                                  Payment ID: {payment.payment_id || 'N/A'}
+                                </Text>
+                                <Text fontSize="sm" color="gray.600">
+                                  Admin Payment ID:{' '}
+                                  {payment.adminPaymentId || 'N/A'}
+                                </Text>
+                                <Text fontSize="sm" color="gray.600">
+                                  Admin Transaction ID:{' '}
+                                  {payment.adminTransactionId || 'N/A'}
+                                </Text>
+                              </>
                             )}
                             {payment.method === 'cod' && (
                               <Text fontSize="sm" color="gray.600">

@@ -29,6 +29,7 @@ import {
   Input,
   FormControl,
   Select,
+  FormLabel,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -59,6 +60,8 @@ export default function OrdersTable() {
   const [selectedOrder, setSelectedOrder] = React.useState(null);
   const [releaseStatus, setReleaseStatus] = React.useState('');
   const [selectedPaymentIndex, setSelectedPaymentIndex] = React.useState(null);
+  const [adminInputs, setAdminInputs] = React.useState({});
+
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
@@ -102,9 +105,9 @@ export default function OrdersTable() {
           serviceProvider: item.service_provider_id?.full_name || 'N/A',
           serviceProviderId: item.service_provider_id?._id || 'N/A',
           totalAmount: item.service_payment?.total_expected || 0,
-          paidAmount: item.service_payment?.amount || 0,
-          remainingAmount: item.service_payment?.remaining_amount || 0,
-          totalTax: item.service_payment?.total_tax || 0,
+          paidAmount: item.payment_history?.amount || 0,
+          remainingAmount: item.payment_history?.amount || 0,
+          totalTax: item.payment_history?.tax || 0,
           paymentStatus: item.payment_status
             ? item.payment_status
                 .split('_')
@@ -120,7 +123,7 @@ export default function OrdersTable() {
           deadline: item.deadline
             ? new Date(item.deadline).toLocaleDateString()
             : 'N/A',
-          paymentHistory: item.service_payment?.payment_history || [],
+          paymentHistory: item.payment_history ? [item.payment_history] : [],
           customerBankDetails: item.user_id?.bankdetails || {},
           serviceProviderBankDetails:
             item.service_provider_id?.bankdetails || {},
@@ -177,12 +180,32 @@ export default function OrdersTable() {
   };
 
   // Handle release status change for a specific payment
-  const handleReleaseStatusChange = async (orderId, paymentId, index) => {
-    console.log(paymentId, orderId, index, releaseStatus);
+  const handleReleaseStatusChange = async (
+    orderId,
+    paymentId,
+    index,
+    adminPaymentId,
+    adminTransactionId,
+  ) => {
+    if (!adminPaymentId || adminPaymentId.trim() === '') {
+      return toast.error('Admin Payment ID is required');
+    }
+
+    if (!adminTransactionId || adminTransactionId.trim() === '') {
+      return toast.error('Admin Transaction ID is required');
+    }
+    // console.log(
+    //   paymentId,
+    //   orderId,
+    //   index,
+    //   releaseStatus,
+    //   adminPaymentId,
+    //   adminTransactionId,
+    // );
     try {
       await axios.post(
         `${baseUrl}api/direct-order/admin/approve-release/${orderId}/${paymentId}`,
-        { release_status: releaseStatus },
+        { release_status: releaseStatus, adminPaymentId, adminTransactionId },
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -455,12 +478,11 @@ export default function OrdersTable() {
     debugTable: process.env.NODE_ENV === 'development',
   });
 
-	const releaseStatusOptions = [
-  { label: "Paid to Provider", value: "release_requested" },
-  { label: "Paid", value: "released" },
-  { label: "Rejected", value: "rejected" }
-];
-
+  const releaseStatusOptions = [
+    { label: 'Paid to Provider', value: 'release_requested' },
+    { label: 'Paid', value: 'released' },
+    { label: 'Rejected', value: 'rejected' },
+  ];
 
   if (loading) {
     return (
@@ -779,6 +801,44 @@ export default function OrdersTable() {
                               <strong>Collected At:</strong>{' '}
                               {new Date(payment.collected_at).toLocaleString()}
                             </Text>
+                            {/* ---- NEW FIELDS FOR ADMIN ---- */}
+                            <FormControl mt={3}>
+                              <FormLabel>Admin Payment ID</FormLabel>
+                              <Input
+                                placeholder="Enter admin payment id"
+                                value={
+                                  adminInputs[payment._id]?.paymentId || ''
+                                }
+                                onChange={(e) =>
+                                  setAdminInputs((prev) => ({
+                                    ...prev,
+                                    [payment._id]: {
+                                      ...prev[payment._id],
+                                      paymentId: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </FormControl>
+
+                            <FormControl mt={2}>
+                              <FormLabel>Admin Transaction ID</FormLabel>
+                              <Input
+                                placeholder="Enter admin transaction id"
+                                value={
+                                  adminInputs[payment._id]?.transactionId || ''
+                                }
+                                onChange={(e) =>
+                                  setAdminInputs((prev) => ({
+                                    ...prev,
+                                    [payment._id]: {
+                                      ...prev[payment._id],
+                                      transactionId: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </FormControl>
                             <FormControl mt={2}>
                               <Select
                                 value={
@@ -808,11 +868,16 @@ export default function OrdersTable() {
                                     selectedOrder.id,
                                     payment._id,
                                     index,
+                                    adminInputs[payment._id]?.paymentId || null,
+                                    adminInputs[payment._id]?.transactionId ||
+                                      null,
                                   )
                                 }
                                 isDisabled={
                                   !releaseStatus ||
-                                  releaseStatus === payment.release_status
+                                  releaseStatus === payment.release_status ||
+                                  !adminInputs[payment._id]?.paymentId ||
+                                  !adminInputs[payment._id]?.transactionId
                                 }
                               >
                                 Update Release Status

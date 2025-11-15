@@ -28,7 +28,6 @@ import {
   Card as ChakraCard,
   Input,
   FormControl,
-  Select,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -41,7 +40,7 @@ import {
 import axios from 'axios';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Custom components
@@ -57,12 +56,11 @@ export default function OrdersTable() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [selectedOrder, setSelectedOrder] = React.useState(null);
-  const [releaseStatus, setReleaseStatus] = React.useState('');
-  const [selectedPaymentIndex, setSelectedPaymentIndex] = React.useState(null);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   });
+	console.log("data",selectedOrder);
   const {
     isOpen: isDetailsOpen,
     onOpen: onDetailsOpen,
@@ -101,10 +99,10 @@ export default function OrdersTable() {
           customerName: item.user_id?.full_name || 'Unknown',
           serviceProvider: item.service_provider_id?.full_name || 'N/A',
           serviceProviderId: item.service_provider_id?._id || 'N/A',
-          totalAmount: item.service_payment?.total_expected || 0,
-          paidAmount: item.service_payment?.amount || 0,
-          remainingAmount: item.service_payment?.remaining_amount || 0,
-          totalTax: item.service_payment?.total_tax || 0,
+          totalAmount: item.payment_history?.total_expected || 0,
+          paidAmount: item.payment_history?.amount || 0,
+          remainingAmount: item.payment_history?.amount || 0,
+          totalTax: item.payment_history?.total_tax || 0,
           paymentStatus: item.payment_status
             ? item.payment_status
                 .split('_')
@@ -120,7 +118,7 @@ export default function OrdersTable() {
           deadline: item.deadline
             ? new Date(item.deadline).toLocaleDateString()
             : 'N/A',
-          paymentHistory: item.service_payment?.payment_history || [],
+          paymentHistory: item.payment_history || [],
           customerBankDetails: item.user_id?.bankdetails || {},
           serviceProviderBankDetails:
             item.service_provider_id?.bankdetails || {},
@@ -167,62 +165,7 @@ export default function OrdersTable() {
   // Handle view details click
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
-    setReleaseStatus(
-      order.paymentHistory.length > 0
-        ? order.paymentHistory[0].release_status
-        : 'pending',
-    );
-    setSelectedPaymentIndex(null);
     onDetailsOpen();
-  };
-
-  // Handle release status change for a specific payment
-  const handleReleaseStatusChange = async (orderId, paymentId, index) => {
-    console.log(paymentId, orderId, index, releaseStatus);
-    try {
-      await axios.post(
-        `${baseUrl}api/direct-order/admin/approve-release/${orderId}/${paymentId}`,
-        { release_status: releaseStatus },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      toast.success('Release status updated successfully!', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
-      window.location.reload();
-
-      // Refresh data for the specific payment
-      const updatedData = allData.map((order) => {
-        if (order.id === orderId) {
-          const updatedPaymentHistory = order.paymentHistory.map((payment, i) =>
-            i === index
-              ? { ...payment, release_status: releaseStatus }
-              : payment,
-          );
-          return { ...order, paymentHistory: updatedPaymentHistory };
-        }
-        return order;
-      });
-      setAllData(updatedData);
-      setData(
-        updatedData.filter(
-          (order) =>
-            order.orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            order.customerName
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()),
-        ),
-      );
-      setSelectedPaymentIndex(null);
-    } catch (err) {
-      console.error('Update Release Status Error:', err);
-      toast.error('Failed to update release status', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
-    }
   };
 
   // Status color mapping
@@ -347,7 +290,7 @@ export default function OrdersTable() {
         </Flex>
       ),
     }),
-		  columnHelper.accessor('serviceProvider', {
+    columnHelper.accessor('serviceProvider', {
       id: 'serviceProvider',
       header: () => (
         <Text
@@ -376,7 +319,7 @@ export default function OrdersTable() {
           fontSize={{ sm: '10px', lg: '12px' }}
           color="gray.400"
         >
-          AMOUNT TO BE PAID
+          USER PAID
         </Text>
       ),
       cell: (info) => (
@@ -762,7 +705,35 @@ export default function OrdersTable() {
                             </Text>
                             <Text color={textColor}>
                               <strong>Release Status:</strong>{' '}
-                              {payment.release_status}
+                              <Flex
+                                align="center"
+                                bg={
+                                  getStatusStyles(
+                                    payment.release_status,
+                                    'releaseStatus'
+                                  ).bg
+                                }
+                                px={2}
+                                py={1}
+                                borderRadius="md"
+                              >
+                                <Text
+                                  fontSize="sm"
+                                  color={
+                                    getStatusStyles(
+                                      payment.release_status,
+                                      'releaseStatus'
+                                    ).color
+                                  }
+                                >
+                                  {payment.release_status
+                                    .charAt(0)
+                                    .toUpperCase() +
+                                    payment.release_status
+                                      .slice(1)
+                                      .replace(/_/g, ' ')}
+                                </Text>
+                              </Flex>
                             </Text>
                             <Text color={textColor}>
                               <strong>Collected By:</strong>{' '}
@@ -772,50 +743,6 @@ export default function OrdersTable() {
                               <strong>Collected At:</strong>{' '}
                               {new Date(payment.collected_at).toLocaleString()}
                             </Text>
-                            <FormControl mt={2}>
-                              <Select
-                                value={
-                                  index === selectedPaymentIndex
-                                    ? releaseStatus
-                                    : payment.release_status
-                                }
-                                onChange={(e) => {
-                                  setReleaseStatus(e.target.value);
-                                  setSelectedPaymentIndex(index);
-                                }}
-                                placeholder="Select release status"
-                              >
-                                {[
-                                  'pending',
-                                  'release_requested',
-                                  'released',
-                                  'refunded',
-                                ].map((status) => (
-                                  <option key={status} value={status}>
-                                    {status.charAt(0).toUpperCase() +
-                                      status.slice(1).replace(/_/g, ' ')}
-                                  </option>
-                                ))}
-                              </Select>
-                              <Button
-                                mt={2}
-                                colorScheme="blue"
-                                size="sm"
-                                onClick={() =>
-                                  handleReleaseStatusChange(
-                                    selectedOrder.id,
-                                    payment._id,
-                                    index,
-                                  )
-                                }
-                                isDisabled={
-                                  !releaseStatus ||
-                                  releaseStatus === payment.release_status
-                                }
-                              >
-                                Update Release Status
-                              </Button>
-                            </FormControl>
                           </VStack>
                         </ChakraCard>
                       ))}
