@@ -53,6 +53,8 @@ import PendingWorker from 'views/admin/PendingWorker';
 import EmergencyWorkCategory from 'views/admin/emergencyWorkCategory';
 import DirectHiringRefundPaymentRequest from 'views/admin/directHiringRefundRequest';
 import EmergencyHiringRefundPaymentRequest from 'views/admin/emergencyRefundRequest';
+import GetAllRefferal from "views/admin/getAllRefferal";
+
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
 import {
@@ -316,14 +318,26 @@ const routes = [
     path: '/dispute',
     component: <Dispute />,
   },
-  {
+
+	{
     name: 'Refferal Settings',
+    icon:  <Icon as={MdCardGiftcard} width="20px" height="20px" color="inherit" />,
+    collapse: true,
     layout: '/admin',
-    icon: (
-      <Icon as={MdCardGiftcard} width="20px" height="20px" color="inherit" />
-    ),
-    path: '/refferal',
-    component: <RefferalSetting />,
+    items: [
+      {
+        name: 'Setting',
+        layout: '/admin',
+        path: '/refferal', // ✅ fixed
+        component: <RefferalSetting />,
+      },
+      {
+        name: 'getAllRefferal',
+        layout: '/admin',
+        path: '/getRefferal', // ✅ fixed
+        component: <GetAllRefferal />,
+      },
+    ],
   },
   {
     name: 'Contact Us',
