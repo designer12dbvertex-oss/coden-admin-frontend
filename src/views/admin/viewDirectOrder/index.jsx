@@ -552,9 +552,9 @@ export default function OrdersTable() {
                               {payment.release_status === 'pending'
                                 ? 'Pay to App'
                                 : payment.release_status === 'release_requested'
-                                ? 'Paid to User'
+                                ? 'Paid to Worker'
                                 : payment.release_status === 'released'
-                                ? 'Admin Paid to User'
+                                ? 'Admin Paid to Worker'
                                 : payment.release_status === 'rejected'
                                 ? 'Admin Rejected Payment'
                                 : ''}

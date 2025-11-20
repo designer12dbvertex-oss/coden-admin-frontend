@@ -670,9 +670,9 @@ export default function OrdersTable() {
               onChange={handleSearchChange}
             />
           </FormControl>
-          <Button colorScheme="teal" size="sm" onClick={onAddOpen}>
+          {/* <Button colorScheme="teal" size="sm" onClick={onAddOpen}>
             Add New Category
-          </Button>
+          </Button> */}
         </Flex>
       </Flex>
       <Box>
@@ -987,7 +987,7 @@ export default function OrdersTable() {
                         }}
                       />
                     </FormControl>
-                    <Button
+                    {/* <Button
                       mt="2"
                       colorScheme="blue"
                       onClick={
@@ -1002,7 +1002,7 @@ export default function OrdersTable() {
                       }
                     >
                       {editSubcategory ? 'Update Subcategory' : 'Add Subcategory'}
-                    </Button>
+                    </Button> */}
                     {editSubcategory && (
                       <Button
                         mt="2"
