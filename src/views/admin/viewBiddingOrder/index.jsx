@@ -307,6 +307,17 @@ export default function OrdersTable() {
                     </Text>
                     <Text color={textColor}>{data.address || 'N/A'}</Text>
                   </Flex>
+                  
+                  <Flex align="start" gap="4">
+                    <Text fontWeight="semibold" color={textColor}>
+                      Create:
+                    </Text>
+                    <Text color={textColor}>
+                      {data.createdAt
+                        ? new Date(data.createdAt).toLocaleDateString()
+                        : 'N/A'}
+                    </Text>
+                  </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
                       Deadline:
@@ -452,6 +463,20 @@ export default function OrdersTable() {
                                 <Text fontSize="sm" color="gray.600">
                                   Admin Transaction ID:{' '}
                                   {payment.adminTransactionId || 'N/A'}
+                                </Text>
+                                                       <Text fontSize="sm" color="gray.600">
+                                  Date and Time:{' '}
+                                  {payment.date
+                                    ? new Date(payment.date).toLocaleString("en-IN", {
+                                        year: "numeric",
+                                        month: "2-digit",
+                                        day: "2-digit",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        second: "2-digit",
+                                        hour12: true, // AM / PM enable
+                                      })
+                                    : "N/A"}
                                 </Text>
                               </>
                             )}

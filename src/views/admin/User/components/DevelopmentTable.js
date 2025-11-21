@@ -90,6 +90,7 @@ const useFetchUsers = (baseUrl, token, navigate) => {
             location: user.location?.address || 'N/A',
             uniqueId: user.unique_id || 'N/A',
             mobile: user.phone || 'N/A',
+            current_token:user.current_token || 'N/A',
             full_address: Array.isArray(user.full_address) ? user.full_address : [],
             createdAt: user.createdAt
               ? new Date(user.createdAt).toISOString().split('T')[0]
@@ -217,6 +218,8 @@ export default function ComplexTable() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
+  const [setUserId, saveUserId] = useState(null);
+  const [setIsUseridModalOpen, setIsUserid] = useState(false);
   const [selectedAddresses, setSelectedAddresses] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [selectedInactivationInfo, setSelectedInactivationInfo] = useState(null);
@@ -308,9 +311,32 @@ export default function ComplexTable() {
     setSelectedInactivationInfo(inactivationInfo);
     setIsOrdersModalOpen(true);
   }, []);
+//   const editUserModal = (
+//   id,
+//   current_token,
+//   profile_pic,
+//   full_name,
+//   location,
+//   mobile,
+//   full_address
+// ) => {
+//   alert(
+//     `ID: ${id}\n` +
+//     `Token: ${current_token}\n` +
+//     `Profile Pic: ${profile_pic}\n` +
+//     `Name: ${full_name}\n` +
+//     `Location: ${location}\n` +
+//     `Mobile: ${mobile}\n` +
+//     `Address: ${full_address}`
+//   );
+// };
+
+  
+ 
 
   const closeOrdersModal = useCallback(() => {
     setIsOrdersModalOpen(false);
+    
     setSelectedUserId(null);
     setSelectedInactivationInfo(null);
   }, []);
@@ -763,9 +789,31 @@ export default function ComplexTable() {
             >
               View More
             </Button>
+            &nbsp;
+            {/* <Button
+  size="sm"
+  colorScheme="teal"
+  variant="outline"
+  onClick={() =>
+    editUserModal(
+      info.row.original.id,
+      info.row.original.current_token,
+      info.row.original.profile_pic,
+      info.row.original.full_name,
+      info.row.original.location,
+      info.row.original.mobile,
+      info.row.original.full_address
+    )
+  }
+  _hover={{ bg: 'teal.600', color: 'white' }}
+>
+  Edit
+</Button> */}
+
           </Flex>
         ),
       }),
+      
     ],
     [textColor, handleToggle, toggleLoading, openModal, openOrdersModal, startIndex],
   );
@@ -1016,6 +1064,108 @@ export default function ComplexTable() {
 
       {/* Modal for full addresses */}
       <Modal isOpen={isModalOpen} onClose={closeModal} isCentered size="lg">
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          maxW={{ base: '90%', md: '800px' }}
+          borderRadius="16px"
+          bg={useColorModeValue('white', 'gray.800')}
+          boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)"
+        >
+          <ModalHeader
+            fontSize="lg"
+            fontWeight="700"
+            color={textColor}
+            borderBottom="1px"
+            borderColor={borderColor}
+          >
+            All User Addresses
+          </ModalHeader>
+          <ModalCloseButton color={textColor} />
+          <ModalBody py="20px" maxH="500px" overflowY="auto">
+            {selectedAddresses.length === 0 ? (
+              <Alert status="info" borderRadius="8px">
+                <AlertIcon />
+                <Text color={textColor} fontSize="sm">
+                  No addresses available for this user.
+                </Text>
+              </Alert>
+            ) : (
+              <Box>
+                <Text fontSize="sm" color="gray.500" mb={4}>
+                  Total Addresses: {selectedAddresses.length}
+                </Text>
+                {selectedAddresses.map((address, index) => (
+                  <Box
+                    key={address._id || index}
+                    mb={4}
+                    p={4}
+                    border="1px"
+                    borderColor={borderColor}
+                    borderRadius="12px"
+                    bg={useColorModeValue('gray.50', 'gray.700')}
+                    _hover={{
+                      borderColor: 'teal.300',
+                      boxShadow: '0px 2px 8px rgba(0, 128, 128, 0.15)',
+                    }}
+                    transition="all 0.2s ease"
+                  >
+                    <Flex justify="space-between" align="center" mb={2}>
+                      <Text 
+                        fontSize="md" 
+                        fontWeight="600" 
+                        color={textColor}
+                      >
+                        {index + 1}. {address.title || `Address ${index + 1}`}
+                      </Text>
+                      {address.latitude && address.longitude && (
+                        <Text 
+                          fontSize="xs" 
+                          color="gray.500"
+                          bg={useColorModeValue('gray.200', 'gray.600')}
+                          px={2} 
+                          py={1} 
+                          borderRadius="4px"
+                        >
+                          📍 {address.latitude.toFixed(4)}, {address.longitude.toFixed(4)}
+                        </Text>
+                      )}
+                    </Flex>
+                    
+                    <Box mt={2} pl={4} borderLeft="3px solid" borderLeftColor="teal.300">
+                      <Text fontSize="sm" color={textColor} mb={1}>
+                        <strong>📍 Address:</strong> {address.address || 'N/A'}
+                      </Text>
+                      <Text fontSize="sm" color={textColor} mb={1}>
+                        <strong>🏷️ Title:</strong> {address.title || 'N/A'}
+                      </Text>
+                      <Text fontSize="sm" color={textColor} mb={1}>
+                        <strong>📌 Landmark:</strong> {address.landmark || 'N/A'}
+                      </Text>
+                      {address._id && (
+                        <Text fontSize="xs" color="gray.500">
+                          <strong>ID:</strong> {address._id}
+                        </Text>
+                      )}
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </ModalBody>
+          <ModalFooter borderTop="1px" borderColor={borderColor}>
+            <Button
+              colorScheme="teal"
+              onClick={closeModal}
+              borderRadius="12px"
+              size="sm"
+              _hover={{ bg: 'teal.600' }}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      <Modal isOpen={setIsUseridModalOpen} onClose={closeModal} isCentered size="lg">
         <ModalOverlay bg="blackAlpha.600" />
         <ModalContent
           maxW={{ base: '90%', md: '800px' }}

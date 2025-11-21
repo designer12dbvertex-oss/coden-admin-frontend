@@ -367,6 +367,16 @@ export default function OrdersTable() {
                   </Flex>
                   <Flex align="start" gap="4">
                     <Text fontWeight="semibold" color={textColor}>
+                      Create :
+                    </Text>
+                    <Text color={textColor}>
+                      {data.order?.createdAt
+                        ? new Date(data.order.createdAt).toLocaleDateString()
+                        : 'N/A'}
+                    </Text>
+                  </Flex>
+                  <Flex align="start" gap="4">
+                    <Text fontWeight="semibold" color={textColor}>
                       Deadline:
                     </Text>
                     <Text color={textColor}>
@@ -375,6 +385,7 @@ export default function OrdersTable() {
                         : 'N/A'}
                     </Text>
                   </Flex>
+                  
                   <Flex align="start" gap="4" flexWrap="wrap">
                     <Text fontWeight="semibold" color={textColor}>
                       Image URL:
@@ -525,6 +536,21 @@ export default function OrdersTable() {
                                   Admin Transaction ID:{' '}
                                   {payment.adminTransactionId || 'N/A'}
                                 </Text>
+                                <Text fontSize="sm" color="gray.600">
+  Date and Time:{' '}
+  {payment.date
+    ? new Date(payment.date).toLocaleString("en-IN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true, // AM / PM enable
+      })
+    : "N/A"}
+</Text>
+
                               </>
                             )}
                             {payment.method === 'cod' && (
