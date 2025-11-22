@@ -243,7 +243,7 @@ export default function ReferralSettings() {
       </Flex>
       <Box mb="30px">
         <Flex direction="column" gap="4">
-          <FormControl isInvalid={!!formErrors.joiningReward}>
+          {/* <FormControl isInvalid={!!formErrors.joiningReward}>
             <FormLabel fontSize="sm" fontWeight="500" color={textColor}>
               Joining Reward (₹)
             </FormLabel>
@@ -261,8 +261,8 @@ export default function ReferralSettings() {
             {formErrors.joiningReward && (
               <FormErrorMessage>{formErrors.joiningReward}</FormErrorMessage>
             )}
-          </FormControl>
-          <FormControl isInvalid={!!formErrors.maxReferralUsage}>
+          </FormControl> */}
+          {/* <FormControl isInvalid={!!formErrors.maxReferralUsage}>
             <FormLabel fontSize="sm" fontWeight="500" color={textColor}>
               Max Referral Usage
             </FormLabel>
@@ -280,7 +280,7 @@ export default function ReferralSettings() {
             {formErrors.maxReferralUsage && (
               <FormErrorMessage>{formErrors.maxReferralUsage}</FormErrorMessage>
             )}
-          </FormControl>
+          </FormControl> */}
           <FormControl isInvalid={!!formErrors.rewardPerReferral}>
             <FormLabel fontSize="sm" fontWeight="500" color={textColor}>
               Reward Per Referral (₹)
@@ -320,12 +320,12 @@ export default function ReferralSettings() {
           Current Settings
         </Text>
         <Flex direction="column" gap="2" border="1px" borderColor={borderColor} p="15px" borderRadius="8px">
-          <Text fontSize="sm" color={textColor}>
+          {/* <Text fontSize="sm" color={textColor}>
             <strong>Joining Reward:</strong> ₹{settings.joiningReward}
           </Text>
           <Text fontSize="sm" color={textColor}>
             <strong>Max Referral Usage:</strong> {settings.maxReferralUsage}
-          </Text>
+          </Text> */}
           <Text fontSize="sm" color={textColor}>
             <strong>Reward Per Referral:</strong> ₹{settings.rewardPerReferral}
           </Text>
