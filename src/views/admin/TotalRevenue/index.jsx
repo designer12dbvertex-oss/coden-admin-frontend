@@ -10,7 +10,6 @@ import {
   Select,
   useColorModeValue,
   CardHeader,
-  Flex,
   Heading,
 } from '@chakra-ui/react';
 import { Line, Bar } from 'react-chartjs-2';
@@ -29,7 +28,6 @@ import axios from 'axios';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
 export default function PaymentsDashboard() {
@@ -38,6 +36,7 @@ export default function PaymentsDashboard() {
   const [error, setError] = React.useState(null);
   const [selectedYear, setSelectedYear] = React.useState('');
   const [selectedMonth, setSelectedMonth] = React.useState('');
+
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const cardBg = useColorModeValue('white', 'gray.700');
   const navigate = useNavigate();
@@ -54,21 +53,18 @@ export default function PaymentsDashboard() {
       const response = await axios.get(`${baseUrl}api/admin/getAdminPayments`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('API Response (Payments):', response.data);
 
-      if (!response.data || !response.data.payments) {
-        throw new Error('Invalid response format: Expected payment data');
+      if (!response.data?.payments) {
+        throw new Error('Invalid response format');
       }
-      console.log('Payment Data:', response.data);
+
       setData(response.data.payments);
       setLoading(false);
     } catch (err) {
       console.error('Fetch Payments Error:', err);
       if (
-        err.response?.data?.message === 'Not authorized, token failed' ||
-        err.response?.data?.message === 'Session expired or logged in on another device' ||
-        err.response?.data?.message === 'Un-Authorized, You are not authorized to access this route.' ||
-        err.response?.data?.message === 'Not authorized, token failed'
+        err.response?.data?.message?.includes('authorized') ||
+        err.response?.data?.message?.includes('Session expired')
       ) {
         localStorage.removeItem('token');
         navigate('/');
@@ -81,13 +77,13 @@ export default function PaymentsDashboard() {
 
   React.useEffect(() => {
     fetchPayments();
-  }, [navigate]);
+  }, []);
 
   if (loading) {
     return (
       <Card bg={cardBg} p="20px" borderRadius="20px" boxShadow="lg">
         <Text color={textColor} fontSize="22px" fontWeight="700">
-          Loading...
+          Loading payments data...
         </Text>
       </Card>
     );
@@ -96,124 +92,175 @@ export default function PaymentsDashboard() {
   if (error) {
     return (
       <Card bg={cardBg} p="20px" borderRadius="20px" boxShadow="lg" mt="80px">
-        <Text color={textColor} fontSize="22px" fontWeight="700">
+        <Text color={textColor} fontSize="22px" fontWeight="700" color="red.500">
           Error: {error}
         </Text>
       </Card>
     );
   }
 
-  const paymentTypes = [
-    { key: 'direct', label: 'Direct' },
-    { key: 'bidding', label: 'Bidding' },
-    { key: 'emergency', label: 'Emergency' },
-    { key: 'totals', label: 'Totals' },
-  ];
+  const { direct, bidding, emergency, subscriptions, totals } = data;
 
-  // Extract unique years and available months from totals.monthly keys
-  const allMonthKeys = Object.keys(data.totals?.monthly || {});
-  const years = [...new Set(allMonthKeys.map((key) => key.split('-')[0]))].sort();
-  const availableMonths = selectedYear
-    ? [...new Set(allMonthKeys.filter((key) => key.startsWith(`${selectedYear}-`)).map((key) => key.split('-')[1]))].sort()
+  // Extract years and months
+  const allMonthlyKeys = Object.keys(totals?.monthly || {});
+  const years = [...new Set(allMonthlyKeys.map(k => k.split('-')[0]))].sort((a, b) => b - a);
+  const monthsForYear = selectedYear
+    ? allMonthlyKeys
+        .filter(k => k.startsWith(selectedYear + '-'))
+        .map(k => k.split('-')[1])
+        .sort()
     : [];
 
-  // Filtered months based on selection
-  const getFilteredMonths = () => {
-    if (selectedMonth && selectedYear) {
-      return [`${selectedYear}-${selectedMonth}`];
-    }
-    if (selectedYear) {
-      return allMonthKeys.filter((key) => key.startsWith(`${selectedYear}-`)).sort();
-    }
-    return allMonthKeys.sort();
+  // Determine display months based on filters
+  const getDisplayMonths = () => {
+    if (selectedMonth && selectedYear) return [`${selectedYear}-${selectedMonth.padStart(2, '0')}`];
+    if (selectedYear) return allMonthlyKeys.filter(k => k.startsWith(selectedYear + '-'));
+    return allMonthlyKeys;
   };
 
-  const filteredMonths = getFilteredMonths();
+  const displayMonths = getDisplayMonths();
+  const isSingleMonth = displayMonths.length === 1;
 
-  // Handle year change and reset month if necessary
   const handleYearChange = (e) => {
-    const newYear = e.target.value;
-    setSelectedYear(newYear);
-    if (newYear && availableMonths.length > 0 && !availableMonths.includes(selectedMonth)) {
-      setSelectedMonth('');
-    }
+    const year = e.target.value;
+    setSelectedYear(year);
+    setSelectedMonth('');
   };
 
-  const getChartData = (paymentData) => {
-    const total = paymentData.total || 1; // Avoid division by zero
-    const labels = filteredMonths;
-    const getProportionedData = (key) => {
-      const totalValue = paymentData[key] || 0;
-      return labels.map((month) => {
-        const monthlyTotal = paymentData.monthly?.[month] || 0;
-        return monthlyTotal > 0 ? (totalValue / total) * monthlyTotal : 0;
-      });
+  const periodLabel = selectedMonth
+    ? `${new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long' })} ${selectedYear}`
+    : selectedYear
+    ? selectedYear
+    : 'All Time';
+
+  // Helper: Calculate proportional values for normal payment types
+  const calculatePeriodTotals = (payment) => {
+    const monthlyTotal = displayMonths.reduce((sum, m) => sum + (payment.monthly?.[m] || 0), 0);
+    const totalAllTime = payment.total || 1;
+
+    const proportion = (key) => {
+      const value = payment[key] || 0;
+      return totalAllTime > 0 ? (value / totalAllTime) * monthlyTotal : 0;
     };
 
     return {
-      labels,
+      released: proportion('released'),
+      release_request: proportion('release_request'),
+      pending: proportion('pending'),
+      refunded: payment.refunded || 0,
+      rejected: payment.rejected || 0,
+      total: monthlyTotal,
+    };
+  };
+
+  // Chart data for regular payments
+  const getRegularChartData = (payment) => {
+    const monthlyData = payment.monthly || {};
+    const total = payment.total || 1;
+
+    const proportion = (key) => (value) => total > 0 ? ((payment[key] || 0) / total) * value : 0;
+
+    return {
+      labels: displayMonths.map(m => {
+        const [y, mo] = m.split('-');
+        return `${new Date(y, mo - 1).toLocaleString('default', { month: 'short' })} ${y}`;
+      }),
       datasets: [
         {
           label: 'Released',
-          data: getProportionedData('released'),
-          borderColor: 'rgb(75, 192, 192)',
-          backgroundColor: 'rgba(75, 192, 192, 0.5)',
-          tension: 0.1,
+          data: displayMonths.map(m => proportion('released')(monthlyData[m] || 0)),
+          backgroundColor: 'rgba(34, 197, 94, 0.6)',
+          borderColor: 'rgb(34, 197, 94)',
+          tension: 0.3,
         },
         {
           label: 'Release Request',
-          data: getProportionedData('release_request'),
-          borderColor: 'rgb(255, 99, 132)',
-          backgroundColor: 'rgba(255, 99, 132, 0.5)',
-          tension: 0.1,
+          data: displayMonths.map(m => proportion('release_request')(monthlyData[m] || 0)),
+          backgroundColor: 'rgba(251, 146, 60, 0.6)',
+          borderColor: 'rgb(251, 146, 60)',
+          tension: 0.3,
         },
         {
           label: 'Pending',
-          data: getProportionedData('pending'),
-          borderColor: 'rgb(54, 162, 235)',
-          backgroundColor: 'rgba(54, 162, 235, 0.5)',
-          tension: 0.1,
+          data: displayMonths.map(m => proportion('pending')(monthlyData[m] || 0)),
+          backgroundColor: 'rgba(59, 130, 246, 0.6)',
+          borderColor: 'rgb(59, 130, 246)',
+          tension: 0.3,
         },
       ],
     };
   };
 
+  // Chart data for subscriptions (simple total revenue)
+  const getSubscriptionChartData = () => ({
+    labels: displayMonths.map(m => {
+      const [y, mo] = m.split('-');
+      return `${new Date(y, mo - 1).toLocaleString('default', { month: 'short' })} ${y}`;
+    }),
+    datasets: [
+      {
+        label: 'Subscription Revenue',
+        data: displayMonths.map(m => subscriptions?.monthly?.[m] || 0),
+        backgroundColor: 'rgba(139, 92, 246, 0.7)',
+        borderColor: 'rgb(139, 92, 246)',
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: 'rgb(139, 92, 246)',
+      },
+    ],
+  });
+
+  const chartOptions = (title) => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top'},
+      title: { display: true, text: title, font: { size: 18 } },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { callback: (value: number) => `₹${value.toLocaleString()}` },
+      },
+    },
+  });
+
+  const paymentSections = [
+    { key: 'direct', label: 'Direct Payments', data: direct },
+    { key: 'bidding', label: 'Bidding Payments', data: bidding },
+    { key: 'emergency', label: 'Emergency Payments', data: emergency },
+    { key: 'subscriptions', label: 'Subscription Revenue', data: subscriptions, isSubscription: true },
+    { key: 'totals', label: 'All Payments (Total)', data: totals },
+  ];
+
   return (
     <Box p="20px" bg="white" minHeight="100vh" mt="80px">
-      <Card bg={cardBg} p="20px" borderRadius="20px" boxShadow="lg" mb="30px">
+      <Card bg={cardBg} borderRadius="20px" boxShadow="lg" mb="30px">
         <CardHeader>
-          <Heading size="xl">Admin Payments Overview</Heading>
+          <Heading size="xl">Admin Payments Dashboard</Heading>
         </CardHeader>
         <CardBody>
           <Stack direction={{ base: 'column', md: 'row' }} spacing="4">
             <Select
               value={selectedYear}
               onChange={handleYearChange}
-              placeholder="Select Year ▼"
-              borderRadius="8px"
-              borderColor="gray.300"
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+              placeholder="All Years"
+              w={{ base: '100%', md: '200px' }}
             >
-              <option value="">All Years</option>
-              {years.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
+              {years.map(year => (
+                <option key={year} value={year}>{year}</option>
               ))}
             </Select>
             <Select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              placeholder="Select Month ▼"
-              borderRadius="8px"
-              borderColor="gray.300"
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+              placeholder="All Months"
               isDisabled={!selectedYear}
+              w={{ base: '100%', md: '250px' }}
             >
-              <option value="">All Months</option>
-              {availableMonths.map((month) => (
+              {monthsForYear.map(month => (
                 <option key={month} value={month}>
-                  {month}
+                  {new Date(2025, parseInt(month) - 1).toLocaleString('default', { month: 'long' })}
                 </option>
               ))}
             </Select>
@@ -221,88 +268,87 @@ export default function PaymentsDashboard() {
         </CardBody>
       </Card>
 
-      <Stack spacing="20px">
-        {paymentTypes.map(({ key, label }) => {
-          const payment = data[key] || {};
-          const filteredMonths = getFilteredMonths();
-          const isSingleMonth = filteredMonths.length === 1;
+      <Stack spacing="30px">
+        {paymentSections.map(({ key, label, data: payment, isSubscription }) => {
+          if (!payment) return null;
 
-          const periodReleased = filteredMonths.reduce((acc, m) => acc + getProportionedDataForMonth(payment, m, 'released'), 0);
-          const periodReleaseRequest = filteredMonths.reduce((acc, m) => acc + getProportionedDataForMonth(payment, m, 'release_request'), 0);
-          const periodPending = filteredMonths.reduce((acc, m) => acc + getProportionedDataForMonth(payment, m, 'pending'), 0);
-          const periodTotal = filteredMonths.reduce((acc, m) => acc + (payment.monthly?.[m] || 0), 0);
-
-          const periodType = selectedMonth
-            ? 'Monthly'
-            : selectedYear
-            ? 'Yearly'
-            : 'Overall';
-
-          const periodLabel = selectedMonth
-            ? ` (${selectedYear}-${selectedMonth})`
-            : selectedYear
-            ? ` (${selectedYear})`
-            : '';
-
-          const chartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'top' },
-              title: {
-                display: true,
-                text: `${label} Payments${periodLabel}`,
-                font: { size: 18 },
-              },
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { callback: (value) => `₹${value.toLocaleString()}` },
-              },
-            },
-          };
-
-          const ChartComponent = isSingleMonth ? Bar : Line;
+          const ChartType = isSingleMonth ? Bar : Line;
+          const periodTotal = displayMonths.reduce((sum, m) => sum + ((payment.monthly?.[m]) || 0), 0);
+          const period = !isSubscription ? calculatePeriodTotals(payment) : null;
 
           return (
-            <Card
-              key={key}
-              bg={cardBg}
-              borderRadius="20px"
-              boxShadow="lg"
-              p="20px"
-            >
+            <Card key={key} bg={cardBg} borderRadius="20px" boxShadow="lg">
               <CardHeader>
-                <Heading size="md">{label} Payments</Heading>
+                <Heading size="md">{label} - {periodLabel}</Heading>
               </CardHeader>
               <CardBody>
-                <Flex direction="column" align="stretch">
-                  {/* Chart */}
-                  <Box h="400px" mb="20px" w="100%">
-                    <ChartComponent data={getChartData(payment)} options={chartOptions} />
-                  </Box>
-                  {/* Data Display - Improved styling */}
-                  <Box p="20px" bg="gray.100" borderRadius="12px" boxShadow="md">
-                    <Text fontSize="lg" fontWeight="bold" mb="10px" color="blue.600">
-                      Payment Details{periodLabel}
-                    </Text>
-                    <Stack spacing="2">
-                      <Text fontWeight="semibold" color="green.500">
-                        Released: ₹{periodReleased.toLocaleString()}
+                <Box h="400px" mb="24px">
+                  <ChartType
+                    data={isSubscription ? getSubscriptionChartData() : getRegularChartData(payment)}
+                    options={chartOptions(`${label} Trend`)}
+                  />
+                </Box>
+
+                <Box p="6" bg="gray.50" borderRadius="16px">
+                  <Text fontSize="lg" fontWeight="bold" mb="3" color="blue.700">
+                    Summary ({periodLabel})
+                  </Text>
+                  <Stack spacing="3">
+                    {isSubscription ? (
+                      <Text fontSize="2xl" fontWeight="700" color="purple.600">
+                        ₹{Math.round(periodTotal).toLocaleString()}
                       </Text>
-                      <Text fontWeight="semibold" color="red.500">
-                        Release Request: ₹{periodReleaseRequest.toLocaleString()}
-                      </Text>
-                      <Text fontWeight="semibold" color="blue.500">
-                        Pending: ₹{periodPending.toLocaleString()}
-                      </Text>
-                      <Text fontWeight="semibold" color="purple.500">
-                        {periodType} Total: ₹{periodTotal.toLocaleString()}
-                      </Text>
-                    </Stack>
-                  </Box>
-                </Flex>
+                    ) : key === 'totals' ? (
+                      <>
+                        <Text fontWeight="600" color="green.600">
+                          Released: ₹{Math.round(period.released).toLocaleString()}
+                        </Text>
+                        <Text fontWeight="600" color="orange.600">
+                          Release Requests: ₹{Math.round(period.release_request).toLocaleString()}
+                        </Text>
+                        <Text fontWeight="600" color="blue.600">
+                          Pending: ₹{Math.round(period.pending).toLocaleString()}
+                        </Text>
+                        <Text fontWeight="600" color="red.600">
+                          Rejected/Refunded: ₹{Math.round((period.rejected || 0) + (period.refunded || 0)).toLocaleString()}
+                        </Text>
+                        <Text fontWeight="600" color="purple.700" fontSize="xl">
+                          Total Revenue: ₹{Math.round(period.total).toLocaleString()}
+                        </Text>
+                        {payment.subscription_revenue ? (
+                          <Text fontWeight="600" color="pink.600">
+                            + Subscriptions: ₹{payment.subscription_revenue.toLocaleString()}
+                          </Text>
+                        ) : null}
+                        {payment.platform_fee !== undefined && (
+                          <Text fontWeight="600" color="teal.600">
+                            Platform Fee: ₹{payment.platform_fee.toLocaleString()}
+                          </Text>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Text fontWeight="600" color="green.600">
+                          Released: ₹{Math.round(period.released).toLocaleString()}
+                        </Text>
+                        <Text fontWeight="600" color="orange.600">
+                          Release Requests: ₹{Math.round(period.release_request).toLocaleString()}
+                        </Text>
+                        <Text fontWeight="600" color="blue.600">
+                          Pending: ₹{Math.round(period.pending).toLocaleString()}
+                        </Text>
+                        <Text fontWeight="600" color="purple.700" fontSize="lg">
+                          Total This Period: ₹{Math.round(period.total).toLocaleString()}
+                        </Text>
+                        {payment.platform_fee !== undefined && (
+                          <Text fontWeight="600" color="teal.600">
+                            Platform Fee Collected: ₹{payment.platform_fee.toLocaleString()}
+                          </Text>
+                        )}
+                      </>
+                    )}
+                  </Stack>
+                </Box>
               </CardBody>
             </Card>
           );
@@ -310,12 +356,4 @@ export default function PaymentsDashboard() {
       </Stack>
     </Box>
   );
-}
-
-// Helper function to proportion data for a specific month
-function getProportionedDataForMonth(paymentData, month, key) {
-  const total = paymentData.total || 1; // Avoid division by zero
-  const monthlyTotal = paymentData.monthly?.[month] || 0;
-  const totalValue = paymentData[key] || 0;
-  return monthlyTotal > 0 ? (totalValue / total) * monthlyTotal : 0;
 }
