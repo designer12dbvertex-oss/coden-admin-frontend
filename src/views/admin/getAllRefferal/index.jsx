@@ -229,7 +229,7 @@ export default function ReferralAdminPaymentTable() {
                           size="sm"
                           colorScheme="green"
                           onClick={() => openPayModal(user)}
-                          isDisabled={user.wallet_balance <= 0}
+                          isDisabled={user.wallet_balance <= 499}
                         >
                           Pay ₹{user.wallet_balance}
                         </Button>

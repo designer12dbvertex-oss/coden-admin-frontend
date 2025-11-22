@@ -63,6 +63,12 @@ export default function DisputesTable() {
   const [data, setData] = React.useState([]);
   const [filteredData, setFilteredData] = React.useState([]);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [status, setStatusnow] = React.useState({
+  pending: 0,
+  resolve: 0,
+  rejected: 0
+});
+
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -95,14 +101,21 @@ export default function DisputesTable() {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      console.log('API Response (Disputes):', response.data);
+     console.log('API Response (Disputes):', response.data.pendingCount);
+
+setStatusnow({
+  pending: response.data.pendingCount,
+  resolve: response.data.resolvedCount,
+  rejected: response.data.rejectedCount
+});
+
 
       if (!response.data || !Array.isArray(response.data.disputes)) {
         throw new Error(
           'Invalid response format: Expected an array of disputes',
         );
       }
-
+       
       const formattedData = response.data.disputes.map((item) => ({
         id: item._id || 'N/A',
         order_id: item.order_id || 'N/A',
@@ -137,7 +150,7 @@ export default function DisputesTable() {
             )}/${new Date(item.createdAt).getFullYear()}`
           : 'N/A',
       }));
-
+       
       setData(formattedData);
       setFilteredData(formattedData);
       setLoading(false);
@@ -194,7 +207,7 @@ export default function DisputesTable() {
     },
     [data, activeFilter],
   );
-
+ console.log(filteredData);
   // Update dispute status with reason
   const updateDisputeStatus = async (disputeId, status, reason) => {
     console.log("Updating dispute:", { disputeId, status, reason });
@@ -820,74 +833,120 @@ export default function DisputesTable() {
         style={{ marginTop: '80px' }}
       >
         <Flex
-          px="0px"
-          mb="20px"
-          justifyContent="space-between"
-          align="center"
-          direction={{ base: 'column', md: 'row' }}
-          gap={{ base: '10px', md: '0' }}
-        >
-          <Text
-            color={textColor}
-            fontSize={{ base: 'xl', md: '22px' }}
-            fontWeight="700"
-            lineHeight="100%"
-          >
-            Disputes
-          </Text>
-          <Flex
-            align="center"
-            gap={{ base: '10px', md: '20px' }}
-            direction={{ base: 'column', md: 'row' }}
-          >
-            <InputGroup maxW={{ base: '100%', md: '300px' }}>
-              <InputLeftElement pointerEvents="none">
-                <Icon as={SearchIcon} color="gray.400" />
-              </InputLeftElement>
-              <Input
-                placeholder="Search by ID, title, type, names, or status"
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                borderRadius="12px"
-                bg={useColorModeValue('gray.100', 'gray.700')}
-                _focus={{
-                  borderColor: 'blue.500',
-                  boxShadow: '0 0 0 1px blue.500',
-                }}
-              />
-            </InputGroup>
-            <HStack spacing="2">
-              <Button
-                size="sm"
-                colorScheme={activeFilter === 'all' ? 'teal' : 'gray'}
-                onClick={() => handleFilterClick('all')}
-              >
-                All
-              </Button>
-              <Button
-                size="sm"
-                colorScheme={activeFilter === 'direct' ? 'teal' : 'gray'}
-                onClick={() => handleFilterClick('direct')}
-              >
-                Direct
-              </Button>
-              <Button
-                size="sm"
-                colorScheme={activeFilter === 'bidding' ? 'teal' : 'gray'}
-                onClick={() => handleFilterClick('bidding')}
-              >
-                Bidding
-              </Button>
-              <Button
-                size="sm"
-                colorScheme={activeFilter === 'emergency' ? 'teal' : 'gray'}
-                onClick={() => handleFilterClick('emergency')}
-              >
-                Emergency
-              </Button>
-            </HStack>
-          </Flex>
-        </Flex>
+  px="0px"
+  mb="20px"
+  justifyContent="space-between"
+  align="center"
+  direction={{ base: 'column', md: 'row' }}
+  gap={{ base: '10px', md: '0' }}
+>
+  <Flex direction="column" gap="5px">
+    <Text
+      color={textColor}
+      fontSize={{ base: 'xl', md: '22px' }}
+      fontWeight="700"
+      lineHeight="100%"
+    >
+      Disputes
+    </Text>
+
+    {/* ⭐ STATUS COUNTS BOX */}
+    <Flex gap="10px">
+  <Flex
+    bg="yellow.100"
+    px="10px"
+    py="4px"
+    borderRadius="8px"
+    fontSize="14px"
+    fontWeight="600"
+    color="yellow.700"
+  >
+    Pending: {status.pending}
+  </Flex>
+
+  <Flex
+    bg="green.100"
+    px="10px"
+    py="4px"
+    borderRadius="8px"
+    fontSize="14px"
+    fontWeight="600"
+    color="green.700"
+  >
+    Resolved: {status.resolve}
+  </Flex>
+
+  <Flex
+    bg="red.100"
+    px="10px"
+    py="4px"
+    borderRadius="8px"
+    fontSize="14px"
+    fontWeight="600"
+    color="red.700"
+  >
+    Rejected: {status.rejected}
+  </Flex>
+</Flex>
+
+  </Flex>
+
+  {/* RIGHT SIDE — SEARCH + FILTER */}
+  <Flex
+    align="center"
+    gap={{ base: '10px', md: '20px' }}
+    direction={{ base: 'column', md: 'row' }}
+  >
+    <InputGroup maxW={{ base: '100%', md: '300px' }}>
+      <InputLeftElement pointerEvents="none">
+        <Icon as={SearchIcon} color="gray.400" />
+      </InputLeftElement>
+      <Input
+        placeholder="Search by ID, title, type, names, or status"
+        value={searchQuery}
+        onChange={(e) => handleSearch(e.target.value)}
+        borderRadius="12px"
+        bg={useColorModeValue('gray.100', 'gray.700')}
+        _focus={{
+          borderColor: 'blue.500',
+          boxShadow: '0 0 0 1px blue.500',
+        }}
+      />
+    </InputGroup>
+
+    <HStack spacing="2">
+      <Button
+        size="sm"
+        colorScheme={activeFilter === 'all' ? 'teal' : 'gray'}
+        onClick={() => handleFilterClick('all')}
+      >
+        All
+      </Button>
+      <Button
+        size="sm"
+        colorScheme={activeFilter === 'direct' ? 'teal' : 'gray'}
+        onClick={() => handleFilterClick('direct')}
+      >
+        Direct
+      </Button>
+      <Button
+        size="sm"
+        colorScheme={activeFilter === 'bidding' ? 'teal' : 'gray'}
+        onClick={() => handleFilterClick('bidding')}
+      >
+        Bidding
+      </Button>
+      <Button
+        size="sm"
+        colorScheme={activeFilter === 'emergency' ? 'teal' : 'gray'}
+        onClick={() => handleFilterClick('emergency')}
+      >
+        Emergency
+      </Button>
+    </HStack>
+  </Flex>
+</Flex>
+
 
         <Box overflowX="auto">
           <Table variant="simple" color="gray.500" mb="24px" mt="12px">
