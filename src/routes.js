@@ -41,6 +41,9 @@ import SubAdmins from 'views/admin/allSubadmins';
 import Both from 'views/admin/both';
 import RequestUser from 'views/admin/RequestUser';
 import DirectPaymentRequest from 'views/admin/directPaymentRequest';
+import DirectAllPaymentRequest from 'views/admin/directAllPaymentRequest';
+import BidingAllPaymentRequest from 'views/admin/bidingAllPaymentRequest';
+import EmergencyAllPaymentRequest from 'views/admin/emergencyAllPaymentRequest';
 import Dispute from 'views/admin/dispute';
 import AllServiceProvider from 'views/admin/allServiceprovider';
 import UnverifiedServiceProvider from 'views/admin/unverifiedServiceProvider';
@@ -246,6 +249,24 @@ const routes = [
     collapse: true, // enables dropdown
     layout: '/admin',
     items: [
+      {
+        name: 'Direct All Payment Request',
+        layout: '/admin',
+        path: '/direct_all_payment_request',
+        component: <DirectAllPaymentRequest />,
+      },
+      {
+        name: 'Biding All Payment Request',
+        layout: '/admin',
+        path: '/bidding_all_payment_request',
+        component: <BidingAllPaymentRequest />,
+      },
+      {
+        name: 'Emergency All Payment Request',
+        layout: '/admin',
+        path: '/emergency_all_payment_request',
+        component: <EmergencyAllPaymentRequest />,
+      },
       {
         name: 'Direct Payment Request',
         layout: '/admin',

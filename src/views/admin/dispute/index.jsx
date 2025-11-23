@@ -68,6 +68,9 @@ export default function DisputesTable() {
   resolve: 0,
   rejected: 0
 });
+const [isModalOpen, setIsModalOpen] = React.useState(false);
+const [modalImages, setModalImages] = React.useState([]);
+
 
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -133,6 +136,7 @@ setStatusnow({
         raised_by_id: item.raised_by?._id || 'N/A',
         against: item.against?.full_name || 'N/A',
         against_id: item.against?._id || 'N/A',
+        view:item.images ||[],
         amount: item.amount ? `₹${item.amount.toLocaleString()}` : 'N/A',
         description: item.description || 'N/A',
         requirement: item.requirement || 'N/A',
@@ -172,6 +176,19 @@ setStatusnow({
       }
     }
   };
+const viewPhoto = (photo) => {
+  const images = Array.isArray(photo[0]) ? photo[0] : photo;
+     console.log(images);
+  setModalImages(images);
+  setIsModalOpen(true);
+};
+
+
+
+
+
+
+
 
   // Handle search filtering
   const handleSearch = React.useCallback(
@@ -524,6 +541,33 @@ setStatusnow({
           </Flex>
         ),
       }),
+     columnHelper.accessor('view', {
+  id: 'view',
+  header: () => (
+    <Text
+      justifyContent="space-between"
+      align="center"
+      fontSize={{ sm: '10px', lg: '12px' }}
+      color="gray.400"
+      textTransform="uppercase"
+    >
+      images
+    </Text>
+  ),
+  cell: (info) => (
+    <Flex align="center">
+      <Button
+        size="sm"
+        colorScheme="teal"
+        variant="outline"
+        onClick={() => viewPhoto([info.getValue()])}
+      >
+        View images
+      </Button>
+    </Flex>
+  ),
+}),
+
       columnHelper.accessor('flow_type', {
         id: 'flow_type',
         header: () => (
@@ -1207,6 +1251,37 @@ setStatusnow({
           </ModalFooter>
         </ModalContent>
       </Modal>
+   
+<Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="xl">
+  <ModalOverlay />
+  <ModalContent>
+    <ModalHeader>View Photos</ModalHeader>
+    <ModalCloseButton />
+
+    <ModalBody>
+      <VStack spacing={4} align="stretch">
+       {modalImages.map((img, index) => (
+  <img
+    key={index}
+    src={baseUrl + img}
+    width="100%"
+    borderRadius="md"
+  />
+))}
+
+      </VStack>
+    </ModalBody>
+
+    <ModalFooter>
+      <Button colorScheme="teal" onClick={() => setIsModalOpen(false)}>
+        Close
+      </Button>
+    </ModalFooter>
+  </ModalContent>
+</Modal>
+
+
+
     </>
   );
 }
