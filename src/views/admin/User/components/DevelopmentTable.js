@@ -125,6 +125,10 @@ const useFetchUsers = (baseUrl, token, navigate) => {
   return { data, loading, error, setData, setError };
 };
 
+const openUserModal=(id)=>{
+  alert(id)
+}
+
 // Custom hook for fetching disputes
 const useFetchDisputes = (baseUrl, token, userId) => {
   const [disputes, setDisputes] = useState([]);
@@ -788,6 +792,21 @@ export default function ComplexTable() {
               _hover={{ bg: 'teal.600', color: 'white' }}
             >
               View More
+            </Button>
+            &nbsp;
+            <Button
+              size="sm"
+              colorScheme="teal"
+              variant="outline"
+              onClick={() =>
+                openUserModal(
+                  info.row.original.id
+                  
+                )
+              }
+              _hover={{ bg: 'teal.600', color: 'white' }}
+            >
+              Edit
             </Button>
             &nbsp;
             {/* <Button
