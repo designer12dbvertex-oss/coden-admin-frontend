@@ -4,10 +4,6 @@ import {
   MdPerson,
   MdHome,
   MdLock,
-  MdInfo,
-  MdPrivacyTip,
-  MdEmergency,
-  MdPersonAddAlt1,
   MdCategory,
   MdAttachMoney,
   MdEmail,
@@ -18,6 +14,7 @@ import {
   MdCardGiftcard,
   MdPeople,
 	MdDescription,
+	MdSubscriptions,
 } from 'react-icons/md';
 
 // Admin Imports
@@ -57,6 +54,7 @@ import EmergencyWorkCategory from 'views/admin/emergencyWorkCategory';
 import DirectHiringRefundPaymentRequest from 'views/admin/directHiringRefundRequest';
 import EmergencyHiringRefundPaymentRequest from 'views/admin/emergencyRefundRequest';
 import GetAllRefferal from "views/admin/getAllRefferal";
+import Subscription from "views/admin/Subscription";
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
@@ -64,9 +62,6 @@ import {
   FaBullhorn,
   FaChartLine,
   FaCreditCard,
-  FaFileContract,
-  FaGavel,
-  FaMoneyBillWave,
   FaUndoAlt,
   FaUsers,
   FaUsersCog,
@@ -359,6 +354,13 @@ const routes = [
         component: <GetAllRefferal />,
       },
     ],
+  },
+	{
+    name: 'Subscriptions',
+    layout: '/admin',
+    icon: <Icon as={MdSubscriptions} width="20px" height="20px" color="inherit" />,
+    path: '/subscription',
+    component: <Subscription />,
   },
   {
     name: 'Contact Us',

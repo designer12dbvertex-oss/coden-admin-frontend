@@ -17,6 +17,7 @@ import {
   HStack,
   Switch,
   Input,
+  FormErrorMessage,
   InputGroup,
   InputLeftElement,
   Icon,
@@ -29,6 +30,7 @@ import {
   ModalCloseButton,
   FormControl,
   FormLabel,
+  IconButton,
   Textarea,
   Select,
 } from '@chakra-ui/react';
@@ -39,6 +41,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 import Card from 'components/card/Card';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -49,11 +52,13 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   SearchIcon,
+  
+  DeleteIcon,
 } from '@chakra-ui/icons';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import defaultProfilePic from 'assets/img/profile/profile.webp';
-
+const mapStyle = { width: "100%", height: "250px" };
 const columnHelper = createColumnHelper();
 
 // Custom hook for fetching users
@@ -125,9 +130,6 @@ const useFetchUsers = (baseUrl, token, navigate) => {
   return { data, loading, error, setData, setError };
 };
 
-const openUserModal=(id)=>{
-  alert(id)
-}
 
 // Custom hook for fetching disputes
 const useFetchDisputes = (baseUrl, token, userId) => {
@@ -215,14 +217,24 @@ const toggleUserStatus = async (
 
 export default function ComplexTable() {
   const [sorting, setSorting] = useState([]);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+const [selectedUser, setSelectedUser] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [editName, setEditName] = useState("");
+const [editMobile, setEditMobile] = useState("");
+const [mobileError, setMobileError] = useState(false);
+
+
+const [newImage, setNewImage] = useState(null);
+const [newImagePreview, setNewImagePreview] = useState(null);
+
   const [filteredData, setFilteredData] = useState([]);
   const [toggleLoading, setToggleLoading] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
-  const [setUserId, saveUserId] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [setIsUseridModalOpen, setIsUserid] = useState(false);
   const [selectedAddresses, setSelectedAddresses] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -235,10 +247,161 @@ export default function ComplexTable() {
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const headerBg = useColorModeValue('gray.100', 'gray.700');
   const hoverBg = useColorModeValue('gray.50', 'gray.600');
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+const [tempAddress, setTempAddress] = useState({
+  latitude: "",
+  longitude: "",
+  title: "",
+  houseNo: "",
+  street: "",
+  area: "",
+  landmark: "",
+  pincode: "",
+  address: ""
+});
+
   const baseUrl = useMemo(() => process.env.REACT_APP_BASE_URL, []);
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
+  const { isLoaded } = useLoadScript({
+  googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+});
 
+  const [userAddresses, setUserAddresses] = useState([]);
+const [mapCenter, setMapCenter] = useState({ lat: 22.7196, lng: 75.8577 });
+
+useEffect(() => {
+  if (selectedUser?.full_address) {
+    setUserAddresses(selectedUser.full_address);
+    setMapCenter({
+      lat: selectedUser.full_address[0].latitude,
+      lng: selectedUser.full_address[0].longitude,
+    });
+  }
+}, [selectedUser]);
+
+const deleteAddress = (index) => {
+  setUserAddresses((prev) => prev.filter((_, i) => i !== index));
+};
+
+const handleMapClick = (event) => {
+  setMapCenter({
+    lat: event.latLng.lat(),
+    lng: event.latLng.lng(),
+  });
+};
+const saveAddress = () => {
+  const finalAddress = {
+    latitude: tempAddress.latitude,
+    longitude: tempAddress.longitude,
+    title: tempAddress.title,
+    houseNo: tempAddress.houseNo,
+    street: tempAddress.street,
+    area: tempAddress.area,
+    landmark: tempAddress.landmark,
+    pincode: tempAddress.pincode,
+    address: tempAddress.address,  // Full Google formatted address
+  };
+
+  setUserAddresses([...userAddresses, finalAddress]);
+
+  setIsAddressModalOpen(false);
+};
+
+const addSelectedLocation = () => {
+  const latlng = { lat: mapCenter.lat, lng: mapCenter.lng };
+
+  const geocoder = new window.google.maps.Geocoder();
+
+  geocoder.geocode({ location: latlng }, (results, status) => {
+    if (status === "OK" && results[0]) {
+
+      setTempAddress({
+        latitude: mapCenter.lat,
+        longitude: mapCenter.lng,
+        title: "",
+        houseNo: "",
+        street: "",
+        area: "",
+        landmark: "",
+        pincode: "",
+        address: results[0].formatted_address
+      });
+
+      setIsAddressModalOpen(true);  // <-- OPEN FORM MODAL
+    }
+  });
+};
+
+
+const openUserModal = (id, name, full_address, mobile, profile_pic) => {
+  
+    setUserId(id);
+  setSelectedUser({ id, name, full_address, mobile, profile_pic });
+console.log(full_address);
+  setEditName(name);
+  setEditMobile(mobile);
+  setNewImagePreview(null);
+
+  setIsUserModalOpen(true);
+  
+};
+const handleSaveUser = async () => {
+  try {
+    const form = new FormData();
+console.log(userId);
+    form.append("full_name", editName || "");
+    form.append("mobile", editMobile || "");
+
+    // IMAGE ADD KARO — SAME NAME AS BACKEND (profilePic)
+    if (newImage) {
+      form.append("profilePic", newImage);
+    }
+
+    // FULL ADDRESS ARRAY
+    form.append("full_address", JSON.stringify(userAddresses));
+
+    console.log("FORM DATA:");
+    for (let x of form.entries()) console.log(x[0], x[1]);
+
+    const res = await fetch(`${baseUrl}api/user/updateUserData`, {
+      method: "PUT",
+      headers: {
+        userID: userId, // 👉 Ye hi backend me read hota hai
+      },
+      body: form, // ❗IMPORTANT — JSON nahi, FormData hi
+    });
+
+    const data = await res.json();
+    console.log("UPDATE RESPONSE:", data);
+
+    if (data.status) {
+       toast.success('Profile Updated Success!', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      closeUserModal();
+      fetchUsers();
+    } else {
+      alert(data.message || "Something went wrong");
+    }
+  } catch (err) {
+    console.log("SAVE ERROR:", err);
+  }
+};
+
+
+
+
+
+
+const closeUserModal = () => {
+  setIsUserModalOpen(false);
+};
   const { data, loading, error, setData, setError } = useFetchUsers(
     baseUrl,
     token,
@@ -798,12 +961,15 @@ export default function ComplexTable() {
               size="sm"
               colorScheme="teal"
               variant="outline"
-              onClick={() =>
-                openUserModal(
-                  info.row.original.id
-                  
-                )
-              }
+               onClick={() =>
+    openUserModal(
+      info.row.original.id,
+      info.row.original.full_name,
+      info.row.original.full_address,
+      info.row.original.mobile,
+      info.row.original.profile_pic
+    )
+  }
               _hover={{ bg: 'teal.600', color: 'white' }}
             >
               Edit
@@ -1512,6 +1678,247 @@ export default function ComplexTable() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+      <Modal isOpen={isUserModalOpen} onClose={closeUserModal} isCentered>
+  <ModalOverlay bg="blackAlpha.600" />
+
+  <ModalContent
+    maxW={{ base: "90%", md: "650px" }}
+    borderRadius="16px"
+    bg={useColorModeValue("white", "gray.800")}
+    boxShadow="0px 4px 20px rgba(0, 0, 0, 0.2)" >
+
+    <ModalHeader
+      fontSize="lg"
+      fontWeight="700"
+      color={textColor}
+      borderBottom="1px"
+      borderColor={borderColor}
+    >
+      Edit User Details
+    </ModalHeader>
+
+    <ModalCloseButton color={textColor} />
+
+    <ModalBody py="20px">
+      {selectedUser && (
+        <Box mb={6}>
+
+          {/* ---------------- USER INFO ---------------- */}
+          <Box
+            mb={6}
+            p={4}
+            border="1px"
+            borderColor={borderColor}
+            borderRadius="8px"
+          >
+            <Text fontSize="md" fontWeight="600" color={textColor} mb={4}>
+              User Information
+            </Text>
+         
+            {/* NAME */}
+            <FormControl mb={3}>
+              <FormLabel fontSize="sm">Name</FormLabel>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Enter full name"
+                borderRadius="10px"
+              />
+            </FormControl>
+
+            {/* MOBILE */}
+            <FormControl mb={3} isInvalid={mobileError}>
+              <FormLabel fontSize="sm">Mobile</FormLabel>
+              <Input
+                value={editMobile}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setEditMobile(value);
+                  if (!/^[0-9]{0,10}$/.test(value)) return;
+                  setMobileError(value.length !== 10);
+                }}
+                placeholder="Enter 10-digit mobile number"
+                maxLength={10}
+                borderRadius="10px"
+              />
+              {mobileError && (
+                <FormErrorMessage>Mobile number must be 10 digits</FormErrorMessage>
+              )}
+            </FormControl>
+
+            {/* IMAGE */}
+            <FormControl mb={3}>
+              <FormLabel fontSize="sm">Profile Picture</FormLabel>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setNewImage(file);
+                    setNewImagePreview(URL.createObjectURL(file));
+                  }
+                }}
+              />
+
+              <Box mt={3}>
+                <img
+                  src={newImagePreview || selectedUser.profile_pic}
+                  alt="Profile"
+                  style={{
+                    width: "100px",
+                    height: "100px",
+                    borderRadius: "10px",
+                    objectFit: "cover",
+                  }}
+                />
+              </Box>
+            </FormControl>
+          </Box>
+
+          {/* ---------------- ADDRESS SECTION ---------------- */}
+          <Box
+            p={4}
+            border="1px"
+            borderColor={borderColor}
+            borderRadius="8px"
+          >
+            <Text fontSize="md" fontWeight="600" mb={4}>
+              Saved Addresses
+            </Text>
+
+            {/* ADDRESS LIST */}
+            {userAddresses.map((addr, index) => (
+              <Box
+                key={index}
+                p={3}
+                mb={3}
+                border="1px solid"
+                borderColor={borderColor}
+                borderRadius="10px"
+                position="relative"
+              >
+                <Text fontWeight="600">{addr.title}</Text>
+                <Text fontSize="sm">{addr.address}</Text>
+
+                <IconButton
+                  icon={<DeleteIcon />}
+                  size="sm"
+                  colorScheme="red"
+                  position="absolute"
+                  right="10px"
+                  top="10px"
+                  onClick={() => deleteAddress(index)}
+                />
+              </Box>
+            ))}
+
+            {/* MAP */}
+            <Text fontWeight="600" mt={4} mb={1}>
+              Select Location
+            </Text>
+
+            {isLoaded && (
+              <GoogleMap
+                mapContainerStyle={mapStyle}
+                zoom={14}
+                center={mapCenter}
+                onClick={(e) => handleMapClick(e)}
+              >
+                <Marker position={mapCenter} />
+              </GoogleMap>
+            )}
+
+            {/* ADD LOCATION BUTTON */}
+            <Button
+              mt={4}
+              width="full"
+              colorScheme="blue"
+              onClick={addSelectedLocation}
+            >
+              Add This Location
+            </Button>
+          </Box>
+        </Box>
+      )}
+    </ModalBody>
+
+    <ModalFooter borderTop="1px" borderColor={borderColor}>
+      <Button
+        colorScheme="teal"
+        onClick={handleSaveUser}
+        borderRadius="12px"
+        size="sm"
+        _hover={{ bg: "teal.600" }}
+        mr={3}
+      >
+        Save
+      </Button>
+
+      <Button onClick={closeUserModal} borderRadius="12px" size="sm">
+        Close
+      </Button>
+    </ModalFooter>
+  </ModalContent>
+</Modal>
+<Modal isOpen={isAddressModalOpen} onClose={() => setIsAddressModalOpen(false)} isCentered>
+  <ModalOverlay />
+  <ModalContent>
+    <ModalHeader>Enter Address Details</ModalHeader>
+    <ModalCloseButton />
+
+    <ModalBody>
+      <FormControl mb={3}>
+        <FormLabel>Title</FormLabel>
+        <Input value={tempAddress.title}
+          onChange={(e) => setTempAddress({ ...tempAddress, title: e.target.value })}
+        />
+      </FormControl>
+
+      <FormControl mb={3}>
+        <FormLabel>House No</FormLabel>
+        <Input value={tempAddress.houseNo}
+          onChange={(e) => setTempAddress({ ...tempAddress, houseNo: e.target.value })}
+        />
+      </FormControl>
+
+      <FormControl mb={3}>
+        <FormLabel>Street</FormLabel>
+        <Input value={tempAddress.street}
+          onChange={(e) => setTempAddress({ ...tempAddress, street: e.target.value })}
+        />
+      </FormControl>
+
+      <FormControl mb={3}>
+        <FormLabel>Area</FormLabel>
+        <Input value={tempAddress.area}
+          onChange={(e) => setTempAddress({ ...tempAddress, area: e.target.value })}
+        />
+      </FormControl>
+
+      <FormControl mb={3}>
+        <FormLabel>Landmark</FormLabel>
+        <Input value={tempAddress.landmark}
+          onChange={(e) => setTempAddress({ ...tempAddress, landmark: e.target.value })}
+        />
+      </FormControl>
+
+      <FormControl mb={3}>
+        <FormLabel>Pincode</FormLabel>
+        <Input value={tempAddress.pincode}
+          onChange={(e) => setTempAddress({ ...tempAddress, pincode: e.target.value })}
+        />
+      </FormControl>
+    </ModalBody>
+
+    <ModalFooter>
+      <Button colorScheme="blue" onClick={saveAddress}>
+        Save Address
+      </Button>
+    </ModalFooter>
+  </ModalContent>
+</Modal>
+
 
       <ToastContainer
         position="top-right"
