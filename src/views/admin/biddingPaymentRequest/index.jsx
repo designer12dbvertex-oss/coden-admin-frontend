@@ -785,14 +785,14 @@ export default function OrdersTable() {
                               <strong>Release Status:</strong>{' '}
                               {payment.release_status}
                             </Text>
-                            <Text color={textColor}>
+                            {/*<Text color={textColor}>
                               <strong>Collected By:</strong>{' '}
                               {payment.collected_by}
                             </Text>
                             <Text color={textColor}>
                               <strong>Collected At:</strong>{' '}
                               {new Date(payment.collected_at).toLocaleString()}
-                            </Text>
+                            </Text>*/}
                             {/* ---- NEW FIELDS FOR ADMIN ---- */}
                             <FormControl mt={3}>
                               <FormLabel>Admin Payment ID</FormLabel>

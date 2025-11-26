@@ -735,14 +735,14 @@ export default function OrdersTable() {
                                 </Text>
                               </Flex>
                             </Text>
-                            <Text color={textColor}>
+                            {/*<Text color={textColor}>
                               <strong>Collected By:</strong>{' '}
                               {payment.collected_by}
                             </Text>
                             <Text color={textColor}>
                               <strong>Collected At:</strong>{' '}
                               {new Date(payment.collected_at).toLocaleString()}
-                            </Text>
+                            </Text>*/}
                           </VStack>
                         </ChakraCard>
                       ))}
