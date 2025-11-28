@@ -278,7 +278,7 @@ export default function OrdersTable() {
   };
 
   const releaseStatusOptions = [
-    { label: 'Paid to Provider', value: 'release_requested' },
+    // { label: 'Paid to Provider', value: 'release_requested' },
     { label: 'Paid', value: 'released' },
     { label: 'Rejected', value: 'rejected' },
   ];
