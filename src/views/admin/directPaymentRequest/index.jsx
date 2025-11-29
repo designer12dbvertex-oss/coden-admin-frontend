@@ -187,6 +187,7 @@ export default function OrdersTable() {
     adminPaymentId,
     adminTransactionId,
   ) => {
+    
     if (!adminPaymentId || adminPaymentId.trim() === '') {
       return toast.error('Admin Payment ID is required');
     }
@@ -194,14 +195,7 @@ export default function OrdersTable() {
     if (!adminTransactionId || adminTransactionId.trim() === '') {
       return toast.error('Admin Transaction ID is required');
     }
-    // console.log(
-    //   paymentId,
-    //   orderId,
-    //   index,
-    //   releaseStatus,
-    //   adminPaymentId,
-    //   adminTransactionId,
-    // );
+  
     try {
       await axios.post(
         `${baseUrl}api/direct-order/admin/approve-release/${orderId}/${paymentId}`,
