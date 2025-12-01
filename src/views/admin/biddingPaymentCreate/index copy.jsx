@@ -60,7 +60,6 @@ export default function OrdersTable() {
     pageIndex: 0,
     pageSize: 10,
   });
-	console.log("data",selectedOrder);
   const {
     isOpen: isDetailsOpen,
     onOpen: onDetailsOpen,
@@ -82,7 +81,7 @@ export default function OrdersTable() {
         }
         setLoading(true);
         const response = await axios.get(
-          `${baseUrl}api/direct-order/getAllPaymentCreate`,
+          `${baseUrl}api/bidding-order/getAllBiddingPaymentCreate`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -99,7 +98,7 @@ export default function OrdersTable() {
           customerName: item.user_id?.full_name || 'Unknown',
           serviceProvider: item.service_provider_id?.full_name || 'N/A',
           serviceProviderId: item.service_provider_id?._id || 'N/A',
-          totalAmount: item.service_payment?.total_expected  || 0,
+          totalAmount: item.service_payment?.total_expected || 0,
           paidAmount: item.payment_history?.amount || 0,
           remainingAmount: item.payment_history?.amount || 0,
           totalTax: item.payment_history?.tax || 0,
@@ -377,7 +376,7 @@ export default function OrdersTable() {
           <Button
             colorScheme="blue"
             size="sm"
-            onClick={() => navigate(`/admin/viewOrder/${row.original.id}`)}
+            onClick={() => navigate(`/admin/biddingOrder/${row.original.id}`)}
           >
             View Order
           </Button>
@@ -446,7 +445,7 @@ export default function OrdersTable() {
             fontWeight="700"
             lineHeight="100%"
           >
-            Orders Table
+            Bidding Payment Table
           </Text>
           <FormControl w="200px">
             <Input
@@ -735,7 +734,7 @@ export default function OrdersTable() {
                                 </Text>
                               </Flex>
                             </Text>
-                            {/*<Text color={textColor}>
+                           {/* <Text color={textColor}>
                               <strong>Collected By:</strong>{' '}
                               {payment.collected_by}
                             </Text>

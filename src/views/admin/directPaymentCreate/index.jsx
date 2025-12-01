@@ -28,6 +28,8 @@ import {
   Card as ChakraCard,
   Input,
   FormControl,
+	Select,
+	FormLabel,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -40,7 +42,7 @@ import {
 import axios from 'axios';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Custom components
@@ -60,7 +62,18 @@ export default function OrdersTable() {
     pageIndex: 0,
     pageSize: 10,
   });
-	console.log("data",selectedOrder);
+	const [adminInputs, setAdminInputs] = React.useState({});
+	const [selectedPaymentIndex, setSelectedPaymentIndex] = React.useState(null);
+	const [releaseStatus, setReleaseStatus] = React.useState('');
+	const {
+  isOpen: isRemarkOpen,
+  onOpen: onRemarkOpen,
+  onClose: onRemarkClose,
+} = useDisclosure();
+
+const [pendingReleaseData, setPendingReleaseData] = React.useState(null); // holds data until remark is submitted
+const [releaseRemark, setReleaseRemark] = React.useState('');
+	// console.log("data",selectedOrder);
   const {
     isOpen: isDetailsOpen,
     onOpen: onDetailsOpen,
@@ -69,7 +82,11 @@ export default function OrdersTable() {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const navigate = useNavigate();
-
+   const releaseStatusOptions = [
+    // { label: 'Paid to Provider', value: 'release_requested' },
+    { label: 'Paid', value: 'released' },
+    { label: 'Rejected', value: 'rejected' },
+  ];
   // Fetch orders from API
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
@@ -203,6 +220,103 @@ export default function OrdersTable() {
       }
     }
     return { bg: 'gray.100', color: 'gray.800' };
+  };
+	 const handleReleaseStatusChange = (
+    orderId,
+    paymentId,
+    index,
+    adminPaymentId,
+    adminTransactionId,
+    newStatus
+  ) => {
+    if (!adminPaymentId?.trim()) {
+      toast.error('Admin Payment ID is required');
+      return;
+    }
+    if (!adminTransactionId?.trim()) {
+      toast.error('Admin Transaction ID is required');
+      return;
+    }
+    if (!newStatus || newStatus === 'select') {
+      toast.error('Please select a valid status');
+      return;
+    }
+
+    setPendingReleaseData({
+      orderId,
+      paymentId,
+      index,
+      adminPaymentId,
+      adminTransactionId,
+      release_status: newStatus,
+    });
+    setReleaseRemark('');
+    onRemarkOpen();
+  };
+
+  // Final submission with remark
+  const confirmReleaseWithRemark = async () => {
+    if (!releaseRemark.trim()) {
+      toast.error('Remark is mandatory');
+      return;
+    }
+
+    if (!pendingReleaseData) return;
+
+    try {
+      const { orderId, paymentId, adminPaymentId, adminTransactionId, release_status } = pendingReleaseData;
+
+      await axios.post(
+        `${baseUrl}api/direct-order/admin/approve-release/${orderId}/${paymentId}`,
+        {
+          release_status,
+          adminPaymentId,
+          adminTransactionId,
+          releaseRemark: releaseRemark.trim(),
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      toast.success('Release status updated successfully!');
+// Optimistically update UI
+    const updatedData = allData.map((order) => {
+      if (order.id === orderId) {
+        const updatedPaymentHistory = order.paymentHistory.map((payment, i) =>
+          i === pendingReleaseData.index
+            ? { ...payment, release_status }
+            : payment
+        );
+        return { ...order, paymentHistory: updatedPaymentHistory };
+      }
+      return order;
+    });
+
+    setAllData(updatedData);
+    setData(
+      updatedData.filter(
+        (order) =>
+          order.orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+
+    // RESET ALL STATES & CLOSE BOTH MODALS
+    setPendingReleaseData(null);
+    setReleaseStatus('');
+    setSelectedPaymentIndex(null);
+    setReleaseRemark('');
+    setAdminInputs({}); // optional: clear all admin inputs
+    setSelectedOrder(null); // important!
+
+    onRemarkClose();     // Close remark modal
+    onDetailsClose();
+		window.location.reload();
+    } catch (err) {
+      console.error('Update Error:', err);
+      toast.error(err.response?.data?.message || 'Failed to update status');
+    }
   };
 
   const columns = [
@@ -548,225 +662,145 @@ export default function OrdersTable() {
       </Card>
 
       {/* Details Modal */}
-      {selectedOrder && (
+     {selectedOrder && (
         <Modal isOpen={isDetailsOpen} onClose={onDetailsClose} size="2xl">
           <ModalOverlay />
-          <ModalContent
-            borderRadius="xl"
-            boxShadow="2xl"
-            p={4}
-            bg={useColorModeValue('white', 'gray.800')}
-          >
-            <ModalHeader
-              fontSize="2xl"
-              fontWeight="bold"
-              color={textColor}
-              textAlign="center"
-            >
+          <ModalContent borderRadius="xl" boxShadow="2xl" p={4}>
+            <ModalHeader fontSize="2xl" fontWeight="bold" textAlign="center">
               Payment Details
             </ModalHeader>
-            <ModalCloseButton
-              size="lg"
-              _hover={{ bg: 'gray.100', transform: 'scale(1.1)' }}
-              transition="all 0.2s ease-in-out"
-            />
+            <ModalCloseButton />
             <ModalBody>
-              <ChakraCard
-                p={4}
-                boxShadow="md"
-                borderRadius="lg"
-                bg={useColorModeValue('gray.50', 'gray.700')}
-              >
+              <ChakraCard p={4} borderRadius="lg" bg="gray.50">
                 <VStack spacing={4} align="stretch">
-                  <Text fontWeight="bold" fontSize="lg" color={textColor}>
-                    Payment Information
-                  </Text>
-
+                  {/* Bank Details Grid */}
                   <Grid templateColumns="1fr 1fr" gap={6}>
-                    <GridItem>
-                      <Text fontWeight="bold" fontSize="lg" color={textColor}>
-                        Customer Bank Details
-                      </Text>
-                      {selectedOrder.customerBankDetails &&
-                      Object.keys(selectedOrder.customerBankDetails).length >
-                        0 ? (
-                        <VStack spacing={2} align="stretch">
-                          <Text color={textColor}>
-                            <strong>Account Holder:</strong>{' '}
-                            {
-                              selectedOrder.customerBankDetails
-                                .accountHolderName
-                            }
-                          </Text>
-                          <Text color={textColor}>
-                            <strong>Account Number:</strong>{' '}
-                            {selectedOrder.customerBankDetails.accountNumber}
-                          </Text>
-                          <Text color={textColor}>
-                            <strong>Bank Name:</strong>{' '}
-                            {selectedOrder.customerBankDetails.bankName}
-                          </Text>
-                          <Text color={textColor}>
-                            <strong>IFSC Code:</strong>{' '}
-                            {selectedOrder.customerBankDetails.ifscCode}
-                          </Text>
-                          <Text color={textColor}>
-                            <strong>UPI ID:</strong>{' '}
-                            {selectedOrder.customerBankDetails.upiId}
-                          </Text>
-                        </VStack>
-                      ) : (
-                        <Text color={textColor}>
-                          No customer bank details available
-                        </Text>
-                      )}
-                    </GridItem>
-                    <GridItem>
-                      <Text fontWeight="bold" fontSize="lg" color={textColor}>
-                        Service Provider Bank Details
-                      </Text>
-                      {selectedOrder.serviceProviderBankDetails &&
-                      Object.keys(selectedOrder.serviceProviderBankDetails)
-                        .length > 0 ? (
-                        <VStack spacing={2} align="stretch">
-                          <Text color={textColor}>
-                            <strong>Account Holder:</strong>{' '}
-                            {
-                              selectedOrder.serviceProviderBankDetails
-                                .accountHolderName
-                            }
-                          </Text>
-                          <Text color={textColor}>
-                            <strong>Account Number:</strong>{' '}
-                            {
-                              selectedOrder.serviceProviderBankDetails
-                                .accountNumber
-                            }
-                          </Text>
-                          <Text color={textColor}>
-                            <strong>Bank Name:</strong>{' '}
-                            {selectedOrder.serviceProviderBankDetails.bankName}
-                          </Text>
-                          <Text color={textColor}>
-                            <strong>IFSC Code:</strong>{' '}
-                            {selectedOrder.serviceProviderBankDetails.ifscCode}
-                          </Text>
-                          <Text color={textColor}>
-                            <strong>UPI ID:</strong>{' '}
-                            {selectedOrder.serviceProviderBankDetails.upiId}
-                          </Text>
-                        </VStack>
-                      ) : (
-                        <Text color={textColor}>
-                          No service provider bank details available
-                        </Text>
-                      )}
-                    </GridItem>
+                    {/* Customer & Provider Bank Details */}
                   </Grid>
 
                   <Divider />
 
-                  <Text fontWeight="bold" fontSize="lg" color={textColor}>
-                    Payment History
-                  </Text>
+                  <Text fontWeight="bold" fontSize="lg">Payment History</Text>
                   {selectedOrder.paymentHistory.length > 0 ? (
-                    <Flex wrap="wrap" gap={4} justifyContent="space-between">
+                    <Flex wrap="wrap" gap={4}>
                       {selectedOrder.paymentHistory.map((payment, index) => (
-                        <ChakraCard
-                          key={index}
-                          p={3}
-                          boxShadow="sm"
-                          borderRadius="md"
-                          bg={useColorModeValue('white', 'gray.600')}
-                          width="48%"
-                        >
-                          <VStack align="stretch" spacing={1}>
-                            <Text color={textColor}>
-                              <strong>Payment {index + 1}:</strong> ₹
-                              {payment.amount.toLocaleString()}
-                            </Text>
-                            <Text color={textColor}>
-                              <strong>Tax:</strong> ₹
-                              {payment.tax.toLocaleString()}
-                            </Text>
-                            <Text color={textColor}>
-                              <strong>Payment ID:</strong> {payment.payment_id}
-                            </Text>
-                            <Text color={textColor}>
-                              <strong>Description:</strong>{' '}
-                              {payment.description}
-                            </Text>
-                            <Text color={textColor}>
-                              <strong>Method:</strong>{' '}
-                              {payment.method.toUpperCase()}
-                            </Text>
-                            <Text color={textColor}>
-                              <strong>Status:</strong> {payment.status}
-                            </Text>
-                            <Text color={textColor}>
-                              <strong>Release Status:</strong>{' '}
-                              <Flex
-                                align="center"
-                                bg={
-                                  getStatusStyles(
-                                    payment.release_status,
-                                    'releaseStatus'
-                                  ).bg
+                        <ChakraCard key={index} p={4} width="48%" bg="white" boxShadow="sm">
+                          <VStack align="stretch" spacing={3}>
+                            <Text><strong>Amount:</strong> ₹{payment.amount.toLocaleString()}</Text>
+                            <Text><strong>Tax:</strong> ₹{payment.tax.toLocaleString()}</Text>
+                            <Text><strong>Payment ID:</strong> {payment.payment_id}</Text>
+                            <Text><strong>Status:</strong> {payment.status}</Text>
+                            <Text><strong>Release Status:</strong> {payment.release_status || 'Pending'}</Text>
+
+                            {/* Admin Inputs */}
+                            <FormControl>
+                              <FormLabel>Admin Payment ID</FormLabel>
+                              <Input
+                                placeholder="Enter admin payment id"
+                                value={adminInputs[payment._id]?.paymentId || ''}
+                                onChange={(e) =>
+                                  setAdminInputs(prev => ({
+                                    ...prev,
+                                    [payment._id]: {
+                                      ...prev[payment._id],
+                                      paymentId: e.target.value,
+                                    },
+                                  }))
                                 }
-                                px={2}
-                                py={1}
-                                borderRadius="md"
-                              >
-                                <Text
-                                  fontSize="sm"
-                                  color={
-                                    getStatusStyles(
-                                      payment.release_status,
-                                      'releaseStatus'
-                                    ).color
+                              />
+                            </FormControl>
+
+                            <FormControl>
+                              <FormLabel>Admin Transaction ID</FormLabel>
+                              <Input
+                                placeholder="Enter admin transaction id"
+                                value={adminInputs[payment._id]?.transactionId || ''}
+                                onChange={(e) =>
+                                  setAdminInputs(prev => ({
+                                    ...prev,
+                                    [payment._id]: {
+                                      ...prev[payment._id],
+                                      transactionId: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </FormControl>
+
+                            <FormControl>
+                              <FormLabel>Release Status</FormLabel>
+                              <Select
+                                value={index === selectedPaymentIndex ? releaseStatus : (payment.release_status || '')}
+                                onChange={(e) => {
+                                  const newStatus = e.target.value;
+                                  if (newStatus && newStatus !== payment.release_status) {
+                                    setReleaseStatus(newStatus);
+                                    setSelectedPaymentIndex(index);
+                                    handleReleaseStatusChange(
+                                      selectedOrder.id,
+                                      payment._id,
+                                      index,
+                                      adminInputs[payment._id]?.paymentId || '',
+                                      adminInputs[payment._id]?.transactionId || '',
+                                      newStatus
+                                    );
                                   }
-                                >
-                                  {payment.release_status
-                                    .charAt(0)
-                                    .toUpperCase() +
-                                    payment.release_status
-                                      .slice(1)
-                                      .replace(/_/g, ' ')}
-                                </Text>
-                              </Flex>
-                            </Text>
-                            {/*<Text color={textColor}>
-                              <strong>Collected By:</strong>{' '}
-                              {payment.collected_by}
-                            </Text>
-                            <Text color={textColor}>
-                              <strong>Collected At:</strong>{' '}
-                              {new Date(payment.collected_at).toLocaleString()}
-                            </Text>*/}
+                                }}
+                                placeholder="Select release status"
+                              >
+                                {releaseStatusOptions.map(item => (
+                                  <option key={item.value} value={item.value}>
+                                    {item.label}
+                                  </option>
+                                ))}
+                              </Select>
+                            </FormControl>
                           </VStack>
                         </ChakraCard>
                       ))}
                     </Flex>
                   ) : (
-                    <Text color={textColor}>No payment history available</Text>
+                    <Text>No payment history</Text>
                   )}
                 </VStack>
               </ChakraCard>
             </ModalBody>
             <ModalFooter>
-              <Button
-                colorScheme="teal"
-                mr={3}
-                onClick={onDetailsClose}
-                _hover={{ bg: 'teal.600', transform: 'scale(1.05)' }}
-                transition="all 0.2s ease-in-out"
-              >
-                Close
-              </Button>
+              <Button colorScheme="teal" onClick={onDetailsClose}>Close</Button>
             </ModalFooter>
           </ModalContent>
         </Modal>
       )}
+
+      {/* Mandatory Remark Modal */}
+      <Modal isOpen={isRemarkOpen} onClose={onRemarkClose} size="md" isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Release Remark (Required)</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl isRequired>
+              <FormLabel>Enter Remark</FormLabel>
+              <Input
+                placeholder="e.g. Payment released via NEFT, Rejected due to incomplete delivery..."
+                value={releaseRemark}
+                onChange={(e) => setReleaseRemark(e.target.value)}
+                autoFocus
+              />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter gap={3}>
+            <Button variant="ghost" onClick={onRemarkClose}>Cancel</Button>
+            <Button
+              colorScheme="blue"
+              onClick={confirmReleaseWithRemark}
+              isDisabled={!releaseRemark.trim()}
+            >
+              Confirm & Update
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       <ToastContainer />
     </>
   );
