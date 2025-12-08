@@ -104,6 +104,7 @@ const [releaseRemark, setReleaseRemark] = React.useState('');
             headers: { Authorization: `Bearer ${token}` },
           },
         );
+         console.log(response.data);
         if (!response.data || !Array.isArray(response.data.data)) {
           throw new Error(
             'Invalid response format: Expected an array of orders',

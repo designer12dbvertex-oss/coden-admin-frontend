@@ -491,7 +491,7 @@ const [releaseRemark, setReleaseRemark] = React.useState('');
 					<Button
 						colorScheme="blue"
 						size="sm"
-						onClick={() => navigate(`/admin/viewOrder/${row.original.id}`)}
+						onClick={() => navigate(`/admin/emergency-order/${row.original.id}`)}
 					>
 						View Order
 					</Button>

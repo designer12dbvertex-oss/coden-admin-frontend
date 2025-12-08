@@ -73,6 +73,8 @@ import BiddingPaymentREquest from 'views/admin/biddingPaymentRequest';
 import EmergencyPaymentCreate from 'views/admin/emergencyPaymentCreate';
 import EmergencyPaymentREquest from 'views/admin/emergencyPaymentRequest';
 import RefferalSetting from 'views/admin/Refferal';
+import ViewBiddingOrder from 'views/admin/viewBiddingOrder'
+import ViewEmergencygOrder from 'views/admin/viewEmergencyOrder'
 const routes = [
   {
     name: 'Main Dashboard',
@@ -334,6 +336,22 @@ const routes = [
     path: '/dispute',
     component: <Dispute />,
   },
+  {
+  name: 'Bidding Order Details',
+  layout: '/admin',
+  path: '/bidding-order/:id',          
+  component: <ViewBiddingOrder/>, 
+
+},
+  {
+  name: 'Emergency Order Details',
+  layout: '/admin',
+  path: '/emergency-order/:orderId',          
+  component: <ViewEmergencygOrder/>, 
+
+},
+
+
 
 	{
     name: 'Refferal Settings',

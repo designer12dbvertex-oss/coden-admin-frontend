@@ -104,6 +104,8 @@ const [releaseRemark, setReleaseRemark] = React.useState('');
             headers: { Authorization: `Bearer ${token}` },
           },
         );
+        console.log(response.data);
+        
         if (!response.data || !Array.isArray(response.data.data)) {
           throw new Error(
             'Invalid response format: Expected an array of orders',
@@ -491,7 +493,7 @@ const [releaseRemark, setReleaseRemark] = React.useState('');
           <Button
             colorScheme="blue"
             size="sm"
-            onClick={() => navigate(`/admin/viewOrder/${row.original.id}`)}
+            onClick={() => navigate(`/admin/bidding-order/${row.original.id}`)} 
           >
             View Order
           </Button>

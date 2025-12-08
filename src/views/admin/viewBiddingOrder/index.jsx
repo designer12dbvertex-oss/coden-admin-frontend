@@ -45,24 +45,29 @@ export default function OrdersTable() {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const navigate = useNavigate();
-  const { orderId } = useParams();
+  const { id } = useParams();
   const [disputeInfo, setDisputeInfo] = React.useState(null);
 
   // Fetch order from API
+  
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
 
   React.useEffect(() => {
+   
+    
     const fetchOrders = async () => {
       try {
         if (!baseUrl || !token) {
           throw new Error('Missing base URL or authentication token');
         }
-        if (!orderId) {
+        if (!id) {
           throw new Error('Missing order ID');
         }
+    
+      const API_URL = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
         const response = await axios.get(
-          `${baseUrl}api/bidding-order/AdminGetBiddingOrderById/${orderId}`,
+          `${API_URL}api/bidding-order/AdminGetBiddingOrderById/${id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -96,7 +101,7 @@ export default function OrdersTable() {
     };
 
     fetchOrders();
-  }, [navigate, orderId]);
+  }, [navigate, id]);
 
   const getStatusStyles = (status, type) => {
     if (type === 'hireStatus' || type === 'userStatus') {

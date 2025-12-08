@@ -330,7 +330,7 @@ export default function OrdersTable() {
 					<Button
 						size="sm"
 						colorScheme="blue"
-						onClick={() => navigate(`/admin/viewOrder/${row.original.id}`)}
+						onClick={() => navigate(`/admin/emergency-order/${row.original.id}`)}
 					>
 						View Order
 					</Button>

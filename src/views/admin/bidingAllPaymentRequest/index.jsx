@@ -465,10 +465,10 @@ export default function OrdersTable() {
       navigate(`/admin/viewOrder/${id}`);
     } 
     else if (orderType === "emergency_order") {
-      navigate(`/admin/emergencyOrder/${id}`);
+      navigate(`/admin/emergency-order/${id}`);
     } 
     else if (orderType === "bidding_order") {
-      navigate(`/admin/biddingOrder/${id}`);
+      navigate(`/admin/bidding-order/${id}`);
     }
   }}
 >
