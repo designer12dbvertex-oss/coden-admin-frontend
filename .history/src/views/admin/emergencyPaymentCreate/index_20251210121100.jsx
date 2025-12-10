@@ -98,7 +98,7 @@ const [releaseRemark, setReleaseRemark] = React.useState('');
 					throw new Error('Missing base URL or authentication token');
 				}
 				setLoading(true);
-				const response = await axios.get(`${baseUrl}api/emergency-order/getAllEmergencyPaymentCreate`,
+				const response = await axios.get(`http://localhost:5001api/emergency-order/getAllEmergencyPaymentCreate`,
 					{
 						headers: { Authorization: `Bearer ${token}` },
 					},

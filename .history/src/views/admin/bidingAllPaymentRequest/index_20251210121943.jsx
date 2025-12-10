@@ -87,7 +87,7 @@ export default function OrdersTable() {
         }
         setLoading(true);
         const response = await axios.get(
-          `${baseUrl}api/admin/getAllRequestDirectOrders`,
+          `http://localhost:5001/api/admin/getAllRequestBiddingOrders`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -465,10 +465,10 @@ export default function OrdersTable() {
       navigate(`/admin/viewOrder/${id}`);
     } 
     else if (orderType === "emergency_order") {
-      navigate(`/admin/emergencyOrder/${id}`);
+      navigate(`/admin/emergency-order/${id}`);
     } 
     else if (orderType === "bidding_order") {
-      navigate(`/admin/bidding-order/${id}`);
+      navigate(`/admin/bidding-orders/${id}`);
     }
   }}
 >
@@ -807,7 +807,7 @@ export default function OrdersTable() {
                               <strong>Release Status:</strong>{' '}
                               {payment.release_status}
                             </Text>
-                           {/* <Text color={textColor}>
+                            {/*<Text color={textColor}>
                               <strong>Collected By:</strong>{' '}
                               {payment.collected_by}
                             </Text>

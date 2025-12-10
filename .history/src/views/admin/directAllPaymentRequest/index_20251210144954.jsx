@@ -468,7 +468,7 @@ export default function OrdersTable() {
       navigate(`/admin/emergencyOrder/${id}`);
     } 
     else if (orderType === "bidding_order") {
-      navigate(`/admin/bidding-order/${id}`);
+      navigate(`/admin/bidding_order/${id}`);
     }
   }}
 >

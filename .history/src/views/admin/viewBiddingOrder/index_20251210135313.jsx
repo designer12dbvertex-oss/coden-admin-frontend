@@ -67,7 +67,7 @@ export default function OrdersTable() {
     
 
         const response = await axios.get(
-          `${baseUrl}api/bidding-order/AdminGetBiddingOrderById/${orderId}`,
+          `http://localhost:5001/api/bidding-order/AdminGetBiddingOrderById/${orderId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },

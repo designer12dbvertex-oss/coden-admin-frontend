@@ -65,9 +65,9 @@ export default function OrdersTable() {
           throw new Error('Missing order ID');
         }
     
-
+      const API_URL = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
         const response = await axios.get(
-          `${baseUrl}api/bidding-order/AdminGetBiddingOrderById/${orderId}`,
+          `${API_URL}api/bidding-order/AdminGetBiddingOrderById/${orderId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },

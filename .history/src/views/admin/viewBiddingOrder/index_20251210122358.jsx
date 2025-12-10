@@ -61,13 +61,13 @@ export default function OrdersTable() {
         if (!baseUrl || !token) {
           throw new Error('Missing base URL or authentication token');
         }
-        if (!orderId) {
+        if (!id) {
           throw new Error('Missing order ID');
         }
     
-
+      const API_URL = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
         const response = await axios.get(
-          `${baseUrl}api/bidding-order/AdminGetBiddingOrderById/${orderId}`,
+          `${API_URL}api/bidding-order/AdminGetBiddingOrderById/${orderId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -101,7 +101,7 @@ export default function OrdersTable() {
     };
 
     fetchOrders();
-  }, [navigate, orderId]);
+  }, [navigate, id]);
 
   const getStatusStyles = (status, type) => {
     if (type === 'hireStatus' || type === 'userStatus') {

@@ -343,13 +343,13 @@ const routes = [
   component: <ViewBiddingOrder/>, 
 
 },
-  {
-  name: 'Emergency Order Details',
-  layout: '/admin',
-  path:'/emergency-order/:orderId',          
-  component: <ViewEmergencygOrder/>, 
+//   {
+//   name: 'Emergency Order Details',
+//   layout: '/admin',
+//   path:'/emergency-order/:orderId',          
+//   component: <ViewEmergencygOrder/>, 
 
-},
+// },
 
 
 
