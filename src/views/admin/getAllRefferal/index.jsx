@@ -34,7 +34,7 @@ import {
   IconButton,
   HStack as ChakraHStack,
 } from '@chakra-ui/react';
-import { ViewIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { ViewIcon, ChevronLeftIcon, ChevronRightIcon, DownloadIcon } from '@chakra-ui/icons';
 import axios from 'axios';
 import * as React from 'react';
 import Card from 'components/card/Card';
@@ -101,7 +101,7 @@ export default function ReferralAdminPaymentTable() {
       toast({ title: 'Error', description: 'Payment ID is required', status: 'warning' });
       return;
     }
-   
+
     try {
       const payload = {
         referralCodeId: payingUser.referralCodeId,
@@ -137,6 +137,77 @@ export default function ReferralAdminPaymentTable() {
     }
   };
 
+  const handleExport = () => {
+    if (!referralData || referralData.length === 0) {
+      toast({
+        title: 'No Data',
+        description: 'There is no data to export.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // 1. Define Headers
+    const headers = [
+      "User Name",
+      "Phone",
+      "Referral Code",
+      "Total Referred",
+      "Max Referrals",
+      "Wallet Balance (INR)",
+      "Bank Name",
+      "Account Holder",
+      "Account Number",
+      "IFSC Code",
+      "UPI ID",
+      "Payment Status"
+    ];
+
+    // 2. Map Data to Rows
+    const csvRows = referralData.map((user) => {
+      // Helper to escape CSV characters
+      const safe = (text) => {
+        if (!text) return '""';
+        return `"${String(text).replace(/"/g, '""')}"`;
+      };
+
+      const bank = user.bankdetails || {};
+      const hasBank = bank.upiId || bank.accountNumber;
+
+      return [
+        safe(user.full_name),
+        safe(user.phone),
+        safe(user.referralCode),
+        user.totalReferred,
+        user.maxReferrals,
+        user.wallet_balance,
+        safe(bank.bankName),
+        safe(bank.accountHolderName),
+        // Force account number as string to prevent scientific notation in Excel
+        safe(bank.accountNumber ? `'${bank.accountNumber}` : ''),
+        safe(bank.ifscCode),
+        safe(bank.upiId),
+        safe(hasBank ? (user.wallet_balance > 0 ? "Pending Payment" : "Settled/No Balance") : "Bank Missing")
+      ].join(",");
+    });
+
+    // 3. Create CSV String
+    const csvString = [headers.join(","), ...csvRows].join("\n");
+
+    // 4. Download
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `referral_payments_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   React.useEffect(() => {
     fetchData();
   }, []);
@@ -160,10 +231,23 @@ export default function ReferralAdminPaymentTable() {
           <Text color={textColor} fontSize="28px" fontWeight="800">
             Referral Payments (Main Users)
           </Text>
+          <HStack spacing={4}>
+            {/* EXPORT BUTTON */}
+            <Button
+              size="sm"
+              colorScheme="green"
+              leftIcon={<DownloadIcon />}
+              onClick={handleExport}
+            >
+              Export 
+            </Button>
+          
           <Badge colorScheme="green" fontSize="lg">
             {referralData.filter(u => u.wallet_balance > 0).length} Pending
           </Badge>
+          </HStack>
         </Flex>
+        
 
         <Box overflowX="auto">
           <Table variant="simple">
@@ -265,7 +349,7 @@ export default function ReferralAdminPaymentTable() {
                 isDisabled={currentPage === 1}
                 aria-label="Previous page"
               />
-              
+
               {[...Array(totalPages)].map((_, i) => (
                 <Button
                   key={i + 1}
@@ -373,7 +457,7 @@ export default function ReferralAdminPaymentTable() {
                     <Stack spacing={2} fontSize="sm" mt={payingUser.bankdetails.upiId ? 3 : 0}>
                       <HStack>
                         <Text fontWeight="600">Bank Name:</Text>
-                       <Text>{payingUser.bankdetails.bankName || '—'}</Text>
+                        <Text>{payingUser.bankdetails.bankName || '—'}</Text>
                       </HStack>
                       <HStack>
                         <Text fontWeight="600">Account Holder:</Text>
@@ -431,3 +515,4 @@ export default function ReferralAdminPaymentTable() {
     </>
   );
 }
+
