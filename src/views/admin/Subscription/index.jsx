@@ -34,6 +34,7 @@ import axios from 'axios';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
+import { FaFileCsv } from 'react-icons/fa'; // Import CSV icon
 
 import Card from 'components/card/Card';
 
@@ -74,7 +75,10 @@ export default function SubscriptionPlans() {
       setLoading(false);
     } catch (err) {
       console.error(err);
-      if (err.response?.status === 401 || err.response?.data?.message?.includes('authorized')) {
+      if (
+        err.response?.status === 401 ||
+        err.response?.data?.message?.includes('authorized')
+      ) {
         localStorage.removeItem('token');
         navigate('/');
       } else {
@@ -92,9 +96,9 @@ export default function SubscriptionPlans() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
@@ -104,7 +108,7 @@ export default function SubscriptionPlans() {
       const response = await axios.put(
         `${baseUrl}api/subscription/update/${editingPlan._id}`,
         formData,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       if (response.data.status) {
@@ -118,7 +122,9 @@ export default function SubscriptionPlans() {
         });
 
         // Update the plan in local state
-        setPlans(prev => prev.map(p => p._id === editingPlan._id ? response.data.data : p));
+        setPlans((prev) =>
+          prev.map((p) => (p._id === editingPlan._id ? response.data.data : p)),
+        );
         onClose();
       }
     } catch (err) {
@@ -133,6 +139,86 @@ export default function SubscriptionPlans() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+  const handleExportCSV = () => {
+    if (plans.length === 0) {
+      toast({
+        title: 'No data to export',
+        description: 'There are no subscription plans to export.',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+        position: 'top-right',
+      });
+      return;
+    }
+
+    // Define CSV headers (matching table headers)
+    const headers = [
+      'Plan',
+      'Price',
+      'No-Comm Tasks',
+      'Total Hires',
+      'Emergency',
+      'Commission (Normal) Min',
+      'Commission (Normal) Max',
+      'Emergency Comm',
+      'Priority',
+      'Active',
+    ];
+
+    // Map plans data to CSV rows
+    const csvRows = plans.map((plan) =>
+      [
+        `"${plan.name}"`, // Enclose name in quotes to handle commas if any
+        plan.price === 0 ? 'Free' : `₹${plan.price}/mo`,
+        plan.noCommissionTasksPerMonth,
+        plan.totalTaskHiresLimit,
+        plan.emergencyTaskLimit,
+        `${plan.commissionInsideLimit}%`, // Separate min/max for clarity
+        `${plan.commissionAboveLimit}%`,
+        `${plan.commissionEmergency}%`,
+        plan.priorityListing ? 'Yes' : 'No',
+        plan.isActive ? 'Active' : 'Inactive',
+      ].join(','),
+    ); // Join array elements with a comma
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','), // Join headers with a comma
+      ...csvRows,
+    ].join('\n'); // Join all rows with a newline character
+
+    // Create a Blob and download it
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'subscription_plans.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({
+        title: 'Export Successful',
+        description: 'Subscription plans exported to CSV.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+        position: 'top-right',
+      });
+    } else {
+      toast({
+        title: 'Export Failed',
+        description:
+          'Your browser does not support downloading files directly.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+        position: 'top-right',
+      });
     }
   };
 
@@ -151,7 +237,9 @@ export default function SubscriptionPlans() {
   if (loading) {
     return (
       <Card p="25px" borderRadius="20px" boxShadow="lg">
-        <Text fontSize="22px" fontWeight="700" color={textColor}>Loading plans...</Text>
+        <Text fontSize="22px" fontWeight="700" color={textColor}>
+          Loading plans...
+        </Text>
       </Card>
     );
   }
@@ -159,18 +247,35 @@ export default function SubscriptionPlans() {
   if (error) {
     return (
       <Card p="25px" borderRadius="20px" boxShadow="lg" mt="80px">
-        <Text fontSize="22px" fontWeight="700" color="red.500">Error: {error}</Text>
+        <Text fontSize="22px" fontWeight="700" color="red.500">
+          Error: {error}
+        </Text>
       </Card>
     );
   }
 
   return (
     <>
-      <Card flexDirection="column" w="100%" px="25px" py="25px" borderRadius="20px" boxShadow="lg" mt="80px">
+      <Card
+        flexDirection="column"
+        w="100%"
+        px="25px"
+        py="25px"
+        borderRadius="20px"
+        boxShadow="lg"
+        mt="80px"
+      >
         <Flex mb="30px" justifyContent="space-between" align="center">
           <Text color={textColor} fontSize="28px" fontWeight="700">
             Subscription Plans (Admin)
           </Text>
+          <Button
+            leftIcon={<Icon as={FaFileCsv} />}
+            colorScheme="green"
+            onClick={handleExportCSV}
+          >
+            Export
+          </Button>
         </Flex>
 
         <Box overflowX="auto">
@@ -198,14 +303,24 @@ export default function SubscriptionPlans() {
                       {getPlanBadge(plan.name)}
                     </Flex>
                   </Td>
-                  <Td fontWeight="600">{plan.price === 0 ? 'Free' : `₹${plan.price}/mo`}</Td>
+                  <Td fontWeight="600">
+                    {plan.price === 0 ? 'Free' : `₹${plan.price}/mo`}
+                  </Td>
                   <Td>{plan.noCommissionTasksPerMonth}/mo</Td>
                   <Td>{plan.totalTaskHiresLimit}</Td>
                   <Td>{plan.emergencyTaskLimit}</Td>
-                  <Td>{plan.commissionInsideLimit}% → {plan.commissionAboveLimit}%</Td>
-                  <Td fontWeight="600" color="red.600">{plan.commissionEmergency}%</Td>
+                  <Td>
+                    {plan.commissionInsideLimit}% → {plan.commissionAboveLimit}%
+                  </Td>
+                  <Td fontWeight="600" color="red.600">
+                    {plan.commissionEmergency}%
+                  </Td>
                   <Td textAlign="center">
-                    {plan.priorityListing ? <CheckIcon color="green.500" /> : <CloseIcon color="red.500" />}
+                    {plan.priorityListing ? (
+                      <CheckIcon color="green.500" />
+                    ) : (
+                      <CloseIcon color="red.500" />
+                    )}
                   </Td>
                   <Td>
                     <Badge colorScheme={plan.isActive ? 'green' : 'red'}>
@@ -213,7 +328,13 @@ export default function SubscriptionPlans() {
                     </Badge>
                   </Td>
                   <Td>
-                    <Button size="sm" leftIcon={<EditIcon />} colorScheme="blue" variant="ghost" onClick={() => handleEditClick(plan)}>
+                    <Button
+                      size="sm"
+                      leftIcon={<EditIcon />}
+                      colorScheme="blue"
+                      variant="ghost"
+                      onClick={() => handleEditClick(plan)}
+                    >
                       Edit
                     </Button>
                   </Td>
@@ -235,59 +356,108 @@ export default function SubscriptionPlans() {
               <Flex direction="column" gap="4">
                 <FormControl>
                   <FormLabel>Plan Name</FormLabel>
-                  <Input name="name" value={formData.name || ''} onChange={handleInputChange} />
+                  <Input
+                    name="name"
+                    value={formData.name || ''}
+                    onChange={handleInputChange}
+                  />
                 </FormControl>
 
                 <FormControl>
                   <FormLabel>Price (₹)</FormLabel>
-                  <Input name="price" type="number" value={formData.price || 0} onChange={handleInputChange} />
+                  <Input
+                    name="price"
+                    type="number"
+                    value={formData.price || 0}
+                    onChange={handleInputChange}
+                  />
                 </FormControl>
 
                 <FormControl>
                   <FormLabel>No-Commission Tasks / Month</FormLabel>
-                  <Input name="noCommissionTasksPerMonth" type="number" value={formData.noCommissionTasksPerMonth || 0} onChange={handleInputChange} />
+                  <Input
+                    name="noCommissionTasksPerMonth"
+                    type="number"
+                    value={formData.noCommissionTasksPerMonth || 0}
+                    onChange={handleInputChange}
+                  />
                 </FormControl>
 
                 <FormControl>
                   <FormLabel>Total Task Hires Limit</FormLabel>
-                  <Input name="totalTaskHiresLimit" type="number" value={formData.totalTaskHiresLimit || 0} onChange={handleInputChange} />
+                  <Input
+                    name="totalTaskHiresLimit"
+                    type="number"
+                    value={formData.totalTaskHiresLimit || 0}
+                    onChange={handleInputChange}
+                  />
                 </FormControl>
 
                 <FormControl>
                   <FormLabel>Emergency Task Limit</FormLabel>
-                  <Input name="emergencyTaskLimit" type="number" value={formData.emergencyTaskLimit || 0} onChange={handleInputChange} />
+                  <Input
+                    name="emergencyTaskLimit"
+                    type="number"
+                    value={formData.emergencyTaskLimit || 0}
+                    onChange={handleInputChange}
+                  />
                 </FormControl>
 
                 <FormControl>
                   <FormLabel>Commission Inside Limit (%)</FormLabel>
-                  <Input name="commissionInsideLimit" type="number" value={formData.commissionInsideLimit || 0} onChange={handleInputChange} />
+                  <Input
+                    name="commissionInsideLimit"
+                    type="number"
+                    value={formData.commissionInsideLimit || 0}
+                    onChange={handleInputChange}
+                  />
                 </FormControl>
 
                 <FormControl>
                   <FormLabel>Commission Above Limit (%)</FormLabel>
-                  <Input name="commissionAboveLimit" type="number" value={formData.commissionAboveLimit || 0} onChange={handleInputChange} />
+                  <Input
+                    name="commissionAboveLimit"
+                    type="number"
+                    value={formData.commissionAboveLimit || 0}
+                    onChange={handleInputChange}
+                  />
                 </FormControl>
 
                 <FormControl>
                   <FormLabel>Emergency Commission (%)</FormLabel>
-                  <Input name="commissionEmergency" type="number" value={formData.commissionEmergency || 0} onChange={handleInputChange} />
+                  <Input
+                    name="commissionEmergency"
+                    type="number"
+                    value={formData.commissionEmergency || 0}
+                    onChange={handleInputChange}
+                  />
                 </FormControl>
 
                 <FormControl display="flex" alignItems="center">
                   <FormLabel mb="0">Priority Listing</FormLabel>
-                  <Switch name="priorityListing" isChecked={formData.priorityListing} onChange={handleInputChange} />
+                  <Switch
+                    name="priorityListing"
+                    isChecked={formData.priorityListing}
+                    onChange={handleInputChange}
+                  />
                 </FormControl>
 
                 <FormControl display="flex" alignItems="center">
                   <FormLabel mb="0">Active</FormLabel>
-                  <Switch name="isActive" isChecked={formData.isActive} onChange={handleInputChange} />
+                  <Switch
+                    name="isActive"
+                    isChecked={formData.isActive}
+                    onChange={handleInputChange}
+                  />
                 </FormControl>
               </Flex>
             )}
           </ModalBody>
 
           <ModalFooter>
-            <Button variant="ghost" onClick={onClose} mr={3}>Cancel</Button>
+            <Button variant="ghost" onClick={onClose} mr={3}>
+              Cancel
+            </Button>
             <Button colorScheme="blue" onClick={handleSave} isLoading={saving}>
               Save Changes
             </Button>

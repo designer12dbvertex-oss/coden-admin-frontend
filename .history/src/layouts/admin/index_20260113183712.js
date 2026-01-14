@@ -8,17 +8,17 @@ import { SidebarContext } from 'contexts/SidebarContext';
 import React, { useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import routes from 'routes.js';
-// import ViewOrder from 'views/admin/viewDirectOrder';
-// import ViewServiceProvider from 'views/admin/viewServiceProviderDetails';
-// import ViewBiddingOrder from 'views/admin/viewBiddingOrder';
-// import ViewEmergencyOrder from 'views/admin/viewEmergencyOrder';
-// import ViewCreateServiceProvider from 'views/admin/createServiceProvider';
-// import ViewCreateSubadmin from 'views/admin/createSubadmin';
-// import ViewUser from "views/admin/viewUserDetails";
-// import ViewDisputeUser from "views/admin/viewDisputeUserDetails"
-// import UserDirectOrder from 'views/admin/userDirectHiring';
+import ViewOrder from 'views/admin/viewDirectOrder';
+import ViewServiceProvider from 'views/admin/viewServiceProviderDetails';
+import ViewBiddingOrder from 'views/admin/viewBiddingOrder';
+import ViewEmergencyOrder from 'views/admin/viewEmergencyOrder';
+import ViewCreateServiceProvider from 'views/admin/createServiceProvider';
+import ViewCreateSubadmin from 'views/admin/createSubadmin';
+import ViewUser from "views/admin/viewUserDetails";
+import ViewDisputeUser from "views/admin/viewDisputeUserDetails"
+import UserDirectOrder from 'views/admin/userDirectHiring';
 // import UserBiddingOrder from 'views/admin/userBiddingHiring';
-// import UserEmergencyOrder from 'views/admin/userEmergencyHiring';
+import UserEmergencyOrder from 'views/admin/userEmergencyHiring';
 import ViewAddBanner from 'views/admin/addBanner';
 // Custom Chakra theme
 export default function Dashboard(props) {
@@ -114,39 +114,39 @@ export default function Dashboard(props) {
   });
 
   // Add custom routes outside the loop
-//   allRoutes.push(
-//     <Route path="/viewOrder/:orderId" element={<ViewOrder />} key="viewOrder" />
-//   );
-// 	allRoutes.push(
-// 		<Route path="/directOrder/:user_id" element={<UserDirectOrder />} key="UserDirectOrder" />
-// 	);
-// 	allRoutes.push(
-// 		// <Route path="/bidding_Order/:user_id" element={<UserBiddingOrder />} key="UserBiddingOrder" />
-// 	);
-// 	allRoutes.push(
-// 		<Route path="/emergency_Order/:user_id" element={<UserEmergencyOrder />} key="UserEmergencyOrder" />
-// 	);
-//   allRoutes.push(
-//     <Route path="/details/:service_provider_id" element={<ViewServiceProvider />} key="viewServiceProvider" />
-//   );
-// 	allRoutes.push(
-//     <Route path="/UserDetails/:user_id" element={<ViewUser />} key="viewUser" />
-//   );
-// 	allRoutes.push(
-//     <Route path="/Dispute/UserDetails/:user_id" element={<ViewDisputeUser />} key="viewDisputeUser" />
-//   );
-//   allRoutes.push(
-//     <Route path="/biddingOrder/:orderId" element={<ViewBiddingOrder />} key="viewBiddingOrder" />
-//   );
-// 	allRoutes.push(
-//     <Route path="/emergencyOrder/:orderId" element={<ViewEmergencyOrder />} key="viewEmergencyOrder" />
-//   );
-// 	allRoutes.push(
-//     <Route path="/createServiceProvider" element={<ViewCreateServiceProvider />} key="viewCreateServiceProvider" />
-//   );
-// allRoutes.push(
-//     <Route path="/createSubadmin" element={<ViewCreateSubadmin />} key="ViewCreateSubadmin" />
-//   );
+  allRoutes.push(
+    <Route path="/viewOrder/:orderId" element={<ViewOrder />} key="viewOrder" />
+  );
+	allRoutes.push(
+		<Route path="/directOrder/:user_id" element={<UserDirectOrder />} key="UserDirectOrder" />
+	);
+	allRoutes.push(
+		// <Route path="/bidding_Order/:user_id" element={<UserBiddingOrder />} key="UserBiddingOrder" />
+	);
+	allRoutes.push(
+		<Route path="/emergency_Order/:user_id" element={<UserEmergencyOrder />} key="UserEmergencyOrder" />
+	);
+  allRoutes.push(
+    <Route path="/details/:service_provider_id" element={<ViewServiceProvider />} key="viewServiceProvider" />
+  );
+	allRoutes.push(
+    <Route path="/UserDetails/:user_id" element={<ViewUser />} key="viewUser" />
+  );
+	allRoutes.push(
+    <Route path="/Dispute/UserDetails/:user_id" element={<ViewDisputeUser />} key="viewDisputeUser" />
+  );
+  allRoutes.push(
+    <Route path="/biddingOrder/:orderId" element={<ViewBiddingOrder />} key="viewBiddingOrder" />
+  );
+	allRoutes.push(
+    <Route path="/emergencyOrder/:orderId" element={<ViewEmergencyOrder />} key="viewEmergencyOrder" />
+  );
+	allRoutes.push(
+    <Route path="/createServiceProvider" element={<ViewCreateServiceProvider />} key="viewCreateServiceProvider" />
+  );
+allRoutes.push(
+    <Route path="/createSubadmin" element={<ViewCreateSubadmin />} key="ViewCreateSubadmin" />
+  );
 	allRoutes.push(
     <Route path="/addBanner" element={<ViewAddBanner />} key="ViewCreateBanner" />
   );

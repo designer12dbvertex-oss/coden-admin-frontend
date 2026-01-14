@@ -2054,522 +2054,92 @@
 //       />
 //     </>
 //   );
-// }
-
-/* eslint-disable */
+// }import React from 'react';
 import {
   Box,
-  Flex,
   Table,
   Tbody,
   Td,
-  Text,
   Th,
   Thead,
   Tr,
+  Text,
   useColorModeValue,
-  Button,
-  HStack,
-  Switch,
-  Input,
-  FormErrorMessage,
-  InputGroup,
-  InputLeftElement,
-  Icon,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-  FormControl,
-  FormLabel,
-  IconButton,
-  Textarea,
-  Select,
+  Flex,
+  Badge
 } from '@chakra-ui/react';
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
-import Card from 'components/card/Card';
-import { useNavigate } from 'react-router-dom';
-import React, { useState, useMemo, useCallback } from 'react';
-import {
-  ArrowUpIcon,
-  ArrowDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  SearchIcon,
-  DeleteIcon,
-} from '@chakra-ui/icons';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import defaultProfilePic from 'assets/img/profile/profile.webp';
-import { CSVLink } from 'react-csv';
 
-const mapStyle = { width: "100%", height: "250px" };
-const columnHelper = createColumnHelper();
+// Card container jaisa dashboard mein hai
+import Card from "components/card/Card"; 
 
-export default function ComplexTable() {
-  const [sorting, setSorting] = useState([]);
-  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [editName, setEditName] = useState("");
-  const [editMobile, setEditMobile] = useState("");
-  const [mobileError, setMobileError] = useState(false);
-  const [newImage, setNewImage] = useState(null);
-  const [newImagePreview, setNewImagePreview] = useState(null);
-  const [filteredData] = useState([]); // ← No data by default
-  const [toggleLoading, setToggleLoading] = useState({});
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
-  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
-  const [userId, setUserId] = useState(null);
-  const [selectedAddresses, setSelectedAddresses] = useState([]);
-  const [selectedUserId, setSelectedUserId] = useState(null);
-  const [selectedInactivationInfo, setSelectedInactivationInfo] = useState(null);
-  const [deactivateReason, setDeactivateReason] = useState('');
-  const [disputeId, setDisputeId] = useState('');
-  const itemsPerPage = 10;
-  const maxVisiblePages = 5;
+export default function UserList() {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
-  const headerBg = useColorModeValue('gray.100', 'gray.700');
-  const hoverBg = useColorModeValue('gray.50', 'gray.600');
-  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-  const [tempAddress, setTempAddress] = useState({
-    latitude: "",
-    longitude: "",
-    title: "",
-    houseNo: "",
-    street: "",
-    area: "",
-    landmark: "",
-    pincode: "",
-    address: ""
-  });
 
-  const navigate = useNavigate();
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-  });
-
-  const [userAddresses, setUserAddresses] = useState([]);
-  const [mapCenter, setMapCenter] = useState({ lat: 22.7196, lng: 75.8577 });
-
-  // ──────────────────────────────────────────────────────────────
-  //                   ALL API & DATA FETCHING REMOVED
-  // ──────────────────────────────────────────────────────────────
-
-  const deleteAddress = (index) => {
-    setUserAddresses((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleMapClick = (event) => {
-    setMapCenter({
-      lat: event.latLng.lat(),
-      lng: event.latLng.lng(),
-    });
-  };
-
-  const saveAddress = () => {
-    const finalAddress = { ...tempAddress };
-    setUserAddresses([...userAddresses, finalAddress]);
-    setIsAddressModalOpen(false);
-  };
-
-  const addSelectedLocation = () => {
-    if (!isLoaded) return;
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ location: mapCenter }, (results, status) => {
-      if (status === "OK" && results[0]) {
-        setTempAddress({
-          latitude: mapCenter.lat,
-          longitude: mapCenter.lng,
-          title: "",
-          houseNo: "",
-          street: "",
-          area: "",
-          landmark: "",
-          pincode: "",
-          address: results[0].formatted_address
-        });
-        setIsAddressModalOpen(true);
-      }
-    });
-  };
-
-  const openUserModal = (id, name, full_address, mobile, profile_pic) => {
-    setUserId(id);
-    setSelectedUser({ id, name, full_address, mobile, profile_pic });
-    setEditName(name || "");
-    setEditMobile(mobile || "");
-    setNewImagePreview(null);
-    setUserAddresses(full_address || []);
-    setIsUserModalOpen(true);
-  };
-
-  const handleSaveUser = () => {
-    // Just demo success message — no real save
-    toast.success("Profile Updated (UI Demo Mode)", {
-      position: 'top-right',
-      autoClose: 3000,
-    });
-    closeUserModal();
-  };
-
-  const closeUserModal = () => setIsUserModalOpen(false);
-
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    setCurrentPage(1);
-    // No real filtering — table remains empty
-  };
-
-  const openModal = (addresses) => {
-    setSelectedAddresses(addresses || []);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedAddresses([]);
-  };
-
-  const openDeactivateModal = (userId) => {
-    setSelectedUserId(userId);
-    setDeactivateReason('');
-    setDisputeId('');
-    setIsDeactivateModalOpen(true);
-  };
-
-  const closeDeactivateModal = () => {
-    setIsDeactivateModalOpen(false);
-    setSelectedUserId(null);
-  };
-
-  const openOrdersModal = (userId, inactivationInfo) => {
-    setSelectedUserId(userId);
-    setSelectedInactivationInfo(inactivationInfo);
-    setIsOrdersModalOpen(true);
-  };
-
-  const closeOrdersModal = () => {
-    setIsOrdersModalOpen(false);
-    setSelectedUserId(null);
-    setSelectedInactivationInfo(null);
-  };
-
-  const handleToggle = (userId, currentActive) => {
-    if (toggleLoading[userId]) return;
-    setToggleLoading((prev) => ({ ...prev, [userId]: true }));
-
-    setTimeout(() => {
-      toast.info(`Toggle action (Demo mode) - ${currentActive ? 'Deactivate' : 'Activate'}`, {
-        position: "top-right",
-        autoClose: 2000,
-      });
-      setToggleLoading((prev) => ({ ...prev, [userId]: false }));
-    }, 600);
-
-    if (currentActive) {
-      openDeactivateModal(userId);
-    }
-  };
-
-  const handleDeactivateSubmit = () => {
-    if (!deactivateReason) {
-      toast.error('Reason is required');
-      return;
-    }
-    toast.success("Deactivation submitted (Demo)");
-    closeDeactivateModal();
-  };
-
-  // ─── Pagination (works with empty array) ──────────────────────
-  const totalItems = filteredData.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedData = filteredData.slice(startIndex, endIndex);
-
-  const getVisiblePageNumbers = () => {
-    const pages = [];
-    const half = Math.floor(maxVisiblePages / 2);
-    let start = Math.max(1, currentPage - half);
-    let end = Math.min(totalPages, start + maxVisiblePages - 1);
-
-    if (end - start + 1 < maxVisiblePages) {
-      start = Math.max(1, end - maxVisiblePages + 1);
-    }
-
-    if (start > 1) {
-      pages.push(1);
-      if (start > 2) pages.push('...');
-    }
-
-    for (let i = start; i <= end; i++) pages.push(i);
-
-    if (end < totalPages) {
-      if (end < totalPages - 1) pages.push('...');
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
-  const goToPage = (page) => {
-    if (page === '...' || !page) return;
-    setCurrentPage(Math.min(Math.max(1, page), totalPages));
-  };
-
-  // CSV — will be empty
-  const csvData = [];
-
-  // ─── Table Columns (structure same, just no real data) ────────
-  const columns = useMemo(
-    () => [
-      columnHelper.display({
-        id: 'sno',
-        header: () => <Text textAlign="center">S.No</Text>,
-        cell: ({ row }) => <Text textAlign="center">{row.index + 1}</Text>,
-      }),
-      columnHelper.accessor('uniqueId', {
-        header: () => <Text textAlign="center">Unique ID</Text>,
-        cell: () => <Text textAlign="center">—</Text>,
-      }),
-      columnHelper.accessor('profile_pic', {
-        header: () => <Text textAlign="center">Profile</Text>,
-        cell: () => (
-          <Flex justify="center">
-            <img
-              src={defaultProfilePic}
-              alt="Profile"
-              style={{ width: '40px', height: '40px', borderRadius: '50%' }}
-            />
-          </Flex>
-        ),
-      }),
-      columnHelper.accessor('full_name', {
-        header: () => <Text textAlign="center">Full Name</Text>,
-        cell: () => <Text textAlign="center">—</Text>,
-      }),
-      columnHelper.accessor('mobile', {
-        header: () => <Text textAlign="center">Mobile</Text>,
-        cell: () => <Text textAlign="center">—</Text>,
-      }),
-      columnHelper.accessor('location', {
-        id: 'location',
-        header: () => <Text textAlign="center">Country</Text>,
-        cell: () => (
-          <Flex justify="center" align="center" gap={2}>
-            <Text textAlign="center">—</Text>
-          </Flex>
-        ),
-      }),
-      // ... Add other columns you need with placeholder "—" cells
-      columnHelper.accessor('active', {
-        header: () => <Text textAlign="center">Active</Text>,
-        cell: ({ row }) => (
-          <Flex justify="center" gap={2}>
-            <Switch
-              isChecked={false}
-              onChange={() => handleToggle(row.id, false)}
-              isDisabled={toggleLoading[row.id]}
-            />
-          </Flex>
-        ),
-      }),
-      columnHelper.display({
-        id: 'actions',
-        header: () => <Text textAlign="center">Actions</Text>,
-        cell: () => (
-          <Flex justify="center" gap={2}>
-            <Button size="sm" colorScheme="teal" variant="outline">
-              View More
-            </Button>
-            <Button size="sm" colorScheme="teal" variant="outline">
-              Edit
-            </Button>
-          </Flex>
-        ),
-      }),
-    ],
-    [toggleLoading]
-  );
-
-  const table = useReactTable({
-    data: paginatedData,
-    columns,
-    state: { sorting },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    manualPagination: true,
-    pageCount: totalPages,
-  });
+  // Static Dummy Data - API call ki jagah ye dikhega
+  const dummyUsers = [
+    { id: 1, name: 'Rahul Sharma', email: 'rahul@example.com', status: 'Active', date: '2024-01-10' },
+    { id: 2, name: 'Sneha Gupta', email: 'sneha@example.com', status: 'Inactive', date: '2024-01-12' },
+    { id: 3, name: 'Amit Patel', email: 'amit@example.com', status: 'Active', date: '2024-01-15' },
+    { id: 4, name: 'Pooja Verma', email: 'pooja@example.com', status: 'Pending', date: '2024-01-18' },
+    { id: 5, name: 'Vikas Singh', email: 'vikas@example.com', status: 'Active', date: '2024-01-20' },
+  ];
 
   return (
-    <>
+    <Box pt={{ base: '130px', md: '80px', xl: '80px' }} px="25px">
       <Card
-        flexDirection="column"
-        w="100%"
-        px={{ base: '15px', md: '25px' }}
-        py="25px"
-        borderRadius="16px"
-        boxShadow="0px 4px 20px rgba(0, 0, 0, 0.1)"
-        bg={useColorModeValue('white', 'gray.800')}
-        overflowX="auto"
-      >
-        <Flex
-          px={{ base: '10px', md: '0' }}
-          mb="20px"
-          justifyContent="space-between"
-          align="center"
-          direction={{ base: 'column', md: 'row' }}
-          gap={{ base: '10px', md: '0' }}
-        >
+        direction='column'
+        w='100%'
+        px='0px'
+        overflowX={{ sm: "scroll", lg: "hidden" }}>
+        
+        <Flex px='25px' justify='space-between' mb='20px' align='center'>
           <Text
             color={textColor}
-            fontSize={{ base: 'xl', md: '2xl' }}
-            fontWeight="700"
-          >
-            Users List
+            fontSize='22px'
+            fontWeight='700'
+            lineHeight='100%'>
+            All Users Table
           </Text>
-          <HStack spacing={4}>
-            <InputGroup maxW={{ base: '100%', md: '300px' }}>
-              <InputLeftElement pointerEvents="none">
-                <Icon as={SearchIcon} color="gray.400" />
-              </InputLeftElement>
-              <Input
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                borderRadius="12px"
-              />
-            </InputGroup>
-            <CSVLink
-              data={csvData}
-              filename="users_data.csv"
-              style={{ textDecoration: 'none' }}
-            >
-              <Button colorScheme="teal" variant="outline">
-                Export
-              </Button>
-            </CSVLink>
-          </HStack>
         </Flex>
 
-        <Box overflowX="auto">
-          <Table variant="simple" color="gray.500" mb="24px" mt="12px" minW="1200px">
-            <Thead bg={headerBg}>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <Tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <Th
-                      key={header.id}
-                      px={{ base: '8px', md: '16px' }}
-                      py="12px"
-                      borderColor={borderColor}
-                      cursor="pointer"
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      <Flex justify="center" align="center">
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getIsSorted() ? (
-                          header.column.getIsSorted() === 'asc' ? <ArrowUpIcon ml={2} /> : <ArrowDownIcon ml={2} />
-                        ) : null}
-                      </Flex>
-                    </Th>
-                  ))}
-                </Tr>
-              ))}
-            </Thead>
-            <Tbody>
-              {paginatedData.length === 0 ? (
-                <Tr>
-                  <Td colSpan={columns.length} textAlign="center" py="50px">
-                    <Text color="gray.500" fontSize="lg">No users found</Text>
-                  </Td>
-                </Tr>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <Tr key={row.id} _hover={{ bg: hoverBg }}>
-                    {row.getVisibleCells().map((cell) => (
-                      <Td
-                        key={cell.id}
-                        px={{ base: '8px', md: '16px' }}
-                        py="12px"
-                        borderColor={borderColor}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </Td>
-                    ))}
-                  </Tr>
-                ))
-              )}
-            </Tbody>
-          </Table>
-        </Box>
-
-        {/* Pagination - still visible even when empty */}
-        <Flex justify="space-between" align="center" px={{ base: '10px', md: '25px' }} py="10px">
-          <Text fontSize="sm" color={textColor}>
-            Showing 0 to 0 of 0 users
-          </Text>
-          <HStack spacing={1}>
-            <Button size="sm" isDisabled>Previous</Button>
-            <Button size="sm" variant="solid" colorScheme="teal">1</Button>
-            <Button size="sm" isDisabled>Next</Button>
-          </HStack>
-        </Flex>
+        <Table variant='simple' color='gray.500' mb='24px'>
+          <Thead>
+            <Tr>
+              <Th pe='10px' borderColor={borderColor}>ID</Th>
+              <Th pe='10px' borderColor={borderColor}>NAME</Th>
+              <Th pe='10px' borderColor={borderColor}>EMAIL</Th>
+              <Th pe='10px' borderColor={borderColor}>STATUS</Th>
+              <Th pe='10px' borderColor={borderColor}>JOINING DATE</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {dummyUsers.map((user) => (
+              <Tr key={user.id}>
+                <Td fontSize={{ sm: '14px' }} minW={{ sm: '50px', md: '50px', lg: 'auto' }} borderColor={borderColor}>
+                  {user.id}
+                </Td>
+                <Td fontSize={{ sm: '14px' }} fontWeight="700" color={textColor} borderColor={borderColor}>
+                  {user.name}
+                </Td>
+                <Td fontSize={{ sm: '14px' }} borderColor={borderColor}>
+                  {user.email}
+                </Td>
+                <Td fontSize={{ sm: '14px' }} borderColor={borderColor}>
+                  <Badge 
+                    colorScheme={user.status === 'Active' ? 'green' : user.status === 'Pending' ? 'orange' : 'red'}
+                  >
+                    {user.status}
+                  </Badge>
+                </Td>
+                <Td fontSize={{ sm: '14px' }} borderColor={borderColor}>
+                  {user.date}
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
       </Card>
-
-      {/* ────────────────────────────────────────────────────────────── */}
-      {/*                  ALL MODALS & MAP REMAIN SAME                     */}
-      {/* ────────────────────────────────────────────────────────────── */}
-
-      {/* Address List Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} isCentered size="lg">
-        {/* ... same as your original ... */}
-      </Modal>
-
-      {/* Edit User Modal */}
-      <Modal isOpen={isUserModalOpen} onClose={closeUserModal} isCentered>
-        {/* ... same as your original edit modal with map, address add/delete ... */}
-      </Modal>
-
-      {/* Address Add Details Modal */}
-      <Modal isOpen={isAddressModalOpen} onClose={() => setIsAddressModalOpen(false)} isCentered>
-        {/* ... same form ... */}
-      </Modal>
-
-      {/* Deactivate Reason Modal */}
-      <Modal isOpen={isDeactivateModalOpen} onClose={closeDeactivateModal} isCentered>
-        {/* ... same ... */}
-      </Modal>
-
-      {/* Orders Modal */}
-      <Modal isOpen={isOrdersModalOpen} onClose={closeOrdersModal} isCentered>
-        {/* ... same ... */}
-      </Modal>
-
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        closeOnClick
-        pauseOnHover
-        draggable
-      />
-    </>
+    </Box>
   );
 }

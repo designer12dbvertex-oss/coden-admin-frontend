@@ -23,8 +23,10 @@
     "chakra-react-select": "^6.1.0",
     "chart.js": "^4.5.0",
     "chartjs-plugin-datalabels": "^2.2.0",
+    "date-fns": "^4.1.0",
     "dompurify": "^3.2.6",
     "dotenv": "^16.5.0",
+    "file-saver": "^2.0.5",
     "framer-motion": "^11.3.7",
     "lodash": "^4.17.21",
     "npm-force-resolutions": "^0.0.10",
@@ -32,6 +34,7 @@
     "react-apexcharts": "1.4.1",
     "react-calendar": "^5.0.0",
     "react-chartjs-2": "^5.3.0",
+    "react-csv": "^2.2.2",
     "react-custom-scrollbars-2": "^4.5.0",
     "react-dom": "19.0.0",
     "react-dropzone": "^14.2.3",
@@ -49,7 +52,8 @@
     "stylis": "^4.3.2",
     "stylis-plugin-rtl": "^2.0.2",
     "sweetalert2": "^11.22.2",
-    "web-vitals": "^4.2.2"
+    "web-vitals": "^4.2.2",
+    "xlsx": "^0.18.5"
   },
   "scripts": {
     "start": "react-scripts start",

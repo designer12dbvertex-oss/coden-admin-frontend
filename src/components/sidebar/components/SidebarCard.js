@@ -53,7 +53,7 @@ export default function SidebarDocs() {
           px='10px'
           mt="10px"
           mb='6px'>
-          Welcome to Bharat Works
+          Welcome to Coden
         </Text>
         <Text
           fontSize='14px'
@@ -62,7 +62,7 @@ export default function SidebarDocs() {
           px='10px'
           mb='6px'
           textAlign='center'>
-          Improve your experience with Bharat Works.
+          Improve your experience with Coden.
         </Text>
       </Flex>
     </Flex>

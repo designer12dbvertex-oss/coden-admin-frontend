@@ -23,37 +23,28 @@ import MainDashboard from 'views/admin/dashboard';
 // import Profile from 'views/admin/profile';
 // import DataTables from 'views/admin/dataTables';
 import Users from 'views/admin/User';
-import ServiceProvider from 'views/admin/ServiceProvider';
+
 import AddAboutus from 'views/admin/addAboutUs';
 import AddTermsConditions from 'views/admin/addTermsCondition';
 import AddPrivacyPolicy from 'views/admin/addPrivacyPolicy';
-import Biding from 'views/admin/Biding';
-import DirectHiring from 'views/admin/directHiring';
-import Emergency from 'views/admin/emergencyHiring';
-import WorkCategory from 'views/admin/workCategory';
-import PlatformFee from 'views/admin/platformfee';
+import Subject from 'views/admin/AddSubject';
+import Course from 'views/admin/AddCourse';
+
+import Chapter from 'views/admin/AddChapter';
+
+
 import ContactUs from 'views/admin/CallContact';
 import EmailUs from 'views/admin/EmailContact';
-import SubAdmins from 'views/admin/allSubadmins';
-import Both from 'views/admin/both';
-import RequestUser from 'views/admin/RequestUser';
-import DirectPaymentRequest from 'views/admin/directPaymentRequest';
-import DirectAllPaymentRequest from 'views/admin/directAllPaymentRequest';
-import BidingAllPaymentRequest from 'views/admin/bidingAllPaymentRequest';
-import EmergencyAllPaymentRequest from 'views/admin/emergencyAllPaymentRequest';
-import Dispute from 'views/admin/dispute';
-import AllServiceProvider from 'views/admin/allServiceprovider';
-import UnverifiedServiceProvider from 'views/admin/unverifiedServiceProvider';
-import ChatMonitor from 'views/admin/ChatMonitor';
-import TotalRevenue from 'views/admin/TotalRevenue';
-import Promotion from 'views/admin/Promotion';
-import Banner from 'views/admin/Banner';
-import Worker from 'views/admin/Worker';
-import PendingWorker from 'views/admin/PendingWorker';
-import EmergencyWorkCategory from 'views/admin/emergencyWorkCategory';
-import DirectHiringRefundPaymentRequest from 'views/admin/directHiringRefundRequest';
-import EmergencyHiringRefundPaymentRequest from 'views/admin/emergencyRefundRequest';
-import GetAllRefferal from "views/admin/getAllRefferal";
+
+
+
+
+import Country from 'views/admin/AddCountry';
+import State from 'views/admin/AddState';
+import PendingWorker from 'views/admin/AddCity';
+import City from 'views/admin/AddCity'
+import College from 'views/admin/AddCollege';
+
 import Subscription from "views/admin/Subscription";
 
 // Auth Imports
@@ -67,14 +58,7 @@ import {
   FaUsersCog,
   FaWallet,
 } from 'react-icons/fa';
-import DirectPaymentCreate from 'views/admin/directPaymentCreate';
-import BiddingPaymentCreate from 'views/admin/biddingPaymentCreate';
-import BiddingPaymentREquest from 'views/admin/biddingPaymentRequest';
-import EmergencyPaymentCreate from 'views/admin/emergencyPaymentCreate';
-import EmergencyPaymentREquest from 'views/admin/emergencyPaymentRequest';
-import RefferalSetting from 'views/admin/Refferal';
-import ViewBiddingOrder from 'views/admin/viewBiddingOrder'
-import ViewEmergencygOrder from 'views/admin/viewEmergencyOrder'
+
 const routes = [
   {
     name: 'Main Dashboard',
@@ -93,286 +77,178 @@ const routes = [
         name: 'Users',
         layout: '/admin',
         path: '/users',
-        component: <Users />,
-      },
-      {
-        name: 'Verified Service Provider',
+        component: <Users />  },
+          {
+        name: 'Payment List',
+
         layout: '/admin',
-        path: '/service_provider',
-        component: <ServiceProvider />,
-      },
-      {
-        name: 'Unverified Service Provider',
-        layout: '/admin',
-        path: '/unverified_service_provider',
-        component: <UnverifiedServiceProvider />,
-      },
-      {
-        name: 'Both',
-        layout: '/admin',
-        path: '/both',
-        component: <Both />,
-      },
-      {
-        name: 'All Service Provider',
-        layout: '/admin',
-        path: '/all_service_provider',
-        component: <AllServiceProvider />,
-      },
-      {
-        name: 'Requested User',
-        layout: '/admin',
-        path: '/requests',
-        component: <RequestUser />,
-      },
+         icon: <Icon as={FaWallet} width="20px" height="20px" color="inherit" />,
+        path: '/users',
+        component: <Users />  },
+      
+       
     ],
   },
   {
-    name: 'Co-Workers',
+    name: 'Location',
     layout: '/admin',
     icon: <Icon as={FaUsers} width="20px" height="20px" color="inherit" />,
     collapse: true,
     path: '/co-workers', // parent placeholder path
     items: [
       {
-        name: 'All Co-Worker',
+        name: 'Add Country',
         layout: '/admin',
-        path: '/worker',
-        component: <Worker />,
+        path: '/country',
+        component: <Country />,
       },
       {
-        name: 'Pending Co-Worker',
+        name: 'Add State',
         layout: '/admin',
-        path: '/pending-worker',
-        component: <PendingWorker />,
+        path: '/state',
+        component: <State />,
+      },
+      {
+        name: 'Add City',
+        layout: '/admin',
+        path: '/city',
+        component: <City />,
+      },
+        {
+        name: 'Add College',
+        layout: '/admin',
+        path: '/college',
+        component: <College />,
       },
     ],
   },
+ {
+        name: 'Add Tags',
+        layout: '/admin',   
+        icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />,     
+        path: '/pending-worker',
+        
+        component: <PendingWorker />,
+      },
 
+ 
   {
-    name: 'Sub Admins',
-    layout: '/admin',
-    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
-    path: '/sub_admins',
-    component: <SubAdmins />,
-  },
-  {
-    name: 'Work Category',
-    layout: '/admin',
-    icon: <Icon as={MdCategory} width="20px" height="20px" color="inherit" />,
-    path: '/work_category',
-    component: <WorkCategory />,
-  },
-  {
-    name: 'Emergency Work Category',
-    layout: '/admin',
-    icon: <Icon as={MdCategory} width="20px" height="20px" color="inherit" />,
-    path: '/emergency_work_category',
-    component: <EmergencyWorkCategory />,
-  },
-  {
-    name: 'Platform Fees',
-    layout: '/admin',
-    icon: (
-      <Icon as={MdAttachMoney} width="20px" height="20px" color="inherit" />
-    ),
-    path: '/platform_fee',
-    component: <PlatformFee />,
-  },
-  {
-    name: 'Chat Monitor',
-    layout: '/admin',
-    icon: <Icon as={MdChat} width="20px" height="20px" color="inherit" />,
-    path: '/chat_monitor',
-    component: <ChatMonitor />,
-  },
-  {
-    name: 'Hiring',
+    name: 'Academic Structure',
     layout: '/admin',
     icon: <Icon as={FaUsersCog} width="20px" height="20px" color="inherit" />,
     collapse: true,
     path: '/hiring', // parent (not a real page)
     items: [
 			{
-        name: 'Direct Hiring',
+        name: 'Add Courses',
         layout: '/admin',
-        path: '/direct-hiring',
-        component: <DirectHiring />,
+        path: '/course',
+        component: <Course/>,
       },
       {
-        name: 'Biding Hiring',
+        name: 'Add Subject',
         layout: '/admin',
-        path: '/biding',
-        component: <Biding />,
+        path: '/subject',
+        component: <Subject />,
       },
       {
-        name: 'Emergency Hiring',
+        name: 'Add Chapter',
+        layout: '/admin',
+        path: '/chapter',
+        component: <Chapter />,
+      },
+    ],
+  },
+   {
+        name: 'Test',
         layout: '/admin',
         path: '/emergency-hiring',
-        component: <Emergency />,
+         icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+        component: <Chapter />,
       },
-    ],
-  },
-  {
-    name: 'Payment Create',
-    layout: '/admin',
-    icon: <Icon as={FaWallet} width="20px" height="20px" color="inherit" />,
-    collapse: true,
-    path: '/payment-create', // parent path (not a real page)
-    items: [
-      {
-        name: 'Direct Payment Create',
+        {
+        name: 'Video Lectures',
         layout: '/admin',
-        path: '/direct-payment-create',
-        component: <DirectPaymentCreate />,
+        path: '/emergency-hiring',
+         icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+        component: <Chapter />,
       },
-      {
-        name: 'Bidding Payment Create',
+       {
+        name: 'QBank $ Practice',
         layout: '/admin',
-        path: '/bidding_payment_create',
-        component: <BiddingPaymentCreate />,
+        path: '/emergency-hiring',
+         icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+        component:<Chapter />,
       },
-      {
-        name: 'Emergency Payment Create',
-        layout: '/admin',
-        path: '/emergency_payment_create',
-        component: <EmergencyPaymentCreate />,
-      },
-    ],
-  },
-  {
-    name: 'Payment Requests', // 👈 Dropdown title
-    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
-    collapse: true, // enables dropdown
-    layout: '/admin',
-    items: [
-      {
-        name: 'Direct All Payment Request',
-        layout: '/admin',
-        path: '/direct_all_payment_request',
-        component: <DirectAllPaymentRequest />,
-      },
-      {
-        name: 'Biding All Payment Request',
-        layout: '/admin',
-        path: '/bidding_all_payment_request',
-        component: <BidingAllPaymentRequest />,
-      },
-      {
-        name: 'Emergency All Payment Request',
-        layout: '/admin',
-        path: '/emergency_all_payment_request',
-        component: <EmergencyAllPaymentRequest />,
-      },
-      {
-        name: 'Direct Payment Request',
-        layout: '/admin',
-        path: '/direct_payment_request',
-        component: <DirectPaymentRequest />,
-      },
-      {
-        name: 'Bidding Payment Request',
-        layout: '/admin',
-        path: '/bidding_payment_request',
-        component: <BiddingPaymentREquest />,
-      },
-      {
-        name: 'Emergency Payment Request',
-        layout: '/admin',
-        path: '/emergency_payment_request',
-        component: <EmergencyPaymentREquest />,
-      },
-    ],
-  },
+ 
+  
+//   {
+//     name: 'Total Revenue',
+//     layout: '/admin',
+//     icon: <Icon as={FaChartLine} width="20px" height="20px" color="inherit" />,
+//     path: '/revenue',
+//     component: <TotalRevenue />,
+//   },
+//   {
+//     name: 'Promotion',
+//     layout: '/admin',
+//     icon: <Icon as={FaBullhorn} width="20px" height="20px" color="inherit" />,
+//     path: '/promotion',
+//     component: <Promotion />,
+//   },
+//   {
+//     name: 'App Banner',
+//     layout: '/admin',
+//     icon: <Icon as={MdCampaign} width="20px" height="20px" color="inherit" />,
+//     path: '/banner',
+//     component: <Banner />,
+//   },
+//   {
+//     name: 'All Dispute',
+//     layout: '/admin',
+//     icon: (
+//       <Icon as={MdReportProblem} width="20px" height="20px" color="inherit" />
+//     ),
+//     path: '/dispute',
+//     component: <Dispute />,
+//   },
+//   {
+//   name: 'Bidding Order Details',
+//   layout: '/admin',
+//   path: '/bidding-order/:orderId',          
+//   component: <ViewBiddingOrder/>, 
 
-  {
-    name: 'Refund Management',
-    icon: <Icon as={FaUndoAlt} width="20px" height="20px" color="inherit" />,
-    collapse: true,
-    layout: '/admin',
-    items: [
-      {
-        name: 'Direct Hiring Refunds',
-        layout: '/admin',
-        path: '/direct_hiring_refund_payment_request', // ✅ fixed
-        component: <DirectHiringRefundPaymentRequest />,
-      },
-      {
-        name: 'Emergency Hiring Refunds',
-        layout: '/admin',
-        path: '/emergency_hiring_refund_payment_request', // ✅ fixed
-        component: <EmergencyHiringRefundPaymentRequest />,
-      },
-    ],
-  },
+// },
+//   {
+//   name: 'Emergency Order Details',
+//   layout: '/admin',
+//   path:'/emergency-order/:orderId',          
+//   component: <ViewEmergencygOrder/>, 
 
-  {
-    name: 'Total Revenue',
-    layout: '/admin',
-    icon: <Icon as={FaChartLine} width="20px" height="20px" color="inherit" />,
-    path: '/revenue',
-    component: <TotalRevenue />,
-  },
-  {
-    name: 'Promotion',
-    layout: '/admin',
-    icon: <Icon as={FaBullhorn} width="20px" height="20px" color="inherit" />,
-    path: '/promotion',
-    component: <Promotion />,
-  },
-  {
-    name: 'App Banner',
-    layout: '/admin',
-    icon: <Icon as={MdCampaign} width="20px" height="20px" color="inherit" />,
-    path: '/banner',
-    component: <Banner />,
-  },
-  {
-    name: 'All Dispute',
-    layout: '/admin',
-    icon: (
-      <Icon as={MdReportProblem} width="20px" height="20px" color="inherit" />
-    ),
-    path: '/dispute',
-    component: <Dispute />,
-  },
-  {
-  name: 'Bidding Order Details',
-  layout: '/admin',
-  path: '/bidding-order/:orderId',          
-  component: <ViewBiddingOrder/>, 
-
-},
-  {
-  name: 'Emergency Order Details',
-  layout: '/admin',
-  path:'/emergency-order/:orderId',          
-  component: <ViewEmergencygOrder/>, 
-
-},
+// },
 
 
 
-	{
-    name: 'Refferal Settings',
-    icon:  <Icon as={MdCardGiftcard} width="20px" height="20px" color="inherit" />,
-    collapse: true,
-    layout: '/admin',
-    items: [
-      {
-        name: 'Setting',
-        layout: '/admin',
-        path: '/refferal', // ✅ fixed
-        component: <RefferalSetting />,
-      },
-      {
-        name: 'getAllRefferal',
-        layout: '/admin',
-        path: '/getRefferal', // ✅ fixed
-        component: <GetAllRefferal />,
-      },
-    ],
-  },
+	// {
+  //   name: 'Refferal Settings',
+  //   icon:  <Icon as={MdCardGiftcard} width="20px" height="20px" color="inherit" />,
+  //   collapse: true,
+  //   layout: '/admin',
+  //   items: [
+  //     {
+  //       name: 'Setting',
+  //       layout: '/admin',
+  //       path: '/refferal', // ✅ fixed
+  //       component: <RefferalSetting />,
+  //     },
+  //     {
+  //       name: 'getAllRefferal',
+  //       layout: '/admin',
+  //       path: '/getRefferal', // ✅ fixed
+  //       component: <GetAllRefferal />,
+  //     },
+  //   ],
+  // },
 	{
     name: 'Subscriptions',
     layout: '/admin',
