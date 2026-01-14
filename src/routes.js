@@ -13,8 +13,8 @@ import {
   MdCampaign,
   MdCardGiftcard,
   MdPeople,
-	MdDescription,
-	MdSubscriptions,
+  MdDescription,
+  MdSubscriptions,
 } from 'react-icons/md';
 
 // Admin Imports
@@ -32,20 +32,17 @@ import Course from 'views/admin/AddCourse';
 
 import Chapter from 'views/admin/AddChapter';
 
-
 import ContactUs from 'views/admin/CallContact';
 import EmailUs from 'views/admin/EmailContact';
-
-
-
 
 import Country from 'views/admin/AddCountry';
 import State from 'views/admin/AddState';
 import PendingWorker from 'views/admin/AddCity';
-import City from 'views/admin/AddCity'
+import City from 'views/admin/AddCity';
 import College from 'views/admin/AddCollege';
+import TestManagement from 'views/admin/test';
 
-import Subscription from "views/admin/Subscription";
+import Subscription from 'views/admin/Subscription';
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
@@ -77,16 +74,16 @@ const routes = [
         name: 'Users',
         layout: '/admin',
         path: '/users',
-        component: <Users />  },
-          {
+        component: <Users />,
+      },
+      {
         name: 'Payment List',
 
         layout: '/admin',
-         icon: <Icon as={FaWallet} width="20px" height="20px" color="inherit" />,
+        icon: <Icon as={FaWallet} width="20px" height="20px" color="inherit" />,
         path: '/users',
-        component: <Users />  },
-      
-       
+        component: <Users />,
+      },
     ],
   },
   {
@@ -114,7 +111,7 @@ const routes = [
         path: '/city',
         component: <City />,
       },
-        {
+      {
         name: 'Add College',
         layout: '/admin',
         path: '/college',
@@ -122,16 +119,15 @@ const routes = [
       },
     ],
   },
- {
-        name: 'Add Tags',
-        layout: '/admin',   
-        icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />,     
-        path: '/pending-worker',
-        
-        component: <PendingWorker />,
-      },
+  {
+    name: 'Add Tags',
+    layout: '/admin',
+    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />,
+    path: '/pending-worker',
 
- 
+    component: <PendingWorker />,
+  },
+
   {
     name: 'Academic Structure',
     layout: '/admin',
@@ -139,11 +135,11 @@ const routes = [
     collapse: true,
     path: '/hiring', // parent (not a real page)
     items: [
-			{
+      {
         name: 'Add Courses',
         layout: '/admin',
         path: '/course',
-        component: <Course/>,
+        component: <Course />,
       },
       {
         name: 'Add Subject',
@@ -159,77 +155,74 @@ const routes = [
       },
     ],
   },
-   {
-        name: 'Test',
-        layout: '/admin',
-        path: '/emergency-hiring',
-         icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
-        component: <Chapter />,
-      },
-        {
-        name: 'Video Lectures',
-        layout: '/admin',
-        path: '/emergency-hiring',
-         icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
-        component: <Chapter />,
-      },
-       {
-        name: 'QBank $ Practice',
-        layout: '/admin',
-        path: '/emergency-hiring',
-         icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
-        component:<Chapter />,
-      },
- 
-  
-//   {
-//     name: 'Total Revenue',
-//     layout: '/admin',
-//     icon: <Icon as={FaChartLine} width="20px" height="20px" color="inherit" />,
-//     path: '/revenue',
-//     component: <TotalRevenue />,
-//   },
-//   {
-//     name: 'Promotion',
-//     layout: '/admin',
-//     icon: <Icon as={FaBullhorn} width="20px" height="20px" color="inherit" />,
-//     path: '/promotion',
-//     component: <Promotion />,
-//   },
-//   {
-//     name: 'App Banner',
-//     layout: '/admin',
-//     icon: <Icon as={MdCampaign} width="20px" height="20px" color="inherit" />,
-//     path: '/banner',
-//     component: <Banner />,
-//   },
-//   {
-//     name: 'All Dispute',
-//     layout: '/admin',
-//     icon: (
-//       <Icon as={MdReportProblem} width="20px" height="20px" color="inherit" />
-//     ),
-//     path: '/dispute',
-//     component: <Dispute />,
-//   },
-//   {
-//   name: 'Bidding Order Details',
-//   layout: '/admin',
-//   path: '/bidding-order/:orderId',          
-//   component: <ViewBiddingOrder/>, 
+  {
+    name: 'Test',
+    layout: '/admin',
+    path: '/tests',
+    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+    component: <TestManagement />,
+  },
+  {
+    name: 'Video Lectures',
+    layout: '/admin',
+    path: '/emergency-hiring',
+    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+    component: <Chapter />,
+  },
+  {
+    name: 'QBank $ Practice',
+    layout: '/admin',
+    path: '/emergency-hiring',
+    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+    component: <Chapter />,
+  },
 
-// },
-//   {
-//   name: 'Emergency Order Details',
-//   layout: '/admin',
-//   path:'/emergency-order/:orderId',          
-//   component: <ViewEmergencygOrder/>, 
+  //   {
+  //     name: 'Total Revenue',
+  //     layout: '/admin',
+  //     icon: <Icon as={FaChartLine} width="20px" height="20px" color="inherit" />,
+  //     path: '/revenue',
+  //     component: <TotalRevenue />,
+  //   },
+  //   {
+  //     name: 'Promotion',
+  //     layout: '/admin',
+  //     icon: <Icon as={FaBullhorn} width="20px" height="20px" color="inherit" />,
+  //     path: '/promotion',
+  //     component: <Promotion />,
+  //   },
+  //   {
+  //     name: 'App Banner',
+  //     layout: '/admin',
+  //     icon: <Icon as={MdCampaign} width="20px" height="20px" color="inherit" />,
+  //     path: '/banner',
+  //     component: <Banner />,
+  //   },
+  //   {
+  //     name: 'All Dispute',
+  //     layout: '/admin',
+  //     icon: (
+  //       <Icon as={MdReportProblem} width="20px" height="20px" color="inherit" />
+  //     ),
+  //     path: '/dispute',
+  //     component: <Dispute />,
+  //   },
+  //   {
+  //   name: 'Bidding Order Details',
+  //   layout: '/admin',
+  //   path: '/bidding-order/:orderId',
+  //   component: <ViewBiddingOrder/>,
 
-// },
+  // },
+  //   {
+  //   name: 'Emergency Order Details',
+  //   layout: '/admin',
+  //   path:'/emergency-order/:orderId',
+  //   component: <ViewEmergencygOrder/>,
 
+  // },
 
-
-	// {
+  // {
   //   name: 'Refferal Settings',
   //   icon:  <Icon as={MdCardGiftcard} width="20px" height="20px" color="inherit" />,
   //   collapse: true,
@@ -249,10 +242,12 @@ const routes = [
   //     },
   //   ],
   // },
-	{
+  {
     name: 'Subscriptions',
     layout: '/admin',
-    icon: <Icon as={MdSubscriptions} width="20px" height="20px" color="inherit" />,
+    icon: (
+      <Icon as={MdSubscriptions} width="20px" height="20px" color="inherit" />
+    ),
     path: '/subscription',
     component: <Subscription />,
   },
