@@ -24,11 +24,13 @@ import MainDashboard from 'views/admin/dashboard';
 // import DataTables from 'views/admin/dataTables';
 import Users from 'views/admin/User';
 
+
 import AddAboutus from 'views/admin/addAboutUs';
 import AddTermsConditions from 'views/admin/addTermsCondition';
 import AddPrivacyPolicy from 'views/admin/addPrivacyPolicy';
 import Subject from 'views/admin/AddSubject';
 import Course from 'views/admin/AddCourse';
+import SubSubject from 'views/admin/AddSubSubject';
 
 import Chapter from 'views/admin/AddChapter';
 
@@ -42,7 +44,9 @@ import City from 'views/admin/AddCity';
 import College from 'views/admin/AddCollege';
 import TestManagement from 'views/admin/test';
 
-import Subscription from 'views/admin/Subscription';
+import Subscription from "views/admin/Subscription";
+import ProfilePage from "views/admin/profile/ProfileSetting";
+import MCQ from "views/admin/AddMCQ";
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
@@ -64,6 +68,13 @@ const routes = [
     icon: <Icon as={MdHome} width="20px" height="20px" color="inherit" />,
     component: <MainDashboard />,
   },
+{
+  name: "Profile Setting",
+  layout: "/admin",
+  path: "/profile-setting",
+  component: <ProfilePage />,
+  showInSidebar: false, // Yeh line sabse zaroori hai
+},
   {
     name: 'User Management',
     layout: '/admin',
@@ -148,34 +159,84 @@ const routes = [
         component: <Subject />,
       },
       {
+        name: 'Add Sub-Subject',
+        layout: '/admin',
+        path: '/subsubject',
+        component: <SubSubject/>,
+      },
+      {
         name: 'Add Chapter',
         layout: '/admin',
         path: '/chapter',
         component: <Chapter />,
       },
+      {
+        name: 'Add MCQ',
+        layout: '/admin',
+        path: '/mcq',
+        component: <MCQ/>,
+      },
     ],
   },
-  {
-    name: 'Test',
-    layout: '/admin',
-    path: '/tests',
-    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
-    component: <TestManagement />,
-  },
-  {
-    name: 'Video Lectures',
-    layout: '/admin',
-    path: '/emergency-hiring',
-    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
-    component: <Chapter />,
-  },
-  {
-    name: 'QBank $ Practice',
-    layout: '/admin',
-    path: '/emergency-hiring',
-    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
-    component: <Chapter />,
-  },
+  
+   {
+        name: 'Test',
+        layout: '/admin',
+        path: '/test',
+         icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+        component: <Chapter />,
+      },
+        {
+        name: 'Video Lectures',
+        layout: '/admin',
+        path: '/emergency-hiring',
+         icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+        component: <Chapter />,
+      },
+       {
+        name: 'QBank $ Practice',
+        layout: '/admin',
+        path: '/emergency-hiring',
+         icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+        component:<Chapter />,
+      },
+
+
+//   {
+//     name: 'Total Revenue',
+//     layout: '/admin',
+//     icon: <Icon as={FaChartLine} width="20px" height="20px" color="inherit" />,
+//     path: '/revenue',
+//     component: <TotalRevenue />,
+//   },
+//   {
+//     name: 'Promotion',
+//     layout: '/admin',
+//     icon: <Icon as={FaBullhorn} width="20px" height="20px" color="inherit" />,
+//     path: '/promotion',
+//     component: <Promotion />,
+//   },
+//   {
+//     name: 'App Banner',
+//     layout: '/admin',
+//     icon: <Icon as={MdCampaign} width="20px" height="20px" color="inherit" />,
+//     path: '/banner',
+//     component: <Banner />,
+//   },
+//   {
+//     name: 'All Dispute',
+//     layout: '/admin',
+//     icon: (
+//       <Icon as={MdReportProblem} width="20px" height="20px" color="inherit" />
+//     ),
+//     path: '/dispute',
+//     component: <Dispute />,
+//   },
+//   {
+//   name: 'Bidding Order Details',
+//   layout: '/admin',
+//   path: '/bidding-order/:orderId',
+//   component: <ViewBiddingOrder/>,
 
   //   {
   //     name: 'Total Revenue',
@@ -251,20 +312,20 @@ const routes = [
     path: '/subscription',
     component: <Subscription />,
   },
-  {
-    name: 'Contact Us',
-    layout: '/admin',
-    icon: <Icon as={MdPhone} width="20px" height="20px" color="inherit" />,
-    path: '/contact-us',
-    component: <ContactUs />,
-  },
-  {
-    name: 'Email Us',
-    layout: '/admin',
-    icon: <Icon as={MdEmail} width="20px" height="20px" color="inherit" />,
-    path: '/email-us',
-    component: <EmailUs />,
-  },
+  // {
+  //   name: 'Contact Us',
+  //   layout: '/admin',
+  //   icon: <Icon as={MdPhone} width="20px" height="20px" color="inherit" />,
+  //   path: '/contact-us',
+  //   component: <ContactUs />,
+  // },
+  // {
+  //   name: 'Email Us',
+  //   layout: '/admin',
+  //   icon: <Icon as={MdEmail} width="20px" height="20px" color="inherit" />,
+  //   path: '/email-us',
+  //   component: <EmailUs />,
+  // },
   {
     name: 'CMS Pages',
     layout: '/admin',

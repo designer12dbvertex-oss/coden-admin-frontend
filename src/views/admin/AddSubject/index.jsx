@@ -270,7 +270,7 @@ export default function SubjectManagement() {
       setSubjects(subjectRes.data.data || []);
     } catch (err) {
       console.error("Fetch Error:", err);
-      toast({ title: 'Data load karne mein dikkat aayi', status: 'error' });
+      toast({ title: 'Failed to fetch courses', status: 'error' });
     }
   };
 
@@ -279,7 +279,7 @@ export default function SubjectManagement() {
   // 2. Add Subject (POST /api/admin/subjects)
   const handleAddSubject = async () => {
     if (!subjectName || !selectedCourse) {
-      return toast({ title: 'Course select karein aur Subject ka naam bharein', status: 'warning' });
+      return toast({ title: 'Please Select Course and Subject Name', status: 'warning' });
     }
     setLoading(true);
     try {
@@ -287,7 +287,7 @@ export default function SubjectManagement() {
         { name: subjectName, courseId: selectedCourse }, 
         getHeaders()
       );
-      toast({ title: 'Subject add ho gaya!', status: 'success' });
+      toast({ title: 'Subject Added!', status: 'success' });
       setSubjectName('');
       fetchData();
     } catch (err) { 
@@ -319,26 +319,27 @@ export default function SubjectManagement() {
         { name: editData.name, courseId: editData.courseId },
         getHeaders()
       );
-      toast({ title: 'Subject update ho gaya!', status: 'success' });
+      toast({ title: 'Subject Added!', status: 'success' });
       onClose();
       fetchData();
     } catch (err) { 
-      toast({ title: 'Update fail ho gaya', status: 'error' }); 
+      toast({ title: ' Failed to Update ', status: 'error' }); 
     }
   };
 
   // 6. Delete Call (DELETE /api/admin/subjects/:id)
   const handleDelete = async (id) => {
-    if(window.confirm("Kya aap is subject ko hamesha ke liye delete karna chahte hain?")) {
-      try {
-        await axios.delete(`${baseUrl}api/admin/subjects/${id}`, getHeaders());
-        toast({ title: 'Subject delete ho gaya', status: 'info' });
-        fetchData();
-      } catch (err) { 
-        toast({ title: 'Delete fail ho gaya', status: 'error' }); 
-      }
+  if (window.confirm("Are you sure you want to delete this?")) {
+    try {
+      await axios.delete(`${baseUrl}api/admin/subjects/${id}`, getHeaders());
+      toast({ title: 'Subject has been deleted successfully', status: 'info' });
+      fetchData();
+    } catch (err) {
+      toast({ title: 'Failed to delete subject', status: 'error' });
     }
-  };
+  }
+};
+
 
   return (
     <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
@@ -348,9 +349,9 @@ export default function SubjectManagement() {
         <Text color={textColor} fontSize='22px' fontWeight='700' mb='20px'>Subject Management</Text>
         <Flex gap='20px' align='flex-end' direction={{ base: 'column', md: 'row' }}>
           <FormControl flex='1'>
-            <FormLabel>Course Select Karein</FormLabel>
+            <FormLabel>Course Selected</FormLabel>
             <Select 
-              placeholder='Course Chunein' 
+              placeholder='Select Course' 
               value={selectedCourse} 
               onChange={(e) => setSelectedCourse(e.target.value)}
             >
