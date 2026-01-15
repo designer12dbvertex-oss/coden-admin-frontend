@@ -33,6 +33,7 @@ import Course from 'views/admin/AddCourse';
 import SubSubject from 'views/admin/AddSubSubject';
 
 import Chapter from 'views/admin/AddChapter';
+import Payment from 'views/admin/Payment';
 
 
 import ContactUs from 'views/admin/CallContact';
@@ -79,7 +80,7 @@ const routes = [
   showInSidebar: false, // Yeh line sabse zaroori hai
 },
   {
-    name: 'User Management',
+    name: 'User List',
     layout: '/admin',
     icon: <Icon as={MdPeople} width="20px" height="20px" color="inherit" />,
     collapse: true,
@@ -89,13 +90,7 @@ const routes = [
         layout: '/admin',
         path: '/users',
         component: <Users />  },
-          {
-        name: 'Payment List',
-
-        layout: '/admin',
-         icon: <Icon as={FaWallet} width="20px" height="20px" color="inherit" />,
-        path: '/users',
-        component: <Users />  },
+         
       
        
     ],
@@ -279,6 +274,12 @@ const routes = [
     path: '/subscription',
     component: <Subscription />,
   },
+   {
+        name: 'Payment List',
+        layout: '/admin',
+         icon: <Icon as={FaWallet} width="20px" height="20px" color="inherit" />,
+        path: '/payment',
+        component: <Payment/>  },
   // {
   //   name: 'Contact Us',
   //   layout: '/admin',
