@@ -2,325 +2,172 @@
 'use client';
 
 import {
-  Box,
-  Flex,
-  Text,
-  useColorModeValue,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Badge,
-  Icon,
-  Tooltip,
-  Button,
-  Input,
-  Switch,
-  useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-  FormControl,
-  FormLabel,
-  useDisclosure,
+  Box, Flex, Text, useColorModeValue, Table, Thead, Tbody, Tr, Th, Td,
+  Badge, Button, Input, Switch, useToast, Modal, ModalOverlay, Select,
+  ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
+  FormControl, FormLabel, useDisclosure, Textarea, IconButton, Stack, Spinner
 } from '@chakra-ui/react';
 import axios from 'axios';
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CheckIcon, CloseIcon, EditIcon } from '@chakra-ui/icons';
-import { FaFileCsv } from 'react-icons/fa'; // Import CSV icon
-
+import { EditIcon, AddIcon, DeleteIcon, SmallAddIcon } from '@chakra-ui/icons';
 import Card from 'components/card/Card';
 
 export default function SubscriptionPlans() {
   const [plans, setPlans] = React.useState([]);
   const [editingPlan, setEditingPlan] = React.useState(null);
-  const [formData, setFormData] = React.useState({});
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
-  const [error, setError] = React.useState(null);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
   const textColor = useColorModeValue('secondaryGray.900', 'white');
-  const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
-  const bgHover = useColorModeValue('gray.50', 'whiteAlpha.100');
-  const navigate = useNavigate();
-
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
 
-  const fetchSubscriptionPlans = async () => {
-    try {
-      if (!baseUrl || !token) throw new Error('Missing config');
+  // Form Initial State
+  const initialForm = {
+    name: '',
+    features: '',
+    pricing: [{ months: 1, price: '' }],
+    isActive: true,
+  };
 
+  const [formData, setFormData] = React.useState(initialForm);
+
+  // 🟢 1. Fetch Plans (Backend Endpoint: /api/plans/admin/all-plans)
+  const fetchPlans = async () => {
+    try {
       setLoading(true);
-      const response = await axios.get(`${baseUrl}api/subscription/admin/all`, {
+      const response = await axios.get(`${baseUrl}api/plans/admin/all-plans`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!response.data.status || !Array.isArray(response.data.data)) {
-        throw new Error('Invalid response');
+      if (response.data.status) {
+        setPlans(response.data.data);
       }
-
-      const sortedPlans = response.data.data.sort((a, b) => a.price - b.price);
-      setPlans(sortedPlans);
-      setLoading(false);
     } catch (err) {
-      console.error(err);
-      if (
-        err.response?.status === 401 ||
-        err.response?.data?.message?.includes('authorized')
-      ) {
-        localStorage.removeItem('token');
-        navigate('/');
-      } else {
-        setError(err.message || 'Failed to load plans');
-        setLoading(false);
-      }
+      console.error("Fetch Error:", err);
+      toast({ title: 'Error loading plans', description: 'Backend connection failed', status: 'error', position: 'top-right' });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleEditClick = (plan) => {
-    setEditingPlan(plan);
-    setFormData({ ...plan });
+  React.useEffect(() => { fetchPlans(); }, []);
+
+  // 🟢 2. Pricing Row Handlers
+  const addPricingRow = () => {
+    setFormData({ ...formData, pricing: [...formData.pricing, { months: 1, price: '' }] });
+  };
+
+  const removePricingRow = (index) => {
+    const newPricing = formData.pricing.filter((_, i) => i !== index);
+    setFormData({ ...formData, pricing: newPricing });
+  };
+
+  const handlePricingChange = (index, field, value) => {
+    const newPricing = [...formData.pricing];
+    newPricing[index][field] = field === 'price' ? value : Number(value);
+    setFormData({ ...formData, pricing: newPricing });
+  };
+
+  // 🟢 3. Modal Controls
+  const handleOpenModal = (plan = null) => {
+    if (plan) {
+      setEditingPlan(plan);
+      setFormData({
+        name: plan.name,
+        isActive: plan.isActive,
+        features: plan.features?.join(', ') || '',
+        pricing: plan.pricing?.length > 0 ? plan.pricing : [{ months: 1, price: '' }],
+      });
+    } else {
+      setEditingPlan(null);
+      setFormData(initialForm);
+    }
     onOpen();
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
+  // 🟢 4. Save Logic (Backend Endpoints: /create-plan & /update-plan)
   const handleSave = async () => {
+    if (!formData.name || formData.pricing.some(p => !p.price)) {
+      return toast({ title: "Validation Error", description: "Please fill all fields", status: "warning" });
+    }
+
     setSaving(true);
     try {
-      const response = await axios.put(
-        `${baseUrl}api/subscription/update/${editingPlan._id}`,
-        formData,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const payload = {
+        ...formData,
+        pricing: formData.pricing.map(p => ({ months: Number(p.months), price: Number(p.price) })),
+        features: formData.features.split(',').map(f => f.trim()).filter(f => f !== ''),
+      };
+
+      // Match your backend route structure
+      const url = editingPlan 
+        ? `${baseUrl}api/plans/update-plan/${editingPlan._id}` 
+        : `${baseUrl}api/plans/create-plan`;
+      
+      const method = editingPlan ? 'put' : 'post';
+
+      const response = await axios[method](url, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (response.data.status) {
-        toast({
-          title: 'Success',
-          description: 'Plan updated successfully!',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-          position: 'top-right',
-        });
-
-        // Update the plan in local state
-        setPlans((prev) =>
-          prev.map((p) => (p._id === editingPlan._id ? response.data.data : p)),
-        );
+        toast({ title: 'Plan Saved Successfully', status: 'success' });
+        fetchPlans();
         onClose();
       }
     } catch (err) {
-      console.error(err);
-      toast({
-        title: 'Error',
-        description: err.response?.data?.message || 'Failed to update plan',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-        position: 'top-right',
-      });
+      toast({ title: 'Operation failed', description: err.response?.data?.message || 'Server Error', status: 'error' });
     } finally {
       setSaving(false);
     }
   };
-  const handleExportCSV = () => {
-    if (plans.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no subscription plans to export.',
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
-        position: 'top-right',
-      });
-      return;
-    }
-
-    // Define CSV headers (matching table headers)
-    const headers = [
-      'Plan',
-      'Price',
-      'No-Comm Tasks',
-      'Total Hires',
-      'Emergency',
-      'Commission (Normal) Min',
-      'Commission (Normal) Max',
-      'Emergency Comm',
-      'Priority',
-      'Active',
-    ];
-
-    // Map plans data to CSV rows
-    const csvRows = plans.map((plan) =>
-      [
-        `"${plan.name}"`, // Enclose name in quotes to handle commas if any
-        plan.price === 0 ? 'Free' : `₹${plan.price}/mo`,
-        plan.noCommissionTasksPerMonth,
-        plan.totalTaskHiresLimit,
-        plan.emergencyTaskLimit,
-        `${plan.commissionInsideLimit}%`, // Separate min/max for clarity
-        `${plan.commissionAboveLimit}%`,
-        `${plan.commissionEmergency}%`,
-        plan.priorityListing ? 'Yes' : 'No',
-        plan.isActive ? 'Active' : 'Inactive',
-      ].join(','),
-    ); // Join array elements with a comma
-
-    // Combine headers and rows
-    const csvContent = [
-      headers.join(','), // Join headers with a comma
-      ...csvRows,
-    ].join('\n'); // Join all rows with a newline character
-
-    // Create a Blob and download it
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', 'subscription_plans.csv');
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast({
-        title: 'Export Successful',
-        description: 'Subscription plans exported to CSV.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-        position: 'top-right',
-      });
-    } else {
-      toast({
-        title: 'Export Failed',
-        description:
-          'Your browser does not support downloading files directly.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-        position: 'top-right',
-      });
-    }
-  };
-
-  React.useEffect(() => {
-    fetchSubscriptionPlans();
-  }, []);
-
-  const getPlanBadge = (name) => {
-    const n = name.split(' ')[0];
-    if (n === 'Starter') return <Badge colorScheme="gray">Free</Badge>;
-    if (n === 'Professional') return <Badge colorScheme="blue">Pro</Badge>;
-    if (n === 'Premium+') return <Badge colorScheme="purple">Premium+</Badge>;
-    return <Badge>{n}</Badge>;
-  };
-
-  if (loading) {
-    return (
-      <Card p="25px" borderRadius="20px" boxShadow="lg">
-        <Text fontSize="22px" fontWeight="700" color={textColor}>
-          Loading plans...
-        </Text>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card p="25px" borderRadius="20px" boxShadow="lg" mt="80px">
-        <Text fontSize="22px" fontWeight="700" color="red.500">
-          Error: {error}
-        </Text>
-      </Card>
-    );
-  }
 
   return (
-    <>
-      <Card
-        flexDirection="column"
-        w="100%"
-        px="25px"
-        py="25px"
-        borderRadius="20px"
-        boxShadow="lg"
-        mt="80px"
-      >
-        <Flex mb="30px" justifyContent="space-between" align="center">
-          <Text color={textColor} fontSize="28px" fontWeight="700">
-            Subscription Plans (Admin)
-          </Text>
-          <Button
-            leftIcon={<Icon as={FaFileCsv} />}
-            colorScheme="green"
-            onClick={handleExportCSV}
-          >
-            Export
-          </Button>
-        </Flex>
+    <Card flexDirection="column" w="100%" px="25px" py="25px" mt="80px" boxShadow="lg" borderRadius="20px">
+      <Flex mb="30px" justifyContent="space-between" align="center">
+        <Box>
+          <Text color={textColor} fontSize="22px" fontWeight="700">Subscription Plans</Text>
+          <Text color="secondaryGray.600" fontSize="sm">Manage plan pricing and features</Text>
+        </Box>
+        <Button leftIcon={<AddIcon />} colorScheme="brand" onClick={() => handleOpenModal()}>
+          Create Plan
+        </Button>
+      </Flex>
 
+      {loading ? (
+        <Flex justify="center" align="center" minH="200px"><Spinner /></Flex>
+      ) : (
         <Box overflowX="auto">
           <Table variant="simple" color={textColor}>
-            <Thead>
-              <Tr bg={useColorModeValue('gray.50', 'navy.800')}>
-                <Th>Plan</Th>
-                <Th>Price</Th>
-                <Th>No-Comm Tasks</Th>
-                <Th>Total Hires</Th>
-                <Th>Emergency</Th>
-                <Th>Commission (Normal)</Th>
-                <Th>Emergency Comm</Th>
-                <Th>Priority</Th>
-                <Th>Active</Th>
+            <Thead bg={useColorModeValue('gray.50', 'navy.800')}>
+              <Tr>
+                <Th>Plan Name</Th>
+                <Th>Pricing Tiers (Months : Price)</Th>
+                <Th>Features</Th>
+                <Th>Status</Th>
                 <Th>Actions</Th>
               </Tr>
             </Thead>
             <Tbody>
               {plans.map((plan) => (
-                <Tr key={plan._id} _hover={{ bg: bgHover }}>
+                <Tr key={plan._id}>
+                  <Td fontWeight="bold" fontSize="sm">{plan.name}</Td>
                   <Td>
-                    <Flex align="center" gap="10px">
-                      <Text fontWeight="600">{plan.name}</Text>
-                      {getPlanBadge(plan.name)}
-                    </Flex>
+                    <Stack direction="row" flexWrap="wrap" gap={2}>
+                      {plan.pricing?.map((p, i) => (
+                        <Badge key={i} colorScheme="purple" variant="subtle" borderRadius="full" px={2}>
+                          {p.months}M : ₹{p.price}
+                        </Badge>
+                      ))}
+                    </Stack>
                   </Td>
-                  <Td fontWeight="600">
-                    {plan.price === 0 ? 'Free' : `₹${plan.price}/mo`}
-                  </Td>
-                  <Td>{plan.noCommissionTasksPerMonth}/mo</Td>
-                  <Td>{plan.totalTaskHiresLimit}</Td>
-                  <Td>{plan.emergencyTaskLimit}</Td>
                   <Td>
-                    {plan.commissionInsideLimit}% → {plan.commissionAboveLimit}%
-                  </Td>
-                  <Td fontWeight="600" color="red.600">
-                    {plan.commissionEmergency}%
-                  </Td>
-                  <Td textAlign="center">
-                    {plan.priorityListing ? (
-                      <CheckIcon color="green.500" />
-                    ) : (
-                      <CloseIcon color="red.500" />
-                    )}
+                    <Text noOfLines={1} fontSize="xs" maxW="200px" color="gray.500">
+                      {plan.features?.join(', ')}
+                    </Text>
                   </Td>
                   <Td>
                     <Badge colorScheme={plan.isActive ? 'green' : 'red'}>
@@ -328,142 +175,75 @@ export default function SubscriptionPlans() {
                     </Badge>
                   </Td>
                   <Td>
-                    <Button
-                      size="sm"
-                      leftIcon={<EditIcon />}
-                      colorScheme="blue"
-                      variant="ghost"
-                      onClick={() => handleEditClick(plan)}
-                    >
-                      Edit
-                    </Button>
+                    <Flex gap={2}>
+                      <IconButton icon={<EditIcon />} size="sm" variant="outline" onClick={() => handleOpenModal(plan)} aria-label="Edit" />
+                    </Flex>
                   </Td>
                 </Tr>
               ))}
             </Tbody>
           </Table>
         </Box>
-      </Card>
+      )}
 
-      {/* Edit Modal */}
+      {/* 🟢 Add/Edit Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="xl">
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Edit Subscription Plan</ModalHeader>
+        <ModalContent borderRadius="15px">
+          <ModalHeader borderBottom="1px solid" borderColor="gray.100">
+            {editingPlan ? 'Update Plan Details' : 'Create New Subscription'}
+          </ModalHeader>
           <ModalCloseButton />
-          <ModalBody>
-            {editingPlan && (
-              <Flex direction="column" gap="4">
-                <FormControl>
-                  <FormLabel>Plan Name</FormLabel>
-                  <Input
-                    name="name"
-                    value={formData.name || ''}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
+          <ModalBody py={6}>
+            <Stack spacing={5}>
+              <FormControl isRequired>
+                <FormLabel fontWeight="600">Plan Name</FormLabel>
+                <Input placeholder="e.g. Professional Plus" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              </FormControl>
 
-                <FormControl>
-                  <FormLabel>Price (₹)</FormLabel>
-                  <Input
-                    name="price"
-                    type="number"
-                    value={formData.price || 0}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
+              <Box p={4} bg={useColorModeValue('gray.50', 'whiteAlpha.100')} borderRadius="12px">
+                <Flex justify="space-between" align="center" mb={4}>
+                  <Text fontWeight="700" fontSize="sm">Pricing Variants</Text>
+                  <Button size="xs" colorScheme="brand" variant="ghost" leftIcon={<SmallAddIcon />} onClick={addPricingRow}>
+                    Add New Row
+                  </Button>
+                </Flex>
 
-                <FormControl>
-                  <FormLabel>No-Commission Tasks / Month</FormLabel>
-                  <Input
-                    name="noCommissionTasksPerMonth"
-                    type="number"
-                    value={formData.noCommissionTasksPerMonth || 0}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
+                {formData.pricing.map((tier, index) => (
+                  <Flex key={index} gap={3} mb={3} align="center">
+                    <Select flex="1" value={tier.months} onChange={(e) => handlePricingChange(index, 'months', e.target.value)}>
+                      <option value={1}>1 Month</option>
+                      <option value={3}>3 Months</option>
+                      <option value={6}>6 Months</option>
+                      <option value={12}>1 Year</option>
+                      <option value={24}>2 Year</option>
+                    </Select>
+                    <Input flex="1" type="number" placeholder="Price (₹)" value={tier.price} onChange={(e) => handlePricingChange(index, 'price', e.target.value)} />
+                    <IconButton icon={<DeleteIcon />} size="sm" colorScheme="red" variant="ghost" onClick={() => removePricingRow(index)} isDisabled={formData.pricing.length === 1} />
+                  </Flex>
+                ))}
+              </Box>
 
-                <FormControl>
-                  <FormLabel>Total Task Hires Limit</FormLabel>
-                  <Input
-                    name="totalTaskHiresLimit"
-                    type="number"
-                    value={formData.totalTaskHiresLimit || 0}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
+              <FormControl>
+                <FormLabel fontWeight="600">Plan Features</FormLabel>
+                <Textarea placeholder="24/7 Support, Premium Content, Unlimited Downloads (Comma separated)" value={formData.features} onChange={(e) => setFormData({ ...formData, features: e.target.value })} />
+              </FormControl>
 
-                <FormControl>
-                  <FormLabel>Emergency Task Limit</FormLabel>
-                  <Input
-                    name="emergencyTaskLimit"
-                    type="number"
-                    value={formData.emergencyTaskLimit || 0}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Commission Inside Limit (%)</FormLabel>
-                  <Input
-                    name="commissionInsideLimit"
-                    type="number"
-                    value={formData.commissionInsideLimit || 0}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Commission Above Limit (%)</FormLabel>
-                  <Input
-                    name="commissionAboveLimit"
-                    type="number"
-                    value={formData.commissionAboveLimit || 0}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Emergency Commission (%)</FormLabel>
-                  <Input
-                    name="commissionEmergency"
-                    type="number"
-                    value={formData.commissionEmergency || 0}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
-
-                <FormControl display="flex" alignItems="center">
-                  <FormLabel mb="0">Priority Listing</FormLabel>
-                  <Switch
-                    name="priorityListing"
-                    isChecked={formData.priorityListing}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
-
-                <FormControl display="flex" alignItems="center">
-                  <FormLabel mb="0">Active</FormLabel>
-                  <Switch
-                    name="isActive"
-                    isChecked={formData.isActive}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
-              </Flex>
-            )}
+              <FormControl display="flex" alignItems="center">
+                <FormLabel mb="0" fontWeight="600">Is Plan Active?</FormLabel>
+                <Switch isChecked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} />
+              </FormControl>
+            </Stack>
           </ModalBody>
 
-          <ModalFooter>
-            <Button variant="ghost" onClick={onClose} mr={3}>
-              Cancel
-            </Button>
-            <Button colorScheme="blue" onClick={handleSave} isLoading={saving}>
-              Save Changes
+          <ModalFooter borderTop="1px solid" borderColor="gray.100">
+            <Button variant="ghost" mr={3} onClick={onClose}>Cancel</Button>
+            <Button colorScheme="brand" isLoading={saving} onClick={handleSave} px={8}>
+              {editingPlan ? 'Update Plan' : 'Save Plan'}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </>
+    </Card>
   );
 }
