@@ -74,13 +74,15 @@ export default function TestManagement() {
     setCourses(res.data.data || []);
   };
 
-  const fetchSubjects = async (courseId) => {
-    setSubjects([]);
-    setSubSubjects([]);
-    setChapters([]);
-    setSubjectId('');
-    setSubSubjectId('');
-    setChapterId('');
+  const fetchSubjects = async (courseId, isEdit = false) => {
+    if (!isEdit) {
+      setSubjects([]);
+      setSubSubjects([]);
+      setChapters([]);
+      setSubjectId('');
+      setSubSubjectId('');
+      setChapterId('');
+    }
 
     const res = await axios.get(
       `${baseUrl}api/admin/subjects?courseId=${courseId}`,
@@ -89,11 +91,13 @@ export default function TestManagement() {
     setSubjects(res.data.data || []);
   };
 
-  const fetchSubSubjects = async (subjectId) => {
-    setSubSubjects([]);
-    setChapters([]);
-    setSubSubjectId('');
-    setChapterId('');
+  const fetchSubSubjects = async (subjectId, isEdit = false) => {
+    if (!isEdit) {
+      setSubSubjects([]);
+      setChapters([]);
+      setSubSubjectId('');
+      setChapterId('');
+    }
 
     const res = await axios.get(
       `${baseUrl}api/admin/sub-subjects?subjectId=${subjectId}`,
@@ -102,9 +106,11 @@ export default function TestManagement() {
     setSubSubjects(res.data.data || []);
   };
 
-  const fetchChapters = async (subSubjectId) => {
-    setChapters([]);
-    setChapterId('');
+  const fetchChapters = async (subSubjectId, isEdit = false) => {
+    if (!isEdit) {
+      setChapters([]);
+      setChapterId('');
+    }
 
     const res = await axios.get(
       `${baseUrl}api/admin/chapters?subSubjectId=${subSubjectId}`,
@@ -186,23 +192,57 @@ export default function TestManagement() {
   /* ================= UPDATE ================= */
 
   const handleUpdate = async () => {
-    await axios.put(
-      `${baseUrl}api/admin/tests/${editData._id}`,
-      {
-        courseId: editData.courseId?._id || editData.courseId,
-        subjectId: editData.subjectId?._id || null,
-        subSubjectId: editData.subSubjectId?._id || null,
-        chapterId: editData.chapterId?._id || null,
-        scopeType: editData.scopeType,
-        testType: editData.testType,
-        totalQuestions: Number(editData.totalQuestions),
-      },
-      headers,
-    );
+    if (
+      !editData?.courseId ||
+      !editData?.scopeType ||
+      !editData?.testType ||
+      !editData?.totalQuestions
+    ) {
+      return toast({ title: 'All fields are required', status: 'warning' });
+    }
 
-    toast({ title: 'Test updated', status: 'success' });
-    onClose();
-    fetchTests();
+    const payload = {
+      courseId: editData.courseId,
+      scopeType: editData.scopeType,
+      testType: editData.testType,
+      totalQuestions: Number(editData.totalQuestions),
+    };
+
+    // 🔥 EXACT BACKEND MATCH
+    if (editData.scopeType === 'subject') {
+      payload.subjectId = editData.subjectId;
+      payload.subSubjectId = null;
+      payload.chapterId = null;
+    }
+
+    if (editData.scopeType === 'sub-subject') {
+      payload.subjectId = null;
+      payload.subSubjectId = editData.subSubjectId;
+      payload.chapterId = null;
+    }
+
+    if (editData.scopeType === 'chapter') {
+      payload.subjectId = null;
+      payload.subSubjectId = editData.subSubjectId;
+      payload.chapterId = editData.chapterId;
+    }
+
+    try {
+      await axios.put(
+        `${baseUrl}api/admin/tests/${editData._id}`,
+        payload,
+        headers,
+      );
+
+      toast({ title: 'Test updated successfully', status: 'success' });
+      onClose();
+      fetchTests();
+    } catch (err) {
+      toast({
+        title: err.response?.data?.message || 'Update failed',
+        status: 'error',
+      });
+    }
   };
 
   /* ================= UNPUBLISH ================= */
@@ -216,12 +256,19 @@ export default function TestManagement() {
   /* ================= LOAD EDIT DATA ================= */
 
   useEffect(() => {
-    if (editData) {
-      const courseId = editData.courseId?._id || editData.courseId;
-      setCourseId(courseId);
-      if (courseId) {
-        fetchSubjects(courseId);
-      }
+    if (!editData) return;
+
+    // Load all dropdown data in sequence for edit mode
+    if (editData.courseId) {
+      fetchSubjects(editData.courseId, true);
+    }
+
+    if (editData.subjectId) {
+      fetchSubSubjects(editData.subjectId, true);
+    }
+
+    if (editData.subSubjectId) {
+      fetchChapters(editData.subSubjectId, true);
     }
   }, [editData]);
 
@@ -410,7 +457,14 @@ export default function TestManagement() {
                     size="sm"
                     mr="2"
                     onClick={() => {
-                      setEditData(t);
+                      setEditData({
+                        ...t,
+                        courseId: t.courseId?._id || t.courseId,
+                        subjectId: t.subjectId?._id || t.subjectId || '',
+                        subSubjectId:
+                          t.subSubjectId?._id || t.subSubjectId || '',
+                        chapterId: t.chapterId?._id || t.chapterId || '',
+                      });
                       onOpen();
                     }}
                   />
@@ -448,13 +502,19 @@ export default function TestManagement() {
           <ModalHeader>Edit Test</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
+            {/* COURSE */}
             <FormControl mb="3">
               <FormLabel>Course</FormLabel>
               <Select
-                value={courseId}
+                value={editData?.courseId || ''}
                 onChange={(e) => {
-                  setCourseId(e.target.value);
-                  setEditData({ ...editData, courseId: e.target.value });
+                  setEditData({
+                    ...editData,
+                    courseId: e.target.value,
+                    subjectId: '',
+                    subSubjectId: '',
+                    chapterId: '',
+                  });
                   fetchSubjects(e.target.value);
                 }}
               >
@@ -467,13 +527,18 @@ export default function TestManagement() {
               </Select>
             </FormControl>
 
+            {/* SUBJECT */}
             <FormControl mb="3">
               <FormLabel>Subject</FormLabel>
               <Select
-                value={subjectId}
+                value={editData?.subjectId || ''}
                 onChange={(e) => {
-                  setSubjectId(e.target.value);
-                  setEditData({ ...editData, subjectId: e.target.value });
+                  setEditData({
+                    ...editData,
+                    subjectId: e.target.value,
+                    subSubjectId: '',
+                    chapterId: '',
+                  });
                   fetchSubSubjects(e.target.value);
                 }}
               >
@@ -486,13 +551,17 @@ export default function TestManagement() {
               </Select>
             </FormControl>
 
+            {/* SUB SUBJECT */}
             <FormControl mb="3">
               <FormLabel>Sub Subject</FormLabel>
               <Select
-                value={subSubjectId}
+                value={editData?.subSubjectId || ''}
                 onChange={(e) => {
-                  setSubSubjectId(e.target.value);
-                  setEditData({ ...editData, subSubjectId: e.target.value });
+                  setEditData({
+                    ...editData,
+                    subSubjectId: e.target.value,
+                    chapterId: '',
+                  });
                   fetchChapters(e.target.value);
                 }}
               >
@@ -505,12 +574,12 @@ export default function TestManagement() {
               </Select>
             </FormControl>
 
+            {/* CHAPTER */}
             <FormControl mb="3">
               <FormLabel>Chapter</FormLabel>
               <Select
-                value={chapterId}
+                value={editData?.chapterId || ''}
                 onChange={(e) => {
-                  setChapterId(e.target.value);
                   setEditData({ ...editData, chapterId: e.target.value });
                 }}
               >
@@ -523,6 +592,7 @@ export default function TestManagement() {
               </Select>
             </FormControl>
 
+            {/* SCOPE TYPE */}
             <FormControl mb="3">
               <FormLabel>Scope Type</FormLabel>
               <Select
@@ -537,6 +607,7 @@ export default function TestManagement() {
               </Select>
             </FormControl>
 
+            {/* TEST TYPE */}
             <FormControl mb="3">
               <FormLabel>Test Type</FormLabel>
               <Select
@@ -550,6 +621,7 @@ export default function TestManagement() {
               </Select>
             </FormControl>
 
+            {/* TOTAL QUESTIONS */}
             <FormControl>
               <FormLabel>Total Questions</FormLabel>
               <Input
