@@ -205,7 +205,7 @@
 //   );
 // }
 /* eslint-disable */
-'use client';
+// 'use client';
 
 /* eslint-disable */
 'use client';
@@ -242,11 +242,13 @@ import { MdEdit, MdDelete, MdSearch } from 'react-icons/md';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Card from 'components/card/Card';
+import { Switch } from '@chakra-ui/react';
 
 export default function CourseManagement() {
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
+  const [publishingId, setPublishingId] = useState(null);
 
   // Form States
   const [courseName, setCourseName] = useState('');
@@ -263,6 +265,33 @@ export default function CourseManagement() {
   const getHeaders = () => ({
     headers: { Authorization: `Bearer ${token}` },
   });
+  const handleTogglePublish = async (course) => {
+    try {
+      setPublishingId(course._id);
+
+      const url = course.isPublished
+        ? `${baseUrl}api/admin/courses/${course._id}/unpublish`
+        : `${baseUrl}api/admin/courses/${course._id}/publish`;
+
+      await axios.patch(url, {}, getHeaders());
+
+      toast({
+        title: `Course ${
+          course.isPublished ? 'Unpublished' : 'Published'
+        } successfully`,
+        status: 'success',
+      });
+
+      fetchCourses();
+    } catch (err) {
+      toast({
+        title: 'Failed to update publish status',
+        status: 'error',
+      });
+    } finally {
+      setPublishingId(null);
+    }
+  };
 
   // 1. Fetch All Courses
   const fetchCourses = async () => {
@@ -432,6 +461,7 @@ export default function CourseManagement() {
                 <Th>Course Name</Th>
                 <Th>Year</Th>
                 <Th>Status</Th>
+                <Th>Published</Th>
                 <Th>Action</Th>
               </Tr>
             </Thead>
@@ -452,6 +482,18 @@ export default function CourseManagement() {
                       {c.status}
                     </Text>
                   </Td>
+                  <Td>
+                    <Switch
+                      isChecked={c.isPublished}
+                      isDisabled={
+                        publishingId === c._id || c.status !== 'active'
+                      }
+                      onChange={() => handleTogglePublish(c)}
+                      colorScheme="green"
+                      size="lg"
+                    />
+                  </Td>
+
                   <Td>
                     <IconButton
                       icon={<MdEdit />}
