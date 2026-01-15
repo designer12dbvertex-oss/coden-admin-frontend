@@ -228,6 +228,7 @@ export default function ChapterManagement() {
   const [chapters, setChapters] = useState([]); // List data
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
+  const [chapterImage, setChapterImage] = useState(null);
 
   // Form States
   const [formData, setFormData] = useState({
@@ -272,14 +273,38 @@ export default function ChapterManagement() {
   const handleCreate = async () => {
     if (!formData.subSubjectId || !formData.name) {
       return toast({
-        title: 'Sub-Subject is  required',
+        title: 'Sub-Subject and Chapter Name required',
         status: 'warning',
       });
     }
+
     setLoading(true);
     try {
-      await axios.post(`${baseUrl}api/admin/chapters`, formData, { headers });
+      const payload = new FormData();
+
+      // text fields
+      payload.append('subSubjectId', formData.subSubjectId);
+      payload.append('name', formData.name);
+      payload.append('description', formData.description);
+      payload.append('weightage', formData.weightage);
+      payload.append('order', formData.order);
+      payload.append('isFreePreview', formData.isFreePreview);
+
+      // image
+      if (chapterImage) {
+        payload.append('image', chapterImage);
+      }
+
+      await axios.post(`${baseUrl}api/admin/chapters`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
       toast({ title: 'Chapter Created!', status: 'success' });
+
+      // reset
       setFormData({
         subSubjectId: '',
         name: '',
@@ -288,9 +313,14 @@ export default function ChapterManagement() {
         order: 0,
         isFreePreview: false,
       });
+      setChapterImage(null);
+
       fetchData();
     } catch (err) {
-      toast({ title: err.response?.data?.message || 'Error', status: 'error' });
+      toast({
+        title: err.response?.data?.message || 'Error',
+        status: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -299,16 +329,45 @@ export default function ChapterManagement() {
   // 3. Update Chapter
   const handleUpdate = async () => {
     try {
-      await axios.put(
-        `${baseUrl}api/admin/chapters/${editData._id}`,
-        editData,
-        { headers },
+      const payload = new FormData();
+
+      // ✅ subSubjectId always string
+      payload.append(
+        'subSubjectId',
+        editData.subSubjectId?._id || editData.subSubjectId,
       );
+
+      payload.append('name', editData.name);
+      payload.append('description', editData.description || '');
+      payload.append('weightage', editData.weightage);
+      payload.append('order', editData.order);
+      payload.append('isFreePreview', editData.isFreePreview);
+      payload.append('status', editData.status || 'active');
+
+      // ✅ image ONLY ONCE
+      if (editData.image instanceof File) {
+        payload.append('image', editData.image);
+      }
+
+      await axios.patch(
+        `${baseUrl}api/admin/chapters/${editData._id}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      );
+
       toast({ title: 'Updated Successfully', status: 'success' });
       onClose();
       fetchData();
     } catch (err) {
-      toast({ title: 'Update failed', status: 'error' });
+      toast({
+        title: err.response?.data?.message || 'Update failed',
+        status: 'error',
+      });
     }
   };
 
@@ -413,6 +472,16 @@ export default function ChapterManagement() {
               placeholder="Chapter details..."
             />
           </FormControl>
+          <FormControl width={{ base: '100%', md: '30%' }}>
+            <FormLabel fontSize="sm" fontWeight="700">
+              Chapter Image
+            </FormLabel>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setChapterImage(e.target.files[0])}
+            />
+          </FormControl>
 
           <Flex align="center" mt="30px">
             <Text fontSize="sm" fontWeight="700" mr="2">
@@ -496,6 +565,7 @@ export default function ChapterManagement() {
                       </Text>
                     </Tooltip>
                   </Td>
+
                   <Td>
                     <Badge colorScheme={item.isFreePreview ? 'green' : 'gray'}>
                       {item.isFreePreview ? 'YES' : 'NO'}
@@ -587,6 +657,16 @@ export default function ChapterManagement() {
                     value={editData.description}
                     onChange={(e) =>
                       setEditData({ ...editData, description: e.target.value })
+                    }
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Update Image</FormLabel>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setEditData({ ...editData, image: e.target.files[0] })
                     }
                   />
                 </FormControl>
