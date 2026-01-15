@@ -47,6 +47,7 @@ import TestManagement from 'views/admin/test';
 import Subscription from 'views/admin/Subscription';
 import ProfilePage from 'views/admin/profile/ProfileSetting';
 import MCQ from 'views/admin/AddMCQ';
+import Video from "views/admin/Video";
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
@@ -183,9 +184,9 @@ const routes = [
   {
     name: 'Video Lectures',
     layout: '/admin',
-    path: '/emergency-hiring',
+    path: '/video',
     icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
-    component: <Chapter />,
+    component: <Video />,
   },
   {
     name: 'QBank $ Practice',
