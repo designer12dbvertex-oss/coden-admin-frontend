@@ -126,7 +126,7 @@ export default function HeaderLinks(props) {
       borderRadius="30px"
       boxShadow={shadow}
     >
-     {/* <SearchBar
+      {/* <SearchBar
         mb={() => (secondary ? { base: '10px', md: 'unset' } : 'unset')}
         me="10px"
         borderRadius="30px"
@@ -267,14 +267,15 @@ export default function HeaderLinks(props) {
             </Text>
           </Flex>
           <Flex flexDirection="column" p="10px">
-            <MenuItem
-              _hover={{ bg: 'none' }}
-              _focus={{ bg: 'none' }}
-              borderRadius="8px"
-              px="14px"
-            >
-              <Text fontSize="sm">Profile Settings</Text>
-            </MenuItem>
+           <MenuItem
+  _hover={{ bg: 'none' }}
+  _focus={{ bg: 'none' }}
+  borderRadius="8px"
+  px="14px"
+  onClick={() => navigate('/admin/profile-setting')} // routes.js wala path
+>
+  <Text fontSize="sm">Profile Settings</Text>
+</MenuItem>
             <MenuItem
               _hover={{ bg: 'none' }}
               _focus={{ bg: 'none' }}

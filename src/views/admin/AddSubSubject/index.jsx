@@ -42,7 +42,7 @@ export default function SubSubjectManagement() {
       setSubjects(subjectRes.data.data || []);
       setSubSubjects(subRes.data.data || []);
     } catch (err) {
-      toast({ title: 'Data load nahi ho paya', status: 'error' });
+      toast({ title: 'Failed to load data', status: 'error' });
     }
   };
 
@@ -50,7 +50,7 @@ export default function SubSubjectManagement() {
 
   const handleAddSubSubject = async () => {
     if (!subSubjectName || !selectedSubject) {
-      return toast({ title: 'Subject aur Sub-subject name zaroori hain', status: 'warning' });
+      return toast({ title: 'Subject and sub-subject name are required', status: 'warning' });
     }
     setLoading(true);
     try {
@@ -58,12 +58,12 @@ export default function SubSubjectManagement() {
         { name: subSubjectName, subjectId: selectedSubject, description: description }, 
         { headers }
       );
-      toast({ title: 'Sub-subject add ho gaya', status: 'success' });
+      toast({ title: 'Sub-subject added successfully', status: 'success' });
       setSubSubjectName('');
       setDescription('');
       fetchData();
     } catch (err) { 
-      toast({ title: 'Error adding sub-subject', status: 'error' }); 
+      toast({ title: 'Failed to add sub-subject', status: 'error' }); 
     } finally { setLoading(false); }
   };
 
@@ -88,21 +88,21 @@ export default function SubSubjectManagement() {
         { name: editData.name, subjectId: editData.subjectId, description: editData.description },
         { headers }
       );
-      toast({ title: 'Update ho gaya!', status: 'success' });
+      toast({ title:'Updated successfully!', status: 'success' });
       onClose();
       fetchData();
     } catch (err) { 
-      toast({ title: 'Update fail ho gaya', status: 'error' }); 
+      toast({ title: 'Failed to update', status: 'error' }); 
     }
   };
 
   const handleDelete = async (id) => {
-    if(window.confirm("Delete karna chahte hain?")) {
+    if(window.confirm("Are you sure you want to delete this?")) {
       try {
         await axios.delete(`${baseUrl}api/admin/sub-subjects/${id}`, { headers });
-        toast({ title: 'Delete ho gaya', status: 'info' });
+        toast({ title: 'Subject has been deleted successfully', status: 'info' });
         fetchData();
-      } catch (err) { toast({ title: 'Delete fail ho gaya', status: 'error' }); }
+      } catch (err) { toast({ title: 'Failed to delete subject', status: 'error' }); }
     }
   };
 

@@ -64,12 +64,12 @@ export default function MCQManagement() {
 
   const handleCreate = async () => {
     if (!formData.chapterId || !formData.question || !formData.correctAnswer) {
-      return toast({ title: 'Question, Chapter aur Correct Answer zaroori hain', status: 'warning' });
+      return toast({ title: 'Question, chapter, and correct answer are required', status: 'warning' });
     }
     setLoading(true);
     try {
       await axios.post(`${baseUrl}api/admin/mcqs`, formData, { headers });
-      toast({ title: 'MCQ Created!', status: 'success' });
+      toast({ title: 'MCQ created successfully!', status: 'success' });
       setFormData({
         chapterId: '', question: '', options: ['', '', '', ''],
         correctAnswer: '', explanation: '', difficulty: 'medium',
@@ -77,17 +77,17 @@ export default function MCQManagement() {
       });
       fetchData();
     } catch (err) {
-      toast({ title: err.response?.data?.message || 'Error', status: 'error' });
+      toast({ title: err.response?.data?.message || 'Failed to create MCQ', status: 'error' });
     } finally { setLoading(false); }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Delete permanently?")) {
+    if (window.confirm("Are you sure you want to delete this?")) {
       try {
         await axios.delete(`${baseUrl}api/admin/mcqs/${id}`, { headers });
-        toast({ title: 'Deleted', status: 'info' });
+        toast({ title: 'Subject has been deleted successfully', status: 'info' });
         fetchData();
-      } catch (err) { toast({ title: 'Delete failed', status: 'error' }); }
+      } catch (err) { toast({ title: 'Failed to delete subject', status: 'error' }); }
     }
   };
 

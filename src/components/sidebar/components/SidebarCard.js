@@ -53,7 +53,7 @@ export default function SidebarDocs() {
           px='10px'
           mt="10px"
           mb='6px'>
-          Welcome to Coden
+          Welcome to Codon
         </Text>
         <Text
           fontSize='14px'
@@ -62,7 +62,7 @@ export default function SidebarDocs() {
           px='10px'
           mb='6px'
           textAlign='center'>
-          Improve your experience with Coden.
+          Improve your experience with Codon.
         </Text>
       </Flex>
     </Flex>

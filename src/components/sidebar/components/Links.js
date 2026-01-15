@@ -31,7 +31,12 @@ export function SidebarLinks({ routes }) {
 
   // Recursive function to create sidebar links
   const createLinks = (routes) =>
+
+    
     routes.map((route, index) => {
+      if (route.showInSidebar === false) {
+      return null;
+      }
       // Dropdown parent (with collapse and items)
       if (route.collapse && route.items) {
         return (

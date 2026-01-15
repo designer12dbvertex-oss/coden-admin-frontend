@@ -24,11 +24,13 @@ import MainDashboard from 'views/admin/dashboard';
 // import DataTables from 'views/admin/dataTables';
 import Users from 'views/admin/User';
 
+
 import AddAboutus from 'views/admin/addAboutUs';
 import AddTermsConditions from 'views/admin/addTermsCondition';
 import AddPrivacyPolicy from 'views/admin/addPrivacyPolicy';
 import Subject from 'views/admin/AddSubject';
 import Course from 'views/admin/AddCourse';
+import SubSubject from 'views/admin/AddSubSubject';
 
 import Chapter from 'views/admin/AddChapter';
 
@@ -46,6 +48,8 @@ import City from 'views/admin/AddCity'
 import College from 'views/admin/AddCollege';
 
 import Subscription from "views/admin/Subscription";
+import ProfilePage from "views/admin/profile/ProfileSetting";
+import MCQ from "views/admin/AddMCQ";
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
@@ -67,6 +71,13 @@ const routes = [
     icon: <Icon as={MdHome} width="20px" height="20px" color="inherit" />,
     component: <MainDashboard />,
   },
+{
+  name: "Profile Setting",
+  layout: "/admin",
+  path: "/profile-setting",
+  component: <ProfilePage />, 
+  showInSidebar: false, // Yeh line sabse zaroori hai
+},
   {
     name: 'User Management',
     layout: '/admin',
@@ -152,17 +163,29 @@ const routes = [
         component: <Subject />,
       },
       {
+        name: 'Add Sub-Subject',
+        layout: '/admin',
+        path: '/subsubject',
+        component: <SubSubject/>,
+      },
+      {
         name: 'Add Chapter',
         layout: '/admin',
         path: '/chapter',
         component: <Chapter />,
+      },
+      {
+        name: 'Add MCQ',
+        layout: '/admin',
+        path: '/mcq',
+        component: <MCQ/>,
       },
     ],
   },
    {
         name: 'Test',
         layout: '/admin',
-        path: '/emergency-hiring',
+        path: '/test',
          icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
         component: <Chapter />,
       },
@@ -256,20 +279,20 @@ const routes = [
     path: '/subscription',
     component: <Subscription />,
   },
-  {
-    name: 'Contact Us',
-    layout: '/admin',
-    icon: <Icon as={MdPhone} width="20px" height="20px" color="inherit" />,
-    path: '/contact-us',
-    component: <ContactUs />,
-  },
-  {
-    name: 'Email Us',
-    layout: '/admin',
-    icon: <Icon as={MdEmail} width="20px" height="20px" color="inherit" />,
-    path: '/email-us',
-    component: <EmailUs />,
-  },
+  // {
+  //   name: 'Contact Us',
+  //   layout: '/admin',
+  //   icon: <Icon as={MdPhone} width="20px" height="20px" color="inherit" />,
+  //   path: '/contact-us',
+  //   component: <ContactUs />,
+  // },
+  // {
+  //   name: 'Email Us',
+  //   layout: '/admin',
+  //   icon: <Icon as={MdEmail} width="20px" height="20px" color="inherit" />,
+  //   path: '/email-us',
+  //   component: <EmailUs />,
+  // },
   {
     name: 'CMS Pages',
     layout: '/admin',
