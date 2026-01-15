@@ -188,13 +188,13 @@ const routes = [
     icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
     component: <Video />,
   },
-  {
-    name: 'QBank $ Practice',
-    layout: '/admin',
-    path: '/emergency-hiring',
-    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
-    component: <Chapter />,
-  },
+  // {
+  //   name: 'QBank $ Practice',
+  //   layout: '/admin',
+  //   path: '/emergency-hiring',
+  //   icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+  //   component: <Chapter />,
+  // },
 
   //   {
   //     name: 'Total Revenue',
