@@ -48,7 +48,7 @@ import Subscription from 'views/admin/Subscription';
 import ProfilePage from 'views/admin/profile/ProfileSetting';
 import MCQ from 'views/admin/AddMCQ';
 import Video from "views/admin/Video";
-
+import Tags from "views/admin/Tags";
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
 import {
@@ -129,9 +129,9 @@ const routes = [
     name: 'Add Tags',
     layout: '/admin',
     icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />,
-    path: '/pending-worker',
+    path: '/tags',
 
-    component: <PendingWorker />,
+    component: <Tags />,
   },
 
   {
