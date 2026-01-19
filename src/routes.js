@@ -49,6 +49,7 @@ import ProfilePage from 'views/admin/profile/ProfileSetting';
 import MCQ from 'views/admin/AddMCQ';
 import Video from "views/admin/Video";
 import Tags from "views/admin/Tags";
+import Topic from "views/admin/topic.jsx"
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
 import {
@@ -166,11 +167,18 @@ const routes = [
         component: <Chapter />,
       },
       {
+        name: 'Add Topic',
+        layout: '/admin',
+        path: '/topic',
+        component: <Topic />,
+      },
+      {
         name: 'Add MCQ',
         layout: '/admin',
         path: '/mcq',
         component: <MCQ />,
       },
+
     ],
   },
 

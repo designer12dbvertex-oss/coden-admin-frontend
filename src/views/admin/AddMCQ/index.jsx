@@ -1281,7 +1281,7 @@ export default function MCQManagement() {
       <Card mb="30px" p="25px">
         <Flex align="center" mb="25px">
             <Icon as={MdAddCircle} color={brandColor} w="28px" h="28px" me="12px" />
-            <Text color={textColor} fontSize="22px" fontWeight="700">MCQ Designer</Text>
+            <Text color={textColor} fontSize="22px" fontWeight="700">Create MCQ</Text>
         </Flex>
         
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={10}>
