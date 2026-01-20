@@ -23,7 +23,7 @@ import MainDashboard from 'views/admin/dashboard';
 // import Profile from 'views/admin/profile';
 // import DataTables from 'views/admin/dataTables';
 import Users from 'views/admin/User';
-
+import MCQList from 'views/admin/AddMCQ/mcq-list.jsx';
 import AddAboutus from 'views/admin/addAboutUs';
 import AddTermsConditions from 'views/admin/addTermsCondition';
 import AddPrivacyPolicy from 'views/admin/addPrivacyPolicy';
@@ -176,6 +176,12 @@ const routes = [
         layout: '/admin',
         path: '/mcq',
         component: <MCQ />,
+      },
+      {
+        name: 'MCQ-List',
+        layout: '/admin',
+        path: '/mcq/mcq-list',
+        component: <MCQList />,
       },
     ],
   },
