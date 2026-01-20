@@ -514,8 +514,8 @@
 //     </>
 //   );
 // }
-
 /* eslint-disable */
+
 'use client';
 
 import {
@@ -531,12 +531,18 @@ import {
   useColorModeValue,
   Button,
   HStack,
-  Switch,
   Input,
   InputGroup,
   InputLeftElement,
   Icon,
   Spinner,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -556,13 +562,15 @@ import axios from 'axios';
 
 const columnHelper = createColumnHelper();
 
-export default function ComplexTable() {
+export default function UsersList() {
   const [sorting, setSorting] = useState([]);
   const [users, setUsers] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const itemsPerPage = 10;
   const maxVisiblePages = 5;
@@ -572,13 +580,33 @@ export default function ComplexTable() {
   const headerBg = useColorModeValue('gray.100', 'gray.700');
   const hoverBg = useColorModeValue('gray.50', 'gray.600');
 
-  const baseUrl = process.env.REACT_APP_BASE_URL.replace(/\/$/, '');
+  const baseUrl = (process.env.REACT_APP_BASE_URL || '').replace(/\/$/, '');
   const token = localStorage.getItem('token');
 
-  // ─────────────────────────────────────────────
-  // FETCH USERS FROM BACKEND
-  // ─────────────────────────────────────────────
+  // ───────────────────────── SAFE HELPERS ─────────────────────────
+  const safeId = (val) =>
+    typeof val === 'object' ? val?._id || val?.$oid || '—' : val || '—';
+
+  const safeDate = (val) => {
+    if (!val) return '—';
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+  };
+
+  const safeDateTime = (val) => {
+    if (!val) return '—';
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? '—' : d.toLocaleString();
+  };
+
+  // ───────────────────────── FETCH USERS ─────────────────────────
   const fetchUsers = async () => {
+    if (!token) {
+      toast.error('Session expired. Please login again.');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -587,8 +615,10 @@ export default function ComplexTable() {
       });
 
       if (response.data.success) {
-        setUsers(response.data.data);
-        setFilteredData(response.data.data);
+        setUsers(response.data.data || []);
+        setFilteredData(response.data.data || []);
+      } else {
+        toast.error('Failed to load users');
       }
     } catch (err) {
       console.error('Fetch users error:', err?.response?.data || err.message);
@@ -602,9 +632,17 @@ export default function ComplexTable() {
     fetchUsers();
   }, []);
 
-  // ─────────────────────────────────────────────
-  // SEARCH
-  // ─────────────────────────────────────────────
+  const openViewModal = (user) => {
+    setSelectedUser(user);
+    setIsViewModalOpen(true);
+  };
+
+  const closeViewModal = () => {
+    setSelectedUser(null);
+    setIsViewModalOpen(false);
+  };
+
+  // ───────────────────────── SEARCH ─────────────────────────
   const handleSearch = (query) => {
     setSearchQuery(query);
     setCurrentPage(1);
@@ -619,9 +657,7 @@ export default function ComplexTable() {
     setFilteredData(filtered);
   };
 
-  // ─────────────────────────────────────────────
-  // PAGINATION
-  // ─────────────────────────────────────────────
+  // ───────────────────────── PAGINATION ─────────────────────────
   const totalItems = filteredData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -658,20 +694,20 @@ export default function ComplexTable() {
     setCurrentPage(Math.min(Math.max(1, page), totalPages));
   };
 
-  // ─────────────────────────────────────────────
-  // CSV EXPORT
-  // ─────────────────────────────────────────────
+  // ───────────────────────── CSV EXPORT ─────────────────────────
   const csvData = filteredData.map((u) => ({
     ID: u._id,
     Name: u.name,
     Email: u.email,
     Mobile: u.mobile,
     Status: u.status,
+    Role: u.role,
+    SignupBy: u.signUpBy,
+    CreatedAt: safeDateTime(u.createdAt),
+    SubscriptionStatus: u.subscriptionStatus,
   }));
 
-  // ─────────────────────────────────────────────
-  // TABLE COLUMNS
-  // ─────────────────────────────────────────────
+  // ───────────────────────── TABLE COLUMNS ─────────────────────────
   const columns = useMemo(
     () => [
       columnHelper.display({
@@ -679,15 +715,6 @@ export default function ComplexTable() {
         header: () => <Text textAlign="center">S.No</Text>,
         cell: ({ row }) => <Text textAlign="center">{row.index + 1}</Text>,
       }),
-
-      // columnHelper.accessor('_id', {
-      //   header: () => <Text textAlign="center">User ID</Text>,
-      //   cell: (info) => (
-      //     <Text textAlign="center" fontSize="xs">
-      //       {info.getValue()}
-      //     </Text>
-      //   ),
-      // }),
 
       columnHelper.accessor('profileImage', {
         header: () => <Text textAlign="center">Profile</Text>,
@@ -700,11 +727,7 @@ export default function ComplexTable() {
                   : defaultProfilePic
               }
               alt="Profile"
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-              }}
+              style={{ width: '40px', height: '40px', borderRadius: '50%' }}
             />
           </Flex>
         ),
@@ -712,80 +735,6 @@ export default function ComplexTable() {
 
       columnHelper.accessor('name', {
         header: () => <Text textAlign="center">Name</Text>,
-        cell: (info) => <Text textAlign="center">{info.getValue()}</Text>,
-      }),
-
-      columnHelper.accessor('email', {
-        header: () => <Text textAlign="center">Email</Text>,
-        cell: (info) => <Text textAlign="center">{info.getValue()}</Text>,
-      }),
-
-      columnHelper.accessor('mobile', {
-        header: () => <Text textAlign="center">Mobile</Text>,
-        cell: (info) => (
-          <Text textAlign="center">{info.getValue() || '—'}</Text>
-        ),
-      }),
-
-      columnHelper.accessor('address', {
-        header: () => <Text textAlign="center">Address</Text>,
-        cell: (info) => (
-          <Text textAlign="center">{info.getValue() || '—'}</Text>
-        ),
-      }),
-
-      // columnHelper.accessor('countryId', {
-      //   header: () => <Text textAlign="center">Country ID</Text>,
-      //   cell: (info) => (
-      //     <Text textAlign="center" fontSize="xs">
-      //       {info.getValue()}
-      //     </Text>
-      //   ),
-      // }),
-
-      // columnHelper.accessor('stateId', {
-      //   header: () => <Text textAlign="center">State ID</Text>,
-      //   cell: (info) => (
-      //     <Text textAlign="center" fontSize="xs">
-      //       {info.getValue()}
-      //     </Text>
-      //   ),
-      // }),
-
-      // columnHelper.accessor('cityId', {
-      //   header: () => <Text textAlign="center">City ID</Text>,
-      //   cell: (info) => (
-      //     <Text textAlign="center" fontSize="xs">
-      //       {info.getValue()}
-      //     </Text>
-      //   ),
-      // }),
-
-      // columnHelper.accessor('collegeId', {
-      //   header: () => <Text textAlign="center">College ID</Text>,
-      //   cell: (info) => (
-      //     <Text textAlign="center" fontSize="xs">
-      //       {info.getValue()}
-      //     </Text>
-      //   ),
-      // }),
-
-      // columnHelper.accessor('classId', {
-      //   header: () => <Text textAlign="center">Class ID</Text>,
-      //   cell: (info) => (
-      //     <Text textAlign="center" fontSize="xs">
-      //       {info.getValue()}
-      //     </Text>
-      //   ),
-      // }),
-
-      columnHelper.accessor('passingYear', {
-        header: () => <Text textAlign="center">Passing Year</Text>,
-        cell: (info) => <Text textAlign="center">{info.getValue()}</Text>,
-      }),
-
-      columnHelper.accessor('admissionYear', {
-        header: () => <Text textAlign="center">Admission Year</Text>,
         cell: (info) => <Text textAlign="center">{info.getValue()}</Text>,
       }),
 
@@ -812,24 +761,11 @@ export default function ComplexTable() {
         cell: (info) => <Text textAlign="center">{info.getValue()}</Text>,
       }),
 
-      columnHelper.accessor('isEmailVerified', {
-        header: () => <Text textAlign="center">Email Verified</Text>,
-        cell: (info) => (
-          <Text
-            textAlign="center"
-            color={info.getValue() ? 'green.500' : 'red.500'}
-            fontWeight="600"
-          >
-            {info.getValue() ? 'Yes' : 'No'}
-          </Text>
-        ),
-      }),
-
       columnHelper.accessor('createdAt', {
         header: () => <Text textAlign="center">Created At</Text>,
         cell: (info) => (
           <Text textAlign="center" fontSize="sm">
-            {new Date(info.getValue()).toLocaleDateString()}
+            {safeDate(info.getValue())}
           </Text>
         ),
       }),
@@ -847,29 +783,21 @@ export default function ComplexTable() {
         ),
       }),
 
-      columnHelper.accessor('subscription', {
-        header: () => <Text textAlign="center">Subscription</Text>,
-        cell: (info) => {
-          const sub = info.getValue();
-          if (!sub) return <Text textAlign="center">—</Text>;
-
-          return (
-            <Box textAlign="center">
-              <Text fontSize="sm">Plan ID: {sub.plan_id}</Text>
-              <Text fontSize="sm">
-                {new Date(sub.startDate).toLocaleDateString()} →{' '}
-                {new Date(sub.endDate).toLocaleDateString()}
-              </Text>
-              <Text fontSize="sm">Months: {sub.selectedMonths}</Text>
-              <Text
-                fontSize="sm"
-                color={sub.isActive ? 'green.500' : 'red.500'}
-              >
-                {sub.isActive ? 'Active' : 'Inactive'}
-              </Text>
-            </Box>
-          );
-        },
+      columnHelper.display({
+        id: 'actions',
+        header: () => <Text textAlign="center">Actions</Text>,
+        cell: ({ row }) => (
+          <Flex justify="center" gap={2}>
+            <Button
+              size="sm"
+              colorScheme="teal"
+              variant="outline"
+              onClick={() => openViewModal(row.original)}
+            >
+              View
+            </Button>
+          </Flex>
+        ),
       }),
     ],
     [baseUrl],
@@ -886,8 +814,32 @@ export default function ComplexTable() {
     pageCount: totalPages,
   });
 
+  const InfoItem = ({ label, value, color, full }) => (
+    <Box
+      flex={full ? '1 1 100%' : '1 1 45%'}
+      bg={useColorModeValue('gray.50', 'gray.800')}
+      borderRadius="10px"
+      p={3}
+      border="1px solid"
+      borderColor={useColorModeValue('gray.200', 'gray.600')}
+    >
+      <Text fontSize="xs" color="gray.500">
+        {label}
+      </Text>
+      <Text
+        fontSize="sm"
+        fontWeight="600"
+        color={color || 'inherit'}
+        wordBreak="break-all"
+      >
+        {value}
+      </Text>
+    </Box>
+  );
+
   return (
     <>
+      {/* USERS TABLE */}
       <Card
         flexDirection="column"
         w="100%"
@@ -1024,8 +976,8 @@ export default function ComplexTable() {
           py="10px"
         >
           <Text fontSize="sm" color={textColor}>
-            Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{' '}
-            {totalItems} users
+            Showing {totalItems === 0 ? 0 : startIndex + 1} to{' '}
+            {Math.min(endIndex, totalItems)} of {totalItems} users
           </Text>
 
           <HStack spacing={1}>
@@ -1060,6 +1012,221 @@ export default function ComplexTable() {
           </HStack>
         </Flex>
       </Card>
+
+      {/* VIEW MODAL */}
+      <Modal
+        isOpen={isViewModalOpen}
+        onClose={closeViewModal}
+        isCentered
+        size="xl"
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>User Details</ModalHeader>
+          <ModalCloseButton />
+
+          <ModalBody>
+            {selectedUser && (
+              <Box>
+                {/* PROFILE HEADER */}
+                <Flex
+                  direction="column"
+                  align="center"
+                  bg={useColorModeValue('gray.50', 'gray.700')}
+                  borderRadius="12px"
+                  p={4}
+                  mb={5}
+                >
+                  <img
+                    src={
+                      selectedUser.profileImage
+                        ? `${baseUrl}${selectedUser.profileImage}`
+                        : defaultProfilePic
+                    }
+                    alt="Profile"
+                    style={{
+                      width: '90px',
+                      height: '90px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '3px solid #319795',
+                    }}
+                  />
+
+                  <Text fontSize="lg" fontWeight="700" mt={2}>
+                    {selectedUser.name || '—'}
+                  </Text>
+                  <Text fontSize="sm" color="gray.500">
+                    {selectedUser.email || '—'}
+                  </Text>
+                </Flex>
+
+                {/* BASIC INFO */}
+                <Box mb={4}>
+                  <Text fontWeight="700" mb={2}>
+                    Basic Information
+                  </Text>
+
+                  <Flex wrap="wrap" gap={3}>
+                    <InfoItem
+                      label="User ID"
+                      value={safeId(selectedUser._id)}
+                    />
+                    <InfoItem
+                      label="Mobile"
+                      value={selectedUser.mobile || '—'}
+                    />
+                    <InfoItem label="Role" value={selectedUser.role || '—'} />
+                    <InfoItem
+                      label="Signup By"
+                      value={selectedUser.signUpBy || '—'}
+                    />
+                    <InfoItem
+                      label="Email Verified"
+                      value={selectedUser.isEmailVerified ? 'Yes' : 'No'}
+                      color={
+                        selectedUser.isEmailVerified ? 'green.500' : 'red.500'
+                      }
+                    />
+                    <InfoItem
+                      label="Status"
+                      value={selectedUser.status || '—'}
+                      color={
+                        selectedUser.status === 'active'
+                          ? 'green.500'
+                          : 'red.500'
+                      }
+                    />
+                  </Flex>
+                </Box>
+
+                {/* ADDRESS & EDUCATION */}
+                <Box mb={4}>
+                  <Text fontWeight="700" mb={2}>
+                    Address & Education
+                  </Text>
+
+                  <Flex wrap="wrap" gap={3}>
+                    <InfoItem
+                      label="Address"
+                      value={selectedUser.address || '—'}
+                      full
+                    />
+
+                    <InfoItem
+                      label="Country"
+                      value={selectedUser.countryId?.name || '—'}
+                    />
+
+                    <InfoItem
+                      label="State"
+                      value={selectedUser.stateId?.name || '—'}
+                    />
+
+                    <InfoItem
+                      label="City"
+                      value={selectedUser.cityId?.name || '—'}
+                    />
+
+                    <InfoItem
+                      label="College"
+                      value={selectedUser.collegeId?.name || '—'}
+                    />
+
+                    <InfoItem
+                      label="Class"
+                      value={selectedUser.classId?.name || '—'}
+                    />
+
+                    <InfoItem
+                      label="Passing Year"
+                      value={selectedUser.passingYear || '—'}
+                    />
+
+                    <InfoItem
+                      label="Admission Year"
+                      value={selectedUser.admissionYear || '—'}
+                    />
+                  </Flex>
+                </Box>
+
+                {/* DATES */}
+                <Box mb={4}>
+                  <Text fontWeight="700" mb={2}>
+                    Account Dates
+                  </Text>
+
+                  <Flex wrap="wrap" gap={3}>
+                    <InfoItem
+                      label="Created At"
+                      value={safeDateTime(selectedUser.createdAt)}
+                    />
+                    <InfoItem
+                      label="Updated At"
+                      value={safeDateTime(selectedUser.updatedAt)}
+                    />
+                  </Flex>
+                </Box>
+
+                {/* SUBSCRIPTION */}
+                <Box>
+                  <Text fontWeight="700" mb={2}>
+                    Subscription
+                  </Text>
+
+                  {selectedUser.subscription ? (
+                    <Box
+                      bg={useColorModeValue('purple.50', 'gray.700')}
+                      borderRadius="12px"
+                      p={4}
+                    >
+                      <Flex wrap="wrap" gap={3}>
+                        <InfoItem
+                          label="Plan ID"
+                          value={safeId(selectedUser.subscription.plan_id)}
+                        />
+                        <InfoItem
+                          label="Start"
+                          value={safeDate(selectedUser.subscription.startDate)}
+                        />
+                        <InfoItem
+                          label="End"
+                          value={safeDate(selectedUser.subscription.endDate)}
+                        />
+                        <InfoItem
+                          label="Months"
+                          value={
+                            selectedUser.subscription.selectedMonths || '—'
+                          }
+                        />
+                        <InfoItem
+                          label="Active"
+                          value={
+                            selectedUser.subscription.isActive ? 'Yes' : 'No'
+                          }
+                          color={
+                            selectedUser.subscription.isActive
+                              ? 'green.500'
+                              : 'red.500'
+                          }
+                        />
+                      </Flex>
+                    </Box>
+                  ) : (
+                    <Text color="gray.500">No subscription</Text>
+                  )}
+                </Box>
+              </Box>
+            )}
+          </ModalBody>
+
+          <ModalFooter>
+            <Button colorScheme="teal" onClick={closeViewModal}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       <ToastContainer
         position="top-right"
