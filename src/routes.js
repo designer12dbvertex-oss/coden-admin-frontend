@@ -47,9 +47,9 @@ import TestManagement from 'views/admin/test';
 import Subscription from 'views/admin/Subscription';
 import ProfilePage from 'views/admin/profile/ProfileSetting';
 import MCQ from 'views/admin/AddMCQ';
-import Video from "views/admin/Video";
-import Tags from "views/admin/Tags";
-import Topic from "views/admin/topic.jsx"
+import Video from 'views/admin/Video';
+import Tags from 'views/admin/Tags';
+import Topic from 'views/admin/topic.jsx';
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
 import {
@@ -87,10 +87,8 @@ const routes = [
         name: 'Users',
         layout: '/admin',
         path: '/users',
-        component: <Users />  },
-
-
-
+        component: <Users />,
+      },
     ],
   },
   {
@@ -161,24 +159,24 @@ const routes = [
         component: <SubSubject />,
       },
       {
-        name: 'Add Chapter',
-        layout: '/admin',
-        path: '/chapter',
-        component: <Chapter />,
-      },
-      {
         name: 'Add Topic',
         layout: '/admin',
         path: '/topic',
         component: <Topic />,
       },
       {
+        name: 'Add Chapter',
+        layout: '/admin',
+        path: '/chapter',
+        component: <Chapter />,
+      },
+
+      {
         name: 'Add MCQ',
         layout: '/admin',
         path: '/mcq',
         component: <MCQ />,
       },
-
     ],
   },
 
@@ -314,12 +312,13 @@ const routes = [
     path: '/subscription',
     component: <Subscription />,
   },
-   {
-        name: 'Payment List',
-        layout: '/admin',
-         icon: <Icon as={FaWallet} width="20px" height="20px" color="inherit" />,
-        path: '/payment',
-        component: <Payment/>  },
+  {
+    name: 'Payment List',
+    layout: '/admin',
+    icon: <Icon as={FaWallet} width="20px" height="20px" color="inherit" />,
+    path: '/payment',
+    component: <Payment />,
+  },
   // {
   //   name: 'Contact Us',
   //   layout: '/admin',
