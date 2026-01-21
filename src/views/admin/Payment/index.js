@@ -271,9 +271,7 @@ export default function SubscriptionHistory() {
             </Table>
 
             {filteredData.length === 0 && (
-              <Flex direction="column" align="center" py={10}>
-                <Text color="gray.400">No transactions match your search.</Text>
-              </Flex>
+              <Text textAlign="center" py="5" color="gray.500">No transactions found.</Text>
             )}
           </Box>
         )}
@@ -289,8 +287,8 @@ function StatsCard({ icon, title, stat }) {
 
   return (
     <Card py="15px" bg={bgCard}>
-      <Flex align="center">
-        <Icon as={icon} w="30px" h="30px" color="brand.500" mr="15px" />
+      <Flex align="center" px="15px">
+        <Icon as={icon} w="40px" h="40px" color="brand.500" mr="15px" />
         <Box>
           <Text color="secondaryGray.600" fontSize="sm" fontWeight="500">
             {title}
