@@ -25,6 +25,9 @@ const CreateTest = () => {
   const [loading, setLoading] = useState(false);
   const [fetchingCourses, setFetchingCourses] = useState(false);
   const [fetchingFilters, setFetchingFilters] = useState(false);
+  const [filteredSubSubjects, setFilteredSubSubjects] = useState([]);
+  const [filteredTopics, setFilteredTopics] = useState([]);
+  const [filteredChapters, setFilteredChapters] = useState([]);
 
   // API Configuration
   const baseUrl = process.env.REACT_APP_BASE_URL || '';
@@ -87,19 +90,46 @@ const CreateTest = () => {
   }, []);
 
   useEffect(() => {
-    // When course is selected and category is subject, fetch filters
     if (formData.courseId && formData.category === 'subject') {
       fetchCourseFilters(formData.courseId);
-    } else if (formData.category === 'grand') {
-      // Clear filters for grand test
-      setFilterData({
-        subjects: [],
-        subSubjects: [],
-        topics: [],
-        chapters: [],
-      });
     }
   }, [formData.courseId, formData.category]);
+
+  // 🔹 Subjects → Sub-subjects
+  useEffect(() => {
+    if (formData.subjects.length) {
+      const filtered = filterData.subSubjects.filter((s) =>
+        formData.subjects.includes(String(s.subjectId)),
+      );
+      setFilteredSubSubjects(filtered);
+    } else {
+      setFilteredSubSubjects([]);
+    }
+  }, [formData.subjects, filterData.subSubjects]);
+
+  // 🔹 Sub-subjects → Topics
+  useEffect(() => {
+    if (formData.subSubjects.length) {
+      const filtered = filterData.topics.filter((t) =>
+        formData.subSubjects.includes(String(t.subSubjectId)),
+      );
+      setFilteredTopics(filtered);
+    } else {
+      setFilteredTopics([]);
+    }
+  }, [formData.subSubjects, filterData.topics]);
+
+  // 🔹 Topics → Chapters
+  useEffect(() => {
+    if (formData.topics.length) {
+      const filtered = filterData.chapters.filter((c) =>
+        formData.topics.includes(String(c.topicId)),
+      );
+      setFilteredChapters(filtered);
+    } else {
+      setFilteredChapters([]);
+    }
+  }, [formData.topics, filterData.chapters]);
 
   // ===== API CALLS =====
   const fetchCourses = async () => {
@@ -107,7 +137,7 @@ const CreateTest = () => {
     try {
       const response = await axios.get(
         `${baseUrl}api/admin/courses`,
-        getHeaders()
+        getHeaders(),
       );
       setCourses(response.data.data || []);
     } catch (error) {
@@ -127,14 +157,16 @@ const CreateTest = () => {
     try {
       const response = await axios.get(
         `${baseUrl}api/admin/tests/filters/${courseId}`,
-        getHeaders()
+        getHeaders(),
       );
-      setFilterData(response.data.data || {
-        subjects: [],
-        subSubjects: [],
-        topics: [],
-        chapters: [],
-      });
+      setFilterData(
+        response.data.data || {
+          subjects: [],
+          subSubjects: [],
+          topics: [],
+          chapters: [],
+        },
+      );
     } catch (error) {
       toast({
         title: 'Error',
@@ -183,12 +215,31 @@ const CreateTest = () => {
 
   const handleMultiSelect = (field, value, isChecked) => {
     setFormData((prev) => {
-      const currentArray = prev[field] || [];
+      let updated = { ...prev };
+
       if (isChecked) {
-        return { ...prev, [field]: [...currentArray, value] };
+        updated[field] = [...prev[field], value];
       } else {
-        return { ...prev, [field]: currentArray.filter((id) => id !== value) };
+        updated[field] = prev[field].filter((id) => id !== value);
       }
+
+      // DEPENDENCY CLEAR LOGIC
+      if (field === 'subjects') {
+        updated.subSubjects = [];
+        updated.topics = [];
+        updated.chapters = [];
+      }
+
+      if (field === 'subSubjects') {
+        updated.topics = [];
+        updated.chapters = [];
+      }
+
+      if (field === 'topics') {
+        updated.chapters = [];
+      }
+
+      return updated;
     });
   };
 
@@ -221,7 +272,10 @@ const CreateTest = () => {
       return;
     }
 
-    if (formData.testMode === 'exam' && (!formData.timeLimit || parseInt(formData.timeLimit) < 1)) {
+    if (
+      formData.testMode === 'exam' &&
+      (!formData.timeLimit || parseInt(formData.timeLimit) < 1)
+    ) {
       toast({
         title: 'Missing Time Limit',
         description: 'Time limit is required for Exam Mode',
@@ -240,7 +294,8 @@ const CreateTest = () => {
       if (!hasFilter) {
         toast({
           title: 'No Selection',
-          description: 'Please select at least one Subject, Sub-subject, Topic, or Chapter',
+          description:
+            'Please select at least one Subject, Sub-subject, Topic, or Chapter',
           status: 'error',
         });
         return;
@@ -261,14 +316,15 @@ const CreateTest = () => {
         topics: formData.topics,
         chapters: formData.chapters,
         mcqLimit: parseInt(formData.mcqLimit),
-        timeLimit: formData.testMode === 'exam' ? parseInt(formData.timeLimit) : null,
+        timeLimit:
+          formData.testMode === 'exam' ? parseInt(formData.timeLimit) : null,
         description: formData.description || '',
       };
 
       const response = await axios.post(
         `${baseUrl}api/admin/tests/create`,
         payload,
-        getHeaders()
+        getHeaders(),
       );
 
       toast({
@@ -347,7 +403,9 @@ const CreateTest = () => {
             <FormLabel>Academic Year</FormLabel>
             <Select
               value={formData.academicYear}
-              onChange={(e) => handleInputChange('academicYear', e.target.value)}
+              onChange={(e) =>
+                handleInputChange('academicYear', e.target.value)
+              }
               placeholder="Select Academic Year"
             >
               {years.map((y) => (
@@ -442,7 +500,7 @@ const CreateTest = () => {
                               handleMultiSelect(
                                 'subjects',
                                 subject._id,
-                                e.target.checked
+                                e.target.checked,
                               )
                             }
                             mb={2}
@@ -455,7 +513,7 @@ const CreateTest = () => {
                   </FormControl>
 
                   {/* Sub-Subjects */}
-                  <FormControl>
+                  <FormControl isDisabled={!formData.subjects.length}>
                     <FormLabel>Sub-Subjects</FormLabel>
                     <Box
                       border="1px solid"
@@ -471,15 +529,20 @@ const CreateTest = () => {
                           No sub-subjects available
                         </Text>
                       ) : (
-                        filterData.subSubjects.map((subSubject) => (
+                        (filteredSubSubjects.length
+                          ? filteredSubSubjects
+                          : []
+                        ).map((subSubject) => (
                           <Checkbox
                             key={subSubject._id}
-                            isChecked={formData.subSubjects.includes(subSubject._id)}
+                            isChecked={formData.subSubjects.includes(
+                              subSubject._id,
+                            )}
                             onChange={(e) =>
                               handleMultiSelect(
                                 'subSubjects',
                                 subSubject._id,
-                                e.target.checked
+                                e.target.checked,
                               )
                             }
                             mb={2}
@@ -492,7 +555,7 @@ const CreateTest = () => {
                   </FormControl>
 
                   {/* Topics */}
-                  <FormControl>
+                  <FormControl isDisabled={!formData.subSubjects.length}>
                     <FormLabel>Topics</FormLabel>
                     <Box
                       border="1px solid"
@@ -508,24 +571,30 @@ const CreateTest = () => {
                           No topics available
                         </Text>
                       ) : (
-                        filterData.topics.map((topic) => (
-                          <Checkbox
-                            key={topic._id}
-                            isChecked={formData.topics.includes(topic._id)}
-                            onChange={(e) =>
-                              handleMultiSelect('topics', topic._id, e.target.checked)
-                            }
-                            mb={2}
-                          >
-                            {topic.name}
-                          </Checkbox>
-                        ))
+                        (filteredTopics.length ? filteredTopics : []).map(
+                          (topic) => (
+                            <Checkbox
+                              key={topic._id}
+                              isChecked={formData.topics.includes(topic._id)}
+                              onChange={(e) =>
+                                handleMultiSelect(
+                                  'topics',
+                                  topic._id,
+                                  e.target.checked,
+                                )
+                              }
+                              mb={2}
+                            >
+                              {topic.name}
+                            </Checkbox>
+                          ),
+                        )
                       )}
                     </Box>
                   </FormControl>
 
                   {/* Chapters */}
-                  <FormControl>
+                  <FormControl isDisabled={!formData.topics.length}>
                     <FormLabel>Chapters</FormLabel>
                     <Box
                       border="1px solid"
@@ -541,22 +610,26 @@ const CreateTest = () => {
                           No chapters available
                         </Text>
                       ) : (
-                        filterData.chapters.map((chapter) => (
-                          <Checkbox
-                            key={chapter._id}
-                            isChecked={formData.chapters.includes(chapter._id)}
-                            onChange={(e) =>
-                              handleMultiSelect(
-                                'chapters',
+                        (filteredChapters.length ? filteredChapters : []).map(
+                          (chapter) => (
+                            <Checkbox
+                              key={chapter._id}
+                              isChecked={formData.chapters.includes(
                                 chapter._id,
-                                e.target.checked
-                              )
-                            }
-                            mb={2}
-                          >
-                            {chapter.name}
-                          </Checkbox>
-                        ))
+                              )}
+                              onChange={(e) =>
+                                handleMultiSelect(
+                                  'chapters',
+                                  chapter._id,
+                                  e.target.checked,
+                                )
+                              }
+                              mb={2}
+                            >
+                              {chapter.name}
+                            </Checkbox>
+                          ),
+                        )
                       )}
                     </Box>
                   </FormControl>
@@ -628,19 +701,28 @@ const CreateTest = () => {
                 )}
                 {formData.month && formData.academicYear && (
                   <Text>
-                    <strong>Period:</strong> {formData.month} / {formData.academicYear}
+                    <strong>Period:</strong> {formData.month} /{' '}
+                    {formData.academicYear}
                   </Text>
                 )}
                 <HStack>
                   <Badge
-                    colorScheme={formData.category === 'grand' ? 'green' : 'blue'}
+                    colorScheme={
+                      formData.category === 'grand' ? 'green' : 'blue'
+                    }
                   >
-                    {formData.category === 'grand' ? 'Grand Test' : 'Subject Test'}
+                    {formData.category === 'grand'
+                      ? 'Grand Test'
+                      : 'Subject Test'}
                   </Badge>
                   <Badge
-                    colorScheme={formData.testMode === 'exam' ? 'orange' : 'cyan'}
+                    colorScheme={
+                      formData.testMode === 'exam' ? 'orange' : 'cyan'
+                    }
                   >
-                    {formData.testMode === 'exam' ? 'Exam Mode' : 'Regular Mode'}
+                    {formData.testMode === 'exam'
+                      ? 'Exam Mode'
+                      : 'Regular Mode'}
                   </Badge>
                 </HStack>
                 {formData.mcqLimit && (
