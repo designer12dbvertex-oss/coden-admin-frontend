@@ -42,7 +42,7 @@ import State from 'views/admin/AddState';
 import PendingWorker from 'views/admin/AddCity';
 import City from 'views/admin/AddCity';
 import College from 'views/admin/AddCollege';
-import TestManagement from 'views/admin/test';
+import TestManagement from './views/admin/test/CreateTest';
 
 import Subscription from 'views/admin/Subscription';
 import ProfilePage from 'views/admin/profile/ProfileSetting';
@@ -53,14 +53,16 @@ import Topic from 'views/admin/topic.jsx';
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
 import {
-  FaBullhorn,
-  FaChartLine,
+  FaAccessibleIcon,
   FaCreditCard,
-  FaUndoAlt,
+  FaFlask,
+  FaListUl,
   FaUsers,
   FaUsersCog,
+  FaVideo,
   FaWallet,
 } from 'react-icons/fa';
+import TestsList from 'views/admin/test/TestsList';
 
 const routes = [
   {
@@ -190,14 +192,23 @@ const routes = [
     name: 'Test',
     layout: '/admin',
     path: '/test',
-    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+    icon: (
+      <Icon as={FaFlask} width="20px" height="20px" color="inherit" />
+    ), // new icon
     component: <TestManagement />,
+  },
+  {
+    name: 'Test',
+    layout: '/admin',
+    path: '/test-list',
+    icon: <Icon as={FaListUl} width="20px" height="20px" color="inherit" />, // new icon
+    component: <TestsList />,
   },
   {
     name: 'Video Lectures',
     layout: '/admin',
     path: '/video',
-    icon: <Icon as={FaCreditCard} width="20px" height="20px" color="inherit" />, // new icon
+    icon: <Icon as={FaVideo} width="20px" height="20px" color="inherit" />, // new icon
     component: <Video />,
   },
   // {
