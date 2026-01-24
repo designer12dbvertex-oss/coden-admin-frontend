@@ -110,6 +110,109 @@ export default function MCQManagement() {
   };
 
   const [formData, setFormData] = useState(initialFormState);
+  const [editingMCQ, setEditingMCQ] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const handleEdit = (mcq) => {
+    setIsEditMode(true);
+    setEditingMCQ(mcq);
+
+    setFormData({
+      courseId: mcq.courseId?._id || '',
+      subjectId: mcq.subjectId?._id || '',
+      subSubjectId: mcq.subSubjectId?._id || '',
+      topicId: mcq.topicId?._id || '',
+      chapterId: mcq.chapterId?._id || '',
+      tagId: mcq.tagId?._id || '',
+      mode: mcq.mode || 'regular',
+      questionText: mcq.question?.text || '',
+      questionFile: null,
+      options: mcq.options.map((o) => ({ text: o.text || '', file: null })),
+      correctAnswer: mcq.correctAnswer || 0,
+      explanationText: mcq.explanation?.text || '',
+      explanationFile: null,
+      difficulty: mcq.difficulty || 'medium',
+      marks: mcq.marks || 4,
+      negativeMarks: mcq.negativeMarks || 1,
+    });
+
+    loadSubjects(mcq.courseId?._id);
+    loadSubSubjects(mcq.subjectId?._id);
+    loadTopics(mcq.subSubjectId?._id);
+    loadChapters(mcq.topicId?._id);
+  };
+  const handleUpdate = async () => {
+    if (!editingMCQ?._id) return;
+
+    setLoading(true);
+    const data = new FormData();
+
+    data.append('chapterId', formData.chapterId);
+    if (formData.tagId) data.append('tagId', formData.tagId);
+    data.append('mode', formData.mode);
+    data.append('correctAnswer', formData.correctAnswer);
+    data.append('difficulty', formData.difficulty);
+    data.append('marks', formData.marks);
+    data.append('negativeMarks', formData.negativeMarks);
+
+    data.append(
+      'question',
+      JSON.stringify({
+        text: formData.questionText,
+        replaceImages: !!formData.questionFile,
+      }),
+    );
+
+    data.append(
+      'explanation',
+      JSON.stringify({
+        text: formData.explanationText,
+        replaceImages: !!formData.explanationFile,
+      }),
+    );
+
+    data.append(
+      'options',
+      JSON.stringify(
+        formData.options.map((o) => ({
+          text: o.text,
+          replaceImage: !!o.file,
+        })),
+      ),
+    );
+
+    if (formData.questionFile)
+      data.append('questionImages', formData.questionFile);
+
+    if (formData.explanationFile)
+      data.append('explanationImages', formData.explanationFile);
+
+    formData.options.forEach((opt, i) => {
+      if (opt.file) data.append(`optionImage_${i}`, opt.file);
+    });
+
+    try {
+      await axios.put(`${baseUrl}/api/admin/mcqs/${editingMCQ._id}`, data, {
+        headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+      });
+
+      toast({ title: 'MCQ updated successfully', status: 'success' });
+
+      setIsEditMode(false);
+      setEditingMCQ(null);
+      setFormData(initialFormState);
+
+      const res = await axios.get(`${baseUrl}/api/admin/mcqs`, { headers });
+      setMcqs(res.data.data || res.data || []);
+    } catch (err) {
+      toast({
+        title: 'Update failed',
+        description: err.response?.data?.message || 'Server error',
+        status: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ── Fetch Master Data ──────────────────────────────────
   useEffect(() => {
@@ -729,15 +832,31 @@ export default function MCQManagement() {
             </FormControl>
 
             <Button
-              colorScheme="brand"
+              colorScheme={isEditMode ? 'orange' : 'brand'}
               mt={8}
               w="full"
               size="lg"
-              onClick={handleCreate}
+              onClick={isEditMode ? handleUpdate : handleCreate}
               isLoading={loading}
             >
-              CREATE MCQ
+              {isEditMode ? 'UPDATE MCQ' : 'CREATE MCQ'}
             </Button>
+
+            {isEditMode && (
+              <Button
+                mt={3}
+                w="full"
+                size="md"
+                variant="outline"
+                onClick={() => {
+                  setIsEditMode(false);
+                  setEditingMCQ(null);
+                  setFormData(initialFormState);
+                }}
+              >
+                Cancel Edit
+              </Button>
+            )}
           </Box>
         </SimpleGrid>
       </Card>
@@ -823,11 +942,30 @@ export default function MCQManagement() {
                         colorScheme="brand"
                         variant="outline"
                         onClick={() =>
-                          window.location.assign('/admin/mcq/mcqlist')
+                          window.location.assign(`/admin/mcq/view/${item._id}`)
                         }
                       >
                         View
                       </Button>
+                    </Box>
+                    <Box flex="1" textAlign="center">
+                      <HStack justify="center" spacing={2}>
+                        <Button
+                          size="sm"
+                          colorScheme="blue"
+                          variant="outline"
+                          onClick={() => handleEdit(item)}
+                        >
+                          Edit
+                        </Button>
+                        <IconButton
+                          size="sm"
+                          colorScheme="red"
+                          variant="ghost"
+                          icon={<MdDelete />}
+                          onClick={() => handleDelete(item._id)}
+                        />
+                      </HStack>
                     </Box>
                   </Flex>
                 );

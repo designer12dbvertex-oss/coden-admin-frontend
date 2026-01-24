@@ -63,6 +63,7 @@ import {
   FaWallet,
 } from 'react-icons/fa';
 import TestsList from 'views/admin/test/TestsList';
+import McqView from 'views/admin/AddMCQ/McqView';
 
 const routes = [
   {
@@ -185,6 +186,13 @@ const routes = [
         path: '/mcq/mcq-list',
         component: <MCQList />,
       },
+      {
+        name: 'MCQ View',
+        layout: '/admin',
+        path: '/mcq/view/:mcqId',
+        component: <McqView />,
+        showInSidebar: false, // 👈 sidebar me nahi dikhana
+      },
     ],
   },
 
@@ -192,9 +200,7 @@ const routes = [
     name: 'Test',
     layout: '/admin',
     path: '/test',
-    icon: (
-      <Icon as={FaFlask} width="20px" height="20px" color="inherit" />
-    ), // new icon
+    icon: <Icon as={FaFlask} width="20px" height="20px" color="inherit" />, // new icon
     component: <TestManagement />,
   },
   {
