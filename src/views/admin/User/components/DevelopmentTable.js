@@ -723,7 +723,9 @@ export default function UsersList() {
             <img
               src={
                 info.getValue()
-                  ? `${baseUrl}${info.getValue()}`
+                  ? info.getValue().startsWith('http')
+                    ? info.getValue() // 👈 Google image
+                    : `${baseUrl}${info.getValue()}` // 👈 Local upload
                   : defaultProfilePic
               }
               alt="Profile"
@@ -1040,7 +1042,9 @@ export default function UsersList() {
                   <img
                     src={
                       selectedUser.profileImage
-                        ? `${baseUrl}${selectedUser.profileImage}`
+                        ? selectedUser.profileImage.startsWith('http')
+                          ? selectedUser.profileImage // 👈 Google image
+                          : `${baseUrl}${selectedUser.profileImage}` // 👈 Local upload
                         : defaultProfilePic
                     }
                     alt="Profile"
