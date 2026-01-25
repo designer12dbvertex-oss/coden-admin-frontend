@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Flex,
@@ -57,9 +57,10 @@ export default function MCQList() {
     [token],
   );
 
-  const [mcqs, setMcqs] = useState([]);
+  const [testsWithMcqs, setTestsWithMcqs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedKey, setExpandedKey] = useState(null);
+  const [expandedTestId, setExpandedTestId] = useState(null);
+  const [expandedChapterKey, setExpandedChapterKey] = useState(null);
   const [selectedMcq, setSelectedMcq] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
@@ -68,37 +69,40 @@ export default function MCQList() {
   const navigate = useNavigate();
   const testIdFromList = location.state?.testId || null;
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchMCQs = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        let url = `${baseUrl}/api/admin/mcqs`;
-        if (testIdFromList) url += `?testId=${testIdFromList}`;
-
-        const res = await axios.get(url, axiosConfig);
-        if (!isMounted) return;
-        setMcqs(res.data?.data || []);
-      } catch (err) {
-        console.error('Failed to load MCQs:', err);
-        if (!isMounted) return;
-        setMcqs([]);
-        setError(
-          err?.response?.data?.message ||
-            'Failed to load MCQs. Please try again.',
-        );
-      } finally {
-        if (isMounted) setLoading(false);
+  const fetchMcqsTestWise = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const url = testIdFromList
+        ? `${baseUrl}/api/admin/mcqs?testId=${testIdFromList}`
+        : `${baseUrl}/api/admin/mcqs`;
+      const res = await axios.get(url, axiosConfig);
+      const data = res.data?.data ?? [];
+      if (
+        res.data?.format === 'test-wise-grouped' &&
+        Array.isArray(data)
+      ) {
+        setTestsWithMcqs(data);
+        if (data.length === 1) {
+          setExpandedTestId(data[0].testId ?? 'unassigned');
+        }
+      } else {
+        setTestsWithMcqs([]);
       }
-    };
-
-    fetchMCQs();
-    return () => {
-      isMounted = false;
-    };
+    } catch (err) {
+      console.error('Failed to fetch MCQs:', err);
+      setTestsWithMcqs([]);
+      setError(
+        err?.response?.data?.message || 'Failed to fetch MCQs. Please try again.',
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [baseUrl, axiosConfig, testIdFromList]);
+
+  useEffect(() => {
+    fetchMcqsTestWise();
+  }, [fetchMcqsTestWise]);
 
   const getDifficultyColor = (diff) => {
     if (diff === 'easy') return 'green';
@@ -106,8 +110,6 @@ export default function MCQList() {
     if (diff === 'hard') return 'red';
     return 'gray';
   };
-
-  const getModeColor = (mode) => (mode === 'exam' ? 'red' : 'blue');
 
   const getImageUrl = (path) => {
     if (!path) return '';
@@ -126,24 +128,28 @@ export default function MCQList() {
     setIsModalOpen(false);
   };
 
-  const grouped = useMemo(() => {
-    return mcqs.reduce((acc, mcq) => {
-      const subject = mcq.subjectId?.name || 'Uncategorized';
-      const subSubject = mcq.subSubjectId?.name || 'General';
-      const topic = mcq.topicId?.name || 'Miscellaneous';
-      const chapter = mcq.chapterId?.name || 'No Chapter';
+  // Helper function to group MCQs by Subject -> SubSubject -> Topic -> Chapter
+  const groupByHierarchy = useMemo(
+    () => (mcqList) => {
+      return mcqList.reduce((acc, mcq) => {
+        const subject = mcq.subjectId?.name || 'Uncategorized';
+        const subSubject = mcq.subSubjectId?.name || 'General';
+        const topic = mcq.topicId?.name || 'Miscellaneous';
+        const chapter = mcq.chapterId?.name || 'No Chapter';
 
-      if (!acc[subject]) acc[subject] = {};
-      if (!acc[subject][subSubject]) acc[subject][subSubject] = {};
-      if (!acc[subject][subSubject][topic])
-        acc[subject][subSubject][topic] = {};
-      if (!acc[subject][subSubject][topic][chapter])
-        acc[subject][subSubject][topic][chapter] = [];
+        if (!acc[subject]) acc[subject] = {};
+        if (!acc[subject][subSubject]) acc[subject][subSubject] = {};
+        if (!acc[subject][subSubject][topic])
+          acc[subject][subSubject][topic] = {};
+        if (!acc[subject][subSubject][topic][chapter])
+          acc[subject][subSubject][topic][chapter] = [];
 
-      acc[subject][subSubject][topic][chapter].push(mcq);
-      return acc;
-    }, {});
-  }, [mcqs]);
+        acc[subject][subSubject][topic][chapter].push(mcq);
+        return acc;
+      }, {});
+    },
+    [],
+  );
 
   return (
     <Box
@@ -157,12 +163,13 @@ export default function MCQList() {
         size="sm"
         variant="outline"
         colorScheme="blue"
-        mb={3} // 👈 thoda upar space mil jayega
+        mb={4}
         alignSelf="flex-start"
         onClick={() => navigate('/admin/test-list')}
       >
         ← Back to Tests
       </Button>
+
       <Card
         bg={bgCard}
         shadow="2xl"
@@ -178,11 +185,14 @@ export default function MCQList() {
             <HStack spacing={3}>
               <Icon as={MdOutlineQuiz} boxSize={7} color={accentColor} />
               <Heading size="lg" color={accentColor}>
-                MCQ Repository
+                {testsWithMcqs.length === 1 && testsWithMcqs[0]?.testName
+                  ? `MCQs for: ${testsWithMcqs[0].testName}`
+                  : 'MCQ Repository'}
               </Heading>
             </HStack>
             <Badge fontSize="md" colorScheme="purple" px={4} py={1}>
-              {mcqs.length} Questions
+              {testsWithMcqs.reduce((sum, test) => sum + test.totalMCQs, 0)}{' '}
+              Questions
             </Badge>
           </HStack>
         </CardHeader>
@@ -215,12 +225,12 @@ export default function MCQList() {
               <Button
                 colorScheme="blue"
                 variant="outline"
-                onClick={() => window.location.reload()}
+                onClick={fetchMcqsTestWise}
               >
                 Retry
               </Button>
             </Flex>
-          ) : Object.keys(grouped).length === 0 ? (
+          ) : testsWithMcqs.length === 0 ? (
             <Flex
               justify="center"
               align="center"
@@ -230,211 +240,348 @@ export default function MCQList() {
             >
               <Icon as={MdOutlineQuiz} boxSize={16} color="gray.400" />
               <Text fontSize="xl" color={secondaryText}>
-                No MCQs found for this test
+                {testIdFromList
+                  ? 'No MCQs found for this test'
+                  : 'No tests with MCQs found'}
               </Text>
+              <Button
+                size="sm"
+                variant="outline"
+                colorScheme="blue"
+                onClick={() => navigate('/admin/test-list')}
+              >
+                Back to Tests
+              </Button>
             </Flex>
           ) : (
-            Object.entries(grouped).map(([subject, subSubjects]) => (
-              <Box key={subject} mb={12}>
-                <HStack mb={4}>
-                  <Icon as={MdSchool} boxSize={6} color={accentColor} />
-                  <Heading size="md" color={accentColor}>
-                    {subject}
-                  </Heading>
-                </HStack>
+            testsWithMcqs.map((testGroup) => {
+              const testKey = testGroup.testId ?? 'unassigned';
+              return (
+              <Box key={testKey} mb={10}>
+                {/* Test section header */}
                 <Box
-                  border="1px solid"
-                  borderColor={borderColor}
+                  p={5}
+                  bg={headerBg}
                   borderRadius="xl"
-                  overflow="hidden"
-                  boxShadow="sm"
+                  border="2px solid"
+                  borderColor={accentColor}
+                  mb={6}
+                  cursor="pointer"
+                  onClick={() =>
+                    setExpandedTestId(
+                      expandedTestId === testKey ? null : testKey,
+                    )
+                  }
+                  _hover={{ boxShadow: 'md' }}
+                  transition="all 0.2s"
                 >
-                  <Table variant="simple" size="md">
-                    <Thead bg={tableBg}>
-                      <Tr>
-                        <Th>Sub Subject</Th>
-                        <Th>Topic</Th>
-                        <Th>Chapter</Th>
-                        <Th>Tags</Th>
-                        <Th>Total Questions</Th>
-                        <Th>Action</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      {Object.entries(subSubjects).flatMap(
-                        ([subSubject, topics]) =>
-                          Object.entries(topics).flatMap(([topic, chapters]) =>
-                            Object.entries(chapters).map(([chapter, items]) => {
-                              const key = `${subject}-${subSubject}-${topic}-${chapter}`;
-                              const tags = Array.from(
-                                new Set(items.flatMap((m) => m.tags || [])),
-                              );
-                              return (
-                                <React.Fragment key={key}>
-                                  <Tr _hover={{ bg: bgHover }}>
-                                    <Td fontWeight="medium">{subSubject}</Td>
-                                    <Td>{topic}</Td>
-                                    <Td>{chapter}</Td>
-                                    <Td>
-                                      <Wrap>
-                                        {tags.length > 0 ? (
-                                          tags.map((tag, i) => (
-                                            <WrapItem key={i}>
-                                              <Badge
-                                                colorScheme="teal"
-                                                variant="subtle"
-                                                px={2}
-                                              >
-                                                {tag}
-                                              </Badge>
-                                            </WrapItem>
-                                          ))
-                                        ) : (
-                                          <Text
-                                            fontSize="sm"
-                                            color={secondaryText}
-                                          >
-                                            —
-                                          </Text>
-                                        )}
-                                      </Wrap>
-                                    </Td>
-                                    <Td>
-                                      <Badge
-                                        colorScheme="purple"
-                                        borderRadius="full"
-                                        px={3}
-                                      >
-                                        {items.length}
-                                      </Badge>
-                                    </Td>
-                                    <Td>
-                                      <Button
-                                        size="sm"
-                                        colorScheme="blue"
-                                        variant="outline"
-                                        borderRadius="full"
-                                        onClick={() =>
-                                          setExpandedKey(
-                                            expandedKey === key ? null : key,
-                                          )
-                                        }
-                                      >
-                                        {expandedKey === key
-                                          ? 'Hide'
-                                          : 'View Questions'}
-                                      </Button>
-                                    </Td>
-                                  </Tr>
-
-                                  {expandedKey === key && (
-                                    <Tr>
-                                      <Td colSpan={6} p={4}>
-                                        <Box
-                                          border="1px solid"
-                                          borderColor={borderColor}
-                                          borderRadius="xl"
-                                          overflow="hidden"
-                                          boxShadow="sm"
-                                        >
-                                          <Table variant="simple" size="sm">
-                                            <Thead bg={tableBg}>
-                                              <Tr>
-                                                <Th>Question</Th>
-                                                <Th>Correct Answer</Th>
-                                                <Th>Mode</Th>
-                                                <Th>Difficulty</Th>
-                                                <Th>Tags</Th>
-                                                <Th>View</Th>
-                                              </Tr>
-                                            </Thead>
-                                            <Tbody>
-                                              {items.map((mcq) => (
-                                                <Tr
-                                                  key={mcq._id}
-                                                  _hover={{ bg: bgHover }}
-                                                >
-                                                  <Td maxW="420px">
-                                                    <Text noOfLines={2}>
-                                                      {mcq.question?.text ||
-                                                        '—'}
-                                                    </Text>
-                                                  </Td>
-                                                  <Td
-                                                    color="green.600"
-                                                    fontWeight="semibold"
-                                                  >
-                                                    {mcq.options?.[
-                                                      mcq.correctAnswer
-                                                    ]?.text || '—'}
-                                                  </Td>
-                                                  <Td>
-                                                    <Badge
-                                                      colorScheme={getModeColor(
-                                                        mcq.mode,
-                                                      )}
-                                                      px={3}
-                                                    >
-                                                      {mcq.mode}
-                                                    </Badge>
-                                                  </Td>
-                                                  <Td>
-                                                    <Badge
-                                                      colorScheme={getDifficultyColor(
-                                                        mcq.difficulty,
-                                                      )}
-                                                      px={3}
-                                                    >
-                                                      {mcq.difficulty}
-                                                    </Badge>
-                                                  </Td>
-                                                  <Td>
-                                                    <Wrap>
-                                                      {(mcq.tags || []).map(
-                                                        (tag, i) => (
-                                                          <WrapItem key={i}>
-                                                            <Badge
-                                                              colorScheme="teal"
-                                                              variant="subtle"
-                                                              px={2}
-                                                            >
-                                                              {tag}
-                                                            </Badge>
-                                                          </WrapItem>
-                                                        ),
-                                                      )}
-                                                    </Wrap>
-                                                  </Td>
-                                                  <Td>
-                                                    <Button
-                                                      size="sm"
-                                                      colorScheme="blue"
-                                                      borderRadius="full"
-                                                      onClick={() =>
-                                                        openModal(mcq)
-                                                      }
-                                                    >
-                                                      View
-                                                    </Button>
-                                                  </Td>
-                                                </Tr>
-                                              ))}
-                                            </Tbody>
-                                          </Table>
-                                        </Box>
-                                      </Td>
-                                    </Tr>
-                                  )}
-                                </React.Fragment>
-                              );
-                            }),
-                          ),
-                      )}
-                    </Tbody>
-                  </Table>
+                  <HStack justify="space-between" align="center">
+                    <HStack spacing={4}>
+                      <Icon
+                        as={MdOutlineQuiz}
+                        boxSize={8}
+                        color={accentColor}
+                      />
+                      <VStack align="start" spacing={0}>
+                        <Heading size="md" color={accentColor}>
+                          {testGroup.testName}
+                        </Heading>
+                        <Text fontSize="sm" color={secondaryText}>
+                          Click to expand/collapse
+                        </Text>
+                      </VStack>
+                    </HStack>
+                    <Badge
+                      fontSize="lg"
+                      colorScheme="purple"
+                      px={4}
+                      py={2}
+                      borderRadius="full"
+                    >
+                      {testGroup.totalMCQs} MCQs
+                    </Badge>
+                  </HStack>
                 </Box>
+
+                {expandedTestId === testKey && (
+                  <VStack spacing={8} align="stretch" pl={{ base: 0, md: 4 }}>
+                    {testGroup.totalMCQs === 0 ? (
+                      <Box
+                        p={8}
+                        textAlign="center"
+                        border="1px dashed"
+                        borderColor={borderColor}
+                        borderRadius="lg"
+                      >
+                        <Text color={secondaryText} fontSize="lg">
+                          No MCQs found for this test
+                        </Text>
+                      </Box>
+                    ) : (
+                      Object.entries(groupByHierarchy(testGroup.mcqList)).map(
+                        ([subject, subSubjects]) => (
+                          <Box key={subject}>
+                            <HStack mb={4}>
+                              <Icon
+                                as={MdSchool}
+                                boxSize={6}
+                                color={accentColor}
+                              />
+                              <Heading size="md" color={accentColor}>
+                                {subject}
+                              </Heading>
+                            </HStack>
+                            <Box
+                              border="1px solid"
+                              borderColor={borderColor}
+                              borderRadius="xl"
+                              overflow="hidden"
+                              boxShadow="sm"
+                            >
+                              <Table variant="simple" size="md">
+                                <Thead bg={tableBg}>
+                                  <Tr>
+                                    <Th>Sub Subject</Th>
+                                    <Th>Topic</Th>
+                                    <Th>Chapter</Th>
+                                    <Th>Tags</Th>
+                                    <Th>Total Questions</Th>
+                                    <Th>Action</Th>
+                                  </Tr>
+                                </Thead>
+                                <Tbody>
+                                  {Object.entries(subSubjects).flatMap(
+                                    ([subSubject, topics]) =>
+                                      Object.entries(topics).flatMap(
+                                        ([topic, chapters]) =>
+                                          Object.entries(chapters).map(
+                                            ([chapter, items]) => {
+                                              const chapterKey = `${subject}-${subSubject}-${topic}-${chapter}`;
+                                              const tags = Array.from(
+                                                new Set(
+                                                  items.flatMap(
+                                                    (m) => m.tags || [],
+                                                  ),
+                                                ),
+                                              );
+                                              return (
+                                                <React.Fragment
+                                                  key={chapterKey}
+                                                >
+                                                  <Tr _hover={{ bg: bgHover }}>
+                                                    <Td fontWeight="medium">
+                                                      {subSubject}
+                                                    </Td>
+                                                    <Td>{topic}</Td>
+                                                    <Td>{chapter}</Td>
+                                                    <Td>
+                                                      <Wrap>
+                                                        {tags.length > 0 ? (
+                                                          tags.map((tag, i) => (
+                                                            <WrapItem key={i}>
+                                                              <Badge
+                                                                colorScheme="teal"
+                                                                variant="subtle"
+                                                                px={2}
+                                                              >
+                                                                {tag}
+                                                              </Badge>
+                                                            </WrapItem>
+                                                          ))
+                                                        ) : (
+                                                          <Text
+                                                            fontSize="sm"
+                                                            color={
+                                                              secondaryText
+                                                            }
+                                                          >
+                                                            —
+                                                          </Text>
+                                                        )}
+                                                      </Wrap>
+                                                    </Td>
+                                                    <Td>
+                                                      <Badge
+                                                        colorScheme="purple"
+                                                        borderRadius="full"
+                                                        px={3}
+                                                      >
+                                                        {items.length}
+                                                      </Badge>
+                                                    </Td>
+                                                    <Td>
+                                                      <Button
+                                                        size="sm"
+                                                        colorScheme="blue"
+                                                        variant="outline"
+                                                        borderRadius="full"
+                                                        onClick={() =>
+                                                          setExpandedChapterKey(
+                                                            expandedChapterKey ===
+                                                              chapterKey
+                                                              ? null
+                                                              : chapterKey,
+                                                          )
+                                                        }
+                                                      >
+                                                        {expandedChapterKey ===
+                                                        chapterKey
+                                                          ? 'Hide'
+                                                          : 'View Questions'}
+                                                      </Button>
+                                                    </Td>
+                                                  </Tr>
+
+                                                  {expandedChapterKey ===
+                                                    chapterKey && (
+                                                    <Tr>
+                                                      <Td colSpan={6} p={4}>
+                                                        <Box
+                                                          border="1px solid"
+                                                          borderColor={
+                                                            borderColor
+                                                          }
+                                                          borderRadius="xl"
+                                                          overflow="hidden"
+                                                          boxShadow="sm"
+                                                        >
+                                                          <Table
+                                                            variant="simple"
+                                                            size="sm"
+                                                          >
+                                                            <Thead bg={tableBg}>
+                                                              <Tr>
+                                                                <Th>
+                                                                  Question
+                                                                </Th>
+                                                                <Th>
+                                                                  Correct Answer
+                                                                </Th>
+                                                                <Th>
+                                                                  Difficulty
+                                                                </Th>
+                                                                <Th>Tags</Th>
+                                                                <Th>View</Th>
+                                                              </Tr>
+                                                            </Thead>
+                                                            <Tbody>
+                                                              {items.map(
+                                                                (mcq) => (
+                                                                  <Tr
+                                                                    key={
+                                                                      mcq._id
+                                                                    }
+                                                                    _hover={{
+                                                                      bg: bgHover,
+                                                                    }}
+                                                                  >
+                                                                    <Td maxW="420px">
+                                                                      <Text
+                                                                        noOfLines={
+                                                                          2
+                                                                        }
+                                                                      >
+                                                                        {mcq
+                                                                          .question
+                                                                          ?.text ||
+                                                                          '—'}
+                                                                      </Text>
+                                                                    </Td>
+                                                                    <Td
+                                                                      color="green.600"
+                                                                      fontWeight="semibold"
+                                                                    >
+                                                                      {mcq
+                                                                        .options?.[
+                                                                        mcq
+                                                                          .correctAnswer
+                                                                      ]?.text ||
+                                                                        '—'}
+                                                                    </Td>
+                                                                    <Td>
+                                                                      <Badge
+                                                                        colorScheme={getDifficultyColor(
+                                                                          mcq.difficulty,
+                                                                        )}
+                                                                        px={3}
+                                                                      >
+                                                                        {
+                                                                          mcq.difficulty
+                                                                        }
+                                                                      </Badge>
+                                                                    </Td>
+                                                                    <Td>
+                                                                      <Wrap>
+                                                                        {(
+                                                                          mcq.tags ||
+                                                                          []
+                                                                        ).map(
+                                                                          (
+                                                                            tag,
+                                                                            i,
+                                                                          ) => (
+                                                                            <WrapItem
+                                                                              key={
+                                                                                i
+                                                                              }
+                                                                            >
+                                                                              <Badge
+                                                                                colorScheme="teal"
+                                                                                variant="subtle"
+                                                                                px={
+                                                                                  2
+                                                                                }
+                                                                              >
+                                                                                {
+                                                                                  tag
+                                                                                }
+                                                                              </Badge>
+                                                                            </WrapItem>
+                                                                          ),
+                                                                        )}
+                                                                      </Wrap>
+                                                                    </Td>
+                                                                    <Td>
+                                                                      <Button
+                                                                        size="sm"
+                                                                        colorScheme="blue"
+                                                                        borderRadius="full"
+                                                                        onClick={() =>
+                                                                          openModal(
+                                                                            mcq,
+                                                                          )
+                                                                        }
+                                                                      >
+                                                                        View
+                                                                      </Button>
+                                                                    </Td>
+                                                                  </Tr>
+                                                                ),
+                                                              )}
+                                                            </Tbody>
+                                                          </Table>
+                                                        </Box>
+                                                      </Td>
+                                                    </Tr>
+                                                  )}
+                                                </React.Fragment>
+                                              );
+                                            },
+                                          ),
+                                      ),
+                                  )}
+                                </Tbody>
+                              </Table>
+                            </Box>
+                          </Box>
+                        ),
+                      )
+                    )}
+                  </VStack>
+                )}
               </Box>
-            ))
+            );
+            })
           )}
         </CardBody>
       </Card>

@@ -42,6 +42,7 @@ import {
   MdLayers,
   MdEqualizer,
   MdAddCircle,
+  MdOutlineQuiz,
 } from 'react-icons/md';
 import axios from 'axios';
 import Card from 'components/card/Card'; // adjust path if needed
@@ -70,6 +71,13 @@ const quillFormats = [
   'align',
 ];
 
+function normaliseMcqList(res) {
+  const raw = res?.data?.data ?? res?.data ?? [];
+  if (res?.data?.format === 'test-wise-grouped' && Array.isArray(raw))
+    return raw.flatMap((g) => g.mcqList || []);
+  return Array.isArray(raw) ? raw : [];
+}
+
 export default function MCQManagement() {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const secondaryColor = useColorModeValue('gray.600', 'gray.400');
@@ -82,6 +90,7 @@ export default function MCQManagement() {
 
   // ── Data States ────────────────────────────────────────
   const [courses, setCourses] = useState([]);
+  const [tests, setTests] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [subSubjects, setSubSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
@@ -99,14 +108,11 @@ export default function MCQManagement() {
     if (testIdFromList) {
       toast({
         title: 'Add MCQ Mode',
-        description: `Adding MCQs for Test ID: ${testIdFromList}`,
+        description: `Adding MCQs for selected test`,
         status: 'info',
         duration: 3000,
       });
-
-      // 🔮 Future use:
-      // yahan tum test ke course/subject fetch karke
-      // formData prefill kar sakte ho
+      setFormData((prev) => ({ ...prev, testId: testIdFromList }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testIdFromList]);
@@ -126,6 +132,7 @@ export default function MCQManagement() {
   };
 
   const initialFormState = {
+    testId: '',
     courseId: '',
     subjectId: '',
     subSubjectId: '',
@@ -154,8 +161,10 @@ export default function MCQManagement() {
   const handleEdit = (mcq) => {
     setIsEditMode(true);
     setEditingMCQ(mcq);
+    const tid = mcq.testId?._id || mcq.testId || '';
 
     setFormData({
+      testId: tid,
       courseId: mcq.courseId?._id || '',
       subjectId: mcq.subjectId?._id || '',
       subSubjectId: mcq.subSubjectId?._id || '',
@@ -236,10 +245,13 @@ export default function MCQManagement() {
 
       setIsEditMode(false);
       setEditingMCQ(null);
-      setFormData(initialFormState);
+      setFormData({
+        ...initialFormState,
+        testId: formData.testId || testIdFromList || '',
+      });
 
       const res = await axios.get(`${baseUrl}/api/admin/mcqs`, { headers });
-      setMcqs(res.data.data || res.data || []);
+      setMcqs(normaliseMcqList(res));
     } catch (err) {
       toast({
         title: 'Update failed',
@@ -255,15 +267,17 @@ export default function MCQManagement() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [courseRes, tagRes, mcqRes] = await Promise.all([
+        const [courseRes, tagRes, mcqRes, testsRes] = await Promise.all([
           axios.get(`${baseUrl}/api/admin/courses`, { headers }),
           axios.get(`${baseUrl}/api/admin/tags`, { headers }),
           axios.get(`${baseUrl}/api/admin/mcqs`, { headers }),
+          axios.get(`${baseUrl}/api/admin/tests?limit=500`, { headers }),
         ]);
 
         setCourses(courseRes.data.data || courseRes.data || []);
         setTags(tagRes.data.data || tagRes.data || []);
-        setMcqs(mcqRes.data.data || mcqRes.data || []);
+        setMcqs(normaliseMcqList(mcqRes));
+        setTests(testsRes.data?.tests || []);
       } catch (err) {
         toast({
           title: 'Initial data load failed',
@@ -377,6 +391,15 @@ export default function MCQManagement() {
   };
 
   const handleCreate = async () => {
+    if (!formData.testId) {
+      toast({
+        title: 'Test is required to create MCQ',
+        description: 'Please select a test from the dropdown.',
+        status: 'warning',
+        duration: 4000,
+      });
+      return;
+    }
     if (!formData.chapterId) {
       toast({ title: 'Chapter is required', status: 'warning' });
       return;
@@ -385,6 +408,7 @@ export default function MCQManagement() {
     setLoading(true);
     const data = new FormData();
 
+    data.append('testId', formData.testId);
     // Required hierarchy
     data.append('courseId', formData.courseId);
     data.append('subjectId', formData.subjectId);
@@ -426,10 +450,12 @@ export default function MCQManagement() {
       });
 
       toast({ title: 'MCQ created successfully', status: 'success' });
-      setFormData(initialFormState);
-      // Refresh list
+      setFormData({
+        ...initialFormState,
+        testId: testIdFromList || formData.testId,
+      });
       const res = await axios.get(`${baseUrl}/api/admin/mcqs`, { headers });
-      setMcqs(res.data.data || res.data || []);
+      setMcqs(normaliseMcqList(res));
     } catch (err) {
       toast({
         title: 'Failed to create MCQ',
@@ -448,7 +474,7 @@ export default function MCQManagement() {
       await axios.delete(`${baseUrl}/api/admin/mcqs/${id}`, { headers });
       toast({ title: 'MCQ deleted', status: 'info' });
       const res = await axios.get(`${baseUrl}/api/admin/mcqs`, { headers });
-      setMcqs(res.data.data || res.data || []);
+      setMcqs(normaliseMcqList(res));
     } catch (err) {
       toast({ title: 'Delete failed', status: 'error' });
     }
@@ -497,6 +523,31 @@ export default function MCQManagement() {
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={10}>
           {/* LEFT – Metadata & Question */}
           <VStack align="stretch" spacing={6}>
+            <FormControl isRequired>
+              <FormLabel
+                fontSize="sm"
+                fontWeight="700"
+                color={secondaryColor}
+              >
+                <Icon as={MdOutlineQuiz} me="1" /> Test
+              </FormLabel>
+              <Select
+                variant="filled"
+                placeholder="Select Test"
+                value={formData.testId}
+                isDisabled={isEditMode}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, testId: e.target.value }))
+                }
+              >
+                {tests.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.testTitle || t.title || t.name || t._id}
+                  </option>
+                ))}
+              </Select>
+            </FormControl>
+
             {/* Course → Subject → SubSubject → Topic → Chapter */}
             <Grid templateColumns="repeat(2, 1fr)" gap={4}>
               <GridItem colSpan={{ base: 2, md: 1 }}>
@@ -890,7 +941,10 @@ export default function MCQManagement() {
                 onClick={() => {
                   setIsEditMode(false);
                   setEditingMCQ(null);
-                  setFormData(initialFormState);
+                  setFormData({
+                    ...initialFormState,
+                    testId: formData.testId || testIdFromList || '',
+                  });
                 }}
               >
                 Cancel Edit
