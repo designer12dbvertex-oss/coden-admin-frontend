@@ -47,6 +47,7 @@ import axios from 'axios';
 import Card from 'components/card/Card'; // adjust path if needed
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { useLocation } from 'react-router-dom';
 
 export default function MCQManagement() {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
@@ -70,6 +71,24 @@ export default function MCQManagement() {
   const [loading, setLoading] = useState(false);
 
   const toast = useToast();
+  const location = useLocation();
+  const testIdFromList = location.state?.testId || null;
+
+  useEffect(() => {
+    if (testIdFromList) {
+      toast({
+        title: 'Add MCQ Mode',
+        description: `Adding MCQs for Test ID: ${testIdFromList}`,
+        status: 'info',
+        duration: 3000,
+      });
+
+      // 🔮 Future use:
+      // yahan tum test ke course/subject fetch karke
+      // formData prefill kar sakte ho
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testIdFromList]);
 
   const rawBaseUrl = process.env.REACT_APP_BASE_URL || 'http://localhost:4000';
   const baseUrl = rawBaseUrl.endsWith('/')

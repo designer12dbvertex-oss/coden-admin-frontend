@@ -1,316 +1,4 @@
-// import React, { useState, useEffect } from 'react';
-// import {
-//   Box,
-//   Button,
-//   Table,
-//   Thead,
-//   Tbody,
-//   Tr,
-//   Th,
-//   Td,
-//   Badge,
-//   HStack,
-//   Select,
-//   Input,
-//   useToast,
-//   Spinner,
-//   VStack,
-//   Text,
-//   IconButton,
-//   Modal,
-//   ModalOverlay,
-//   ModalContent,
-//   ModalHeader,
-//   ModalBody,
-//   ModalCloseButton,
-//   ModalFooter,
-//   useDisclosure,
-// } from '@chakra-ui/react';
-// import { EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
-// import axios from 'axios';
-
-// const TestsList = () => {
-//   const toast = useToast();
-//   const [tests, setTests] = useState([]);
-//   const [loading, setLoading] = useState(false);
-//   const [selectedTest, setSelectedTest] = useState(null);
-//   const { isOpen, onOpen, onClose } = useDisclosure();
-
-//   // API Configuration
-//   const baseUrl = process.env.REACT_APP_BASE_URL || '';
-//   const token = localStorage.getItem('token');
-//   const getHeaders = () => ({
-//     headers: { Authorization: `Bearer ${token}` },
-//   });
-
-//   // Filter states
-//   const [filters, setFilters] = useState({
-//     category: '',
-//     status: 'active',
-//     testMode: '',
-//     page: 1,
-//     limit: 10,
-//   });
-
-//   const [pagination, setPagination] = useState({
-//     total: 0,
-//     pages: 0,
-//   });
-
-//   useEffect(() => {
-//     fetchTests();
-//   }, [filters]);
-
-//   const fetchTests = async () => {
-//     setLoading(true);
-//     try {
-//       const params = new URLSearchParams();
-//       if (filters.category) params.append('category', filters.category);
-//       if (filters.status) params.append('status', filters.status);
-//       if (filters.testMode) params.append('testMode', filters.testMode);
-//       params.append('page', filters.page);
-//       params.append('limit', filters.limit);
-
-//       const response = await axios.get(
-//         `${baseUrl}api/admin/tests?${params}`,
-//         getHeaders()
-//       );
-//       setTests(response.data.data || []);
-//       setPagination(response.data.pagination || { total: 0, pages: 0 });
-//     } catch (error) {
-//       toast({
-//         title: 'Error',
-//         description: error.response?.data?.message || 'Failed to fetch tests',
-//         status: 'error',
-//       });
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleDeleteTest = async (testId) => {
-//     if (!window.confirm('Are you sure you want to delete this test?')) return;
-
-//     try {
-//       await axios.delete(`${baseUrl}api/admin/tests/${testId}`, getHeaders());
-//       toast({
-//         title: 'Success',
-//         description: 'Test deleted successfully',
-//         status: 'success',
-//       });
-//       fetchTests();
-//     } catch (error) {
-//       toast({
-//         title: 'Error',
-//         description: error.response?.data?.message || 'Failed to delete test',
-//         status: 'error',
-//       });
-//     }
-//   };
-
-//   const handleViewTest = async (testId) => {
-//     try {
-//       const response = await axios.get(
-//         `${baseUrl}api/admin/tests/${testId}`,
-//         getHeaders()
-//       );
-//       setSelectedTest(response.data.data);
-//       onOpen();
-//     } catch (error) {
-//       toast({
-//         title: 'Error',
-//         description: error.response?.data?.message || 'Failed to fetch test details',
-//         status: 'error',
-//       });
-//     }
-//   };
-
-//   return (
-//     <Box>
-//       <VStack spacing={6} align="stretch">
-//         {/* FILTERS */}
-//         <HStack spacing={4}>
-//           <Select
-//             placeholder="All Categories"
-//             value={filters.category}
-//             onChange={(e) =>
-//               setFilters({ ...filters, category: e.target.value, page: 1 })
-//             }
-//             width="150px"
-//           >
-//             <option value="grand">Grand Test</option>
-//             <option value="subject">Subject Test</option>
-//           </Select>
-
-//           <Select
-//             value={filters.status}
-//             onChange={(e) =>
-//               setFilters({ ...filters, status: e.target.value, page: 1 })
-//             }
-//             width="150px"
-//           >
-//             <option value="">All Status</option>
-//             <option value="active">Active</option>
-//             <option value="inactive">Inactive</option>
-//             <option value="draft">Draft</option>
-//           </Select>
-
-//           <Select
-//             placeholder="All Modes"
-//             value={filters.testMode}
-//             onChange={(e) =>
-//               setFilters({ ...filters, testMode: e.target.value, page: 1 })
-//             }
-//             width="150px"
-//           >
-//             <option value="regular">Regular</option>
-//             <option value="exam">Exam</option>
-//           </Select>
-//         </HStack>
-
-//         {/* TESTS TABLE */}
-//         {loading ? (
-//           <Spinner />
-//         ) : (
-//           <>
-//             <Box overflowX="auto">
-//               <Table variant="simple">
-//                 <Thead>
-//                   <Tr>
-//                     <Th>Test Title</Th>
-//                     <Th>Category</Th>
-//                     <Th>Mode</Th>
-//                     <Th>Questions</Th>
-//                     <Th>Status</Th>
-//                     <Th>Created</Th>
-//                     <Th>Actions</Th>
-//                   </Tr>
-//                 </Thead>
-//                 <Tbody>
-//                   {tests.map((test) => (
-//                     <Tr key={test._id}>
-//                       <Td fontWeight="bold">{test.testTitle}</Td>
-//                       <Td>
-//                         <Badge colorScheme={test.category === 'grand' ? 'green' : 'blue'}>
-//                           {test.category === 'grand' ? 'Grand' : 'Subject'}
-//                         </Badge>
-//                       </Td>
-//                       <Td>
-//                         <Badge colorScheme={test.testMode === 'exam' ? 'orange' : 'cyan'}>
-//                           {test.testMode}
-//                         </Badge>
-//                       </Td>
-//                       <Td>{test.totalQuestions}</Td>
-//                       <Td>
-//                         <Badge colorScheme={test.status === 'active' ? 'success' : 'gray'}>
-//                           {test.status}
-//                         </Badge>
-//                       </Td>
-//                       <Td>{new Date(test.createdAt).toLocaleDateString()}</Td>
-//                       <Td>
-//                         <HStack spacing={2}>
-//                           <IconButton
-//                             icon={<ViewIcon />}
-//                             size="sm"
-//                             onClick={() => handleViewTest(test._id)}
-//                           />
-//                           <IconButton
-//                             icon={<EditIcon />}
-//                             size="sm"
-//                             colorScheme="blue"
-//                             // onClick={() => handleEditTest(test._id)}
-//                           />
-//                           <IconButton
-//                             icon={<DeleteIcon />}
-//                             size="sm"
-//                             colorScheme="red"
-//                             onClick={() => handleDeleteTest(test._id)}
-//                           />
-//                         </HStack>
-//                       </Td>
-//                     </Tr>
-//                   ))}
-//                 </Tbody>
-//               </Table>
-//             </Box>
-
-//             {/* PAGINATION */}
-//             <HStack justify="center" spacing={4}>
-//               <Button
-//                 onClick={() =>
-//                   setFilters({ ...filters, page: Math.max(1, filters.page - 1) })
-//                 }
-//                 disabled={filters.page === 1}
-//               >
-//                 Previous
-//               </Button>
-//               <Text>
-//                 Page {filters.page} of {pagination.pages}
-//               </Text>
-//               <Button
-//                 onClick={() =>
-//                   setFilters({
-//                     ...filters,
-//                     page: Math.min(pagination.pages, filters.page + 1),
-//                   })
-//                 }
-//                 disabled={filters.page === pagination.pages}
-//               >
-//                 Next
-//               </Button>
-//             </HStack>
-//           </>
-//         )}
-
-//         {/* DETAIL MODAL */}
-//         <Modal isOpen={isOpen} onClose={onClose} size="lg">
-//           <ModalOverlay />
-//           <ModalContent>
-//             <ModalHeader>{selectedTest?.testTitle}</ModalHeader>
-//             <ModalCloseButton />
-//             <ModalBody>
-//               {selectedTest && (
-//                 <VStack align="start" spacing={4}>
-//                   <Box>
-//                     <Text fontWeight="bold">Month:</Text>
-//                     <Text>{selectedTest.month}</Text>
-//                   </Box>
-//                   <Box>
-//                     <Text fontWeight="bold">Academic Year:</Text>
-//                     <Text>{selectedTest.academicYear}</Text>
-//                   </Box>
-//                   <Box>
-//                     <Text fontWeight="bold">Total Questions:</Text>
-//                     <Text>{selectedTest.totalQuestions}</Text>
-//                   </Box>
-//                   {selectedTest.timeLimit && (
-//                     <Box>
-//                       <Text fontWeight="bold">Time Limit:</Text>
-//                       <Text>{selectedTest.timeLimit} minutes</Text>
-//                     </Box>
-//                   )}
-//                   {selectedTest.description && (
-//                     <Box>
-//                       <Text fontWeight="bold">Description:</Text>
-//                       <Text>{selectedTest.description}</Text>
-//                     </Box>
-//                   )}
-//                 </VStack>
-//               )}
-//             </ModalBody>
-//             <ModalFooter>
-//               <Button onClick={onClose}>Close</Button>
-//             </ModalFooter>
-//           </ModalContent>
-//         </Modal>
-//       </VStack>
-//     </Box>
-//   );
-// };
-
-// export default TestsList;
-
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Button,
@@ -323,7 +11,6 @@ import {
   Badge,
   HStack,
   Select,
-  Input,
   useToast,
   Spinner,
   VStack,
@@ -341,129 +28,239 @@ import {
   Card,
   CardHeader,
   CardBody,
-  Divider,
   Flex,
   SimpleGrid,
   Tag,
-  TagLabel,
-  TagLeftIcon,
+  FormControl,
+  FormLabel,
+  Input,
+  NumberInput,
+  NumberInputField,
+  Stack,
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon, ViewIcon, SearchIcon } from '@chakra-ui/icons';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-const TestsList = () => {
+export default function TestsList() {
   const toast = useToast();
+  const navigate = useNavigate();
+
+  const baseUrlRaw = process.env.REACT_APP_BASE_URL || 'http://localhost:4000';
+  const baseUrl = baseUrlRaw.endsWith('/')
+    ? baseUrlRaw.slice(0, -1)
+    : baseUrlRaw;
+
+  const token = localStorage.getItem('token') || '';
+  const axiosConfig = useMemo(
+    () => ({ headers: { Authorization: `Bearer ${token}` } }),
+    [token],
+  );
+
   const [tests, setTests] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selectedTest, setSelectedTest] = useState(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-
-  // API Configuration
-  const baseUrl = process.env.REACT_APP_BASE_URL || '';
-  const token = localStorage.getItem('token');
-  const getHeaders = () => ({
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  // Filter states
   const [filters, setFilters] = useState({
-    category: '',
-    status: 'active',
+    status: '',
     testMode: '',
     page: 1,
     limit: 10,
   });
+  const [pagination, setPagination] = useState({ total: 0, pages: 0 });
+  const [editForm, setEditForm] = useState({});
+  const [editLoading, setEditLoading] = useState(false);
 
-  const [pagination, setPagination] = useState({
-    total: 0,
-    pages: 0,
-  });
+  const {
+    isOpen: isViewOpen,
+    onOpen: onViewOpen,
+    onClose: onViewClose,
+  } = useDisclosure();
+  const {
+    isOpen: isEditOpen,
+    onOpen: onEditOpen,
+    onClose: onEditClose,
+  } = useDisclosure();
 
+  // Fetch tests (inside effect to avoid unstable deps)
   useEffect(() => {
+    let isMounted = true;
+    const fetchTests = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (filters.status) params.append('status', filters.status);
+        if (filters.testMode) params.append('testMode', filters.testMode);
+        params.append('page', filters.page);
+        params.append('limit', filters.limit);
+
+        const res = await axios.get(
+          `${baseUrl}/api/admin/tests?${params.toString()}`,
+          axiosConfig,
+        );
+        if (!isMounted) return;
+        const allTests = res.data?.tests || [];
+        setTests(allTests);
+        setPagination(
+          res.data?.pagination || { total: allTests.length, pages: 1 },
+        );
+      } catch (err) {
+        console.error('fetchTests error', err);
+        if (!isMounted) return;
+        toast({
+          title: 'Error',
+          description: err?.response?.data?.message || 'Failed to fetch tests',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        setTests([]);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
     fetchTests();
-  }, [filters]);
-
-  const fetchTests = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (filters.category) params.append('category', filters.category);
-      if (filters.status) params.append('status', filters.status);
-      if (filters.testMode) params.append('testMode', filters.testMode);
-      params.append('page', filters.page);
-      params.append('limit', filters.limit);
-
-      const response = await axios.get(
-        `${baseUrl}api/admin/tests?${params}`,
-        getHeaders(),
-      );
-      setTests(response.data.data || []);
-      setPagination(response.data.pagination || { total: 0, pages: 0 });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to fetch tests',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      isMounted = false;
+    };
+  }, [baseUrl, axiosConfig, filters, toast]);
 
   const handleDeleteTest = async (testId) => {
     if (!window.confirm('Are you sure you want to delete this test?')) return;
-
     try {
-      await axios.delete(`${baseUrl}api/admin/tests/${testId}`, getHeaders());
+      await axios.delete(`${baseUrl}/api/admin/tests/${testId}`, axiosConfig);
       toast({
         title: 'Success',
         description: 'Test deleted successfully',
         status: 'success',
-        duration: 4000,
-        isClosable: true,
       });
-      fetchTests();
-    } catch (error) {
+      // refresh
+      setFilters((p) => ({ ...p })); // re-trigger effect (or you can call fetch via other pattern)
+    } catch (err) {
+      console.error('delete test error', err);
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete test',
+        description: err?.response?.data?.message || 'Failed to delete test',
         status: 'error',
-        duration: 5000,
-        isClosable: true,
       });
     }
   };
 
   const handleViewTest = async (testId) => {
     try {
-      const response = await axios.get(
-        `${baseUrl}api/admin/tests/${testId}`,
-        getHeaders(),
+      const res = await axios.get(
+        `${baseUrl}/api/admin/tests/${testId}`,
+        axiosConfig,
       );
-      setSelectedTest(response.data.data);
-      onOpen();
-    } catch (error) {
+      setSelectedTest(res.data?.data || null);
+      onViewOpen();
+    } catch (err) {
+      console.error('view test error', err);
       toast({
         title: 'Error',
         description:
-          error.response?.data?.message || 'Failed to fetch test details',
+          err?.response?.data?.message || 'Failed to fetch test details',
         status: 'error',
-        duration: 5000,
-        isClosable: true,
       });
     }
   };
 
-  // Split tests into two groups for better visual separation
-  const grandTests = tests.filter((t) => t.category === 'grand');
-  const subjectTests = tests.filter((t) => t.category === 'subject');
+  const handleOpenEdit = (test) => {
+    setEditForm({
+      testTitle: test.testTitle || '',
+      month: test.month || '',
+      academicYear: test.academicYear || '',
+      testMode: test.testMode || 'regular',
+      mcqLimit: test.mcqLimit ?? 0,
+      timeLimit: test.timeLimit ?? '',
+      description: test.description || '',
+      status: test.status || 'draft',
+      id: test._id,
+    });
+    onEditOpen();
+  };
+
+  const handleEditChange = (field, value) =>
+    setEditForm((p) => ({ ...p, [field]: value }));
+
+  const handleUpdateTest = async () => {
+    const {
+      id,
+      testTitle,
+      month,
+      academicYear,
+      testMode,
+      mcqLimit,
+      timeLimit,
+      description,
+      status,
+    } = editForm;
+    if (!testTitle || !month || !academicYear) {
+      toast({
+        title: 'Missing fields',
+        description: 'Please fill Title, Month and Academic Year',
+        status: 'error',
+      });
+      return;
+    }
+    if (!mcqLimit || Number(mcqLimit) < 1) {
+      toast({
+        title: 'Invalid MCQ Limit',
+        description: 'MCQ Limit must be at least 1',
+        status: 'error',
+      });
+      return;
+    }
+    if (testMode === 'exam' && (!timeLimit || Number(timeLimit) < 1)) {
+      toast({
+        title: 'Invalid Time Limit',
+        description: 'Time limit is required for Exam Mode',
+        status: 'error',
+      });
+      return;
+    }
+
+    setEditLoading(true);
+    try {
+      const payload = {
+        testTitle,
+        month,
+        academicYear,
+        testMode,
+        mcqLimit: Number(mcqLimit),
+        timeLimit: testMode === 'exam' ? Number(timeLimit) : null,
+        description: description || '',
+        status,
+      };
+      await axios.put(`${baseUrl}/api/admin/tests/${id}`, payload, axiosConfig);
+      toast({
+        title: 'Success',
+        description: 'Test updated',
+        status: 'success',
+      });
+      onEditClose();
+      // refresh list
+      setFilters((p) => ({ ...p }));
+    } catch (err) {
+      console.error('update test error', err);
+      toast({
+        title: 'Error',
+        description: err?.response?.data?.message || 'Failed to update test',
+        status: 'error',
+      });
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleAddMcq = (testId) =>
+    navigate('/admin/mcq', { state: { testId } });
+  const handleViewMcqs = (testId) =>
+    navigate('/admin/mcqs', { state: { testId } });
 
   return (
     <Box p={6} bg="gray.50" minH="100vh">
       <VStack spacing={8} align="stretch">
-        {/* Header + Filters */}
         <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
           <Heading size="lg" color="gray.800">
             Test Management
@@ -471,20 +268,7 @@ const TestsList = () => {
 
           <HStack spacing={3} flexWrap="wrap">
             <Select
-              placeholder="All Categories"
-              value={filters.category}
-              onChange={(e) =>
-                setFilters({ ...filters, category: e.target.value, page: 1 })
-              }
-              width={{ base: 'full', sm: '180px' }}
-              bg="white"
-              shadow="sm"
-            >
-              <option value="grand">Grand Test</option>
-              <option value="subject">Subject Test</option>
-            </Select>
-
-            <Select
+              placeholder="All Status"
               value={filters.status}
               onChange={(e) =>
                 setFilters({ ...filters, status: e.target.value, page: 1 })
@@ -509,6 +293,7 @@ const TestsList = () => {
               bg="white"
               shadow="sm"
             >
+              <option value="">All Modes</option>
               <option value="regular">Regular</option>
               <option value="exam">Exam</option>
             </Select>
@@ -518,7 +303,7 @@ const TestsList = () => {
               icon={<SearchIcon />}
               colorScheme="blue"
               variant="outline"
-              isDisabled // just visual for now
+              isDisabled
             />
           </HStack>
         </Flex>
@@ -534,191 +319,116 @@ const TestsList = () => {
             />
           </Flex>
         ) : (
-          <VStack spacing={10} align="stretch">
-            {/* GRAND TESTS SECTION */}
-            <Card shadow="md" borderRadius="lg" overflow="hidden">
-              <CardHeader bg="blue.600" color="white" py={4}>
-                <Heading size="md">Grand Tests</Heading>
-              </CardHeader>
-              <CardBody p={0}>
-                {grandTests.length === 0 ? (
-                  <Flex justify="center" py={10} color="gray.500">
-                    No Grand Tests found
-                  </Flex>
-                ) : (
-                  <Box overflowX="auto">
-                    <Table variant="simple">
-                      <Thead bg="gray.100">
-                        <Tr>
-                          <Th>Test Title</Th>
-                          <Th>Mode</Th>
-                          <Th>Questions</Th>
-                          <Th>Status</Th>
-                          <Th>Created</Th>
-                          <Th isNumeric>Actions</Th>
+          <Card shadow="md" borderRadius="lg" overflow="hidden">
+            <CardHeader bg="white" py={4}>
+              <Heading size="md">All Tests</Heading>
+            </CardHeader>
+            <CardBody p={0}>
+              {tests.length === 0 ? (
+                <Flex justify="center" py={10} color="gray.500">
+                  No Tests found
+                </Flex>
+              ) : (
+                <Box overflowX="auto">
+                  <Table variant="simple">
+                    <Thead bg="gray.100">
+                      <Tr>
+                        <Th>Test Title</Th>
+                        <Th>Course</Th>
+                        <Th>Mode</Th>
+                        <Th>MCQs (added / limit)</Th>
+                        <Th>Status</Th>
+                        <Th>Created</Th>
+                        <Th isNumeric>Actions</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {tests.map((test) => (
+                        <Tr key={test._id} _hover={{ bg: 'gray.50' }}>
+                          <Td fontWeight="medium">{test.testTitle}</Td>
+                          <Td>{test.courseId?.name || '-'}</Td>
+                          <Td>
+                            <Tag
+                              colorScheme={
+                                test.testMode === 'exam' ? 'orange' : 'cyan'
+                              }
+                              variant="subtle"
+                            >
+                              {test.testMode}
+                            </Tag>
+                          </Td>
+                          <Td>
+                            {test.totalQuestions ?? 0} / {test.mcqLimit ?? '-'}
+                          </Td>
+                          <Td>
+                            <Badge
+                              colorScheme={
+                                test.status === 'active'
+                                  ? 'green'
+                                  : test.status === 'draft'
+                                    ? 'purple'
+                                    : 'gray'
+                              }
+                              px={3}
+                              py={1}
+                              borderRadius="full"
+                            >
+                              {test.status}
+                            </Badge>
+                          </Td>
+                          <Td>
+                            {new Date(test.createdAt).toLocaleDateString()}
+                          </Td>
+                          <Td isNumeric>
+                            <HStack spacing={2} justify="flex-end">
+                              <IconButton
+                                icon={<ViewIcon />}
+                                size="sm"
+                                variant="ghost"
+                                colorScheme="blue"
+                                onClick={() => handleViewTest(test._id)}
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                colorScheme="purple"
+                                onClick={() => handleViewMcqs(test._id)}
+                              >
+                                View MCQs
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                colorScheme="blue"
+                                onClick={() => handleAddMcq(test._id)}
+                              >
+                                Add MCQ
+                              </Button>
+                              <IconButton
+                                icon={<EditIcon />}
+                                size="sm"
+                                variant="ghost"
+                                colorScheme="yellow"
+                                onClick={() => handleOpenEdit(test)}
+                              />
+                              <IconButton
+                                icon={<DeleteIcon />}
+                                size="sm"
+                                variant="ghost"
+                                colorScheme="red"
+                                onClick={() => handleDeleteTest(test._id)}
+                              />
+                            </HStack>
+                          </Td>
                         </Tr>
-                      </Thead>
-                      <Tbody>
-                        {grandTests.map((test) => (
-                          <Tr key={test._id} _hover={{ bg: 'gray.50' }}>
-                            <Td fontWeight="medium">{test.testTitle}</Td>
-                            <Td>
-                              <Tag
-                                colorScheme={
-                                  test.testMode === 'exam' ? 'orange' : 'cyan'
-                                }
-                                variant="subtle"
-                              >
-                                {test.testMode}
-                              </Tag>
-                            </Td>
-                            <Td>{test.totalQuestions}</Td>
-                            <Td>
-                              <Badge
-                                colorScheme={
-                                  test.status === 'active'
-                                    ? 'green'
-                                    : test.status === 'draft'
-                                      ? 'purple'
-                                      : 'gray'
-                                }
-                                px={3}
-                                py={1}
-                                borderRadius="full"
-                              >
-                                {test.status}
-                              </Badge>
-                            </Td>
-                            <Td>
-                              {new Date(test.createdAt).toLocaleDateString()}
-                            </Td>
-                            <Td isNumeric>
-                              <HStack spacing={2} justify="flex-end">
-                                <IconButton
-                                  icon={<ViewIcon />}
-                                  size="sm"
-                                  variant="ghost"
-                                  colorScheme="blue"
-                                  onClick={() => handleViewTest(test._id)}
-                                />
-                                {/* <IconButton
-                                  icon={<EditIcon />}
-                                  size="sm"
-                                  variant="ghost"
-                                  colorScheme="blue"
-                                  // onClick={() => handleEditTest(test._id)}
-                                /> */}
-                                <IconButton
-                                  icon={<DeleteIcon />}
-                                  size="sm"
-                                  variant="ghost"
-                                  colorScheme="red"
-                                  onClick={() => handleDeleteTest(test._id)}
-                                />
-                              </HStack>
-                            </Td>
-                          </Tr>
-                        ))}
-                      </Tbody>
-                    </Table>
-                  </Box>
-                )}
-              </CardBody>
-            </Card>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </Box>
+              )}
+            </CardBody>
 
-            {/* SUBJECT TESTS SECTION */}
-            <Card shadow="md" borderRadius="lg" overflow="hidden">
-              <CardHeader bg="purple.600" color="white" py={4}>
-                <Heading size="md">Subject Tests</Heading>
-              </CardHeader>
-              <CardBody p={0}>
-                {subjectTests.length === 0 ? (
-                  <Flex justify="center" py={10} color="gray.500">
-                    No Subject Tests found
-                  </Flex>
-                ) : (
-                  <Box overflowX="auto">
-                    <Table variant="simple">
-                      <Thead bg="gray.100">
-                        <Tr>
-                          <Th>Test Title</Th>
-                          <Th>Mode</Th>
-                          <Th>Questions</Th>
-                          <Th>Status</Th>
-                          <Th>Created</Th>
-                          <Th isNumeric>Actions</Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {subjectTests.map((test) => (
-                          <Tr key={test._id} _hover={{ bg: 'gray.50' }}>
-                            <Td fontWeight="medium">{test.testTitle}</Td>
-                            <Td>
-                              <Tag
-                                colorScheme={
-                                  test.testMode === 'exam' ? 'orange' : 'cyan'
-                                }
-                                variant="subtle"
-                              >
-                                {test.testMode}
-                              </Tag>
-                            </Td>
-                            <Td>{test.totalQuestions}</Td>
-                            <Td>
-                              <Badge
-                                colorScheme={
-                                  test.status === 'active'
-                                    ? 'green'
-                                    : test.status === 'draft'
-                                      ? 'purple'
-                                      : 'gray'
-                                }
-                                px={3}
-                                py={1}
-                                borderRadius="full"
-                              >
-                                {test.status}
-                              </Badge>
-                            </Td>
-                            <Td>
-                              {new Date(test.createdAt).toLocaleDateString()}
-                            </Td>
-                            <Td isNumeric>
-                              <HStack spacing={2} justify="flex-end">
-                                <IconButton
-                                  icon={<ViewIcon />}
-                                  size="sm"
-                                  variant="ghost"
-                                  colorScheme="blue"
-                                  onClick={() => handleViewTest(test._id)}
-                                />
-                                {/* <IconButton
-                                  icon={<EditIcon />}
-                                  size="sm"
-                                  variant="ghost"
-                                  colorScheme="blue"
-                                  // onClick={() => handleEditTest(test._id)}
-                                /> */}
-                                <IconButton
-                                  icon={<DeleteIcon />}
-                                  size="sm"
-                                  variant="ghost"
-                                  colorScheme="red"
-                                  onClick={() => handleDeleteTest(test._id)}
-                                />
-                              </HStack>
-                            </Td>
-                          </Tr>
-                        ))}
-                      </Tbody>
-                    </Table>
-                  </Box>
-                )}
-              </CardBody>
-            </Card>
-
-            {/* Pagination */}
-            <Flex justify="center" mt={6}>
+            <Flex justify="center" mt={6} p={4}>
               <HStack spacing={4}>
                 <Button
                   colorScheme="blue"
@@ -733,11 +443,9 @@ const TestsList = () => {
                 >
                   Previous
                 </Button>
-
                 <Text fontWeight="medium">
                   Page {filters.page} of {pagination.pages || 1}
                 </Text>
-
                 <Button
                   colorScheme="blue"
                   variant="outline"
@@ -753,11 +461,11 @@ const TestsList = () => {
                 </Button>
               </HStack>
             </Flex>
-          </VStack>
+          </Card>
         )}
 
-        {/* DETAIL MODAL - slightly improved */}
-        <Modal isOpen={isOpen} onClose={onClose} size="xl">
+        {/* View Modal */}
+        <Modal isOpen={isViewOpen} onClose={onViewClose} size="xl">
           <ModalOverlay />
           <ModalContent borderRadius="xl">
             <ModalHeader bg="gray.100" borderBottomWidth="1px">
@@ -769,20 +477,10 @@ const TestsList = () => {
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
                   <Box>
                     <Text fontWeight="bold" color="gray.700">
-                      Category
+                      Course
                     </Text>
-                    <Tag
-                      mt={1}
-                      colorScheme={
-                        selectedTest.category === 'grand' ? 'blue' : 'purple'
-                      }
-                    >
-                      {selectedTest.category === 'grand'
-                        ? 'Grand Test'
-                        : 'Subject Test'}
-                    </Tag>
+                    <Text mt={1}>{selectedTest.courseId?.name || '-'}</Text>
                   </Box>
-
                   <Box>
                     <Text fontWeight="bold" color="gray.700">
                       Mode
@@ -796,30 +494,27 @@ const TestsList = () => {
                       {selectedTest.testMode}
                     </Tag>
                   </Box>
-
                   <Box>
                     <Text fontWeight="bold" color="gray.700">
                       Month
                     </Text>
                     <Text mt={1}>{selectedTest.month || '-'}</Text>
                   </Box>
-
                   <Box>
                     <Text fontWeight="bold" color="gray.700">
                       Academic Year
                     </Text>
                     <Text mt={1}>{selectedTest.academicYear || '-'}</Text>
                   </Box>
-
                   <Box>
                     <Text fontWeight="bold" color="gray.700">
-                      Total Questions
+                      Questions
                     </Text>
                     <Text mt={1} fontSize="lg" fontWeight="semibold">
-                      {selectedTest.totalQuestions}
+                      {selectedTest.totalQuestions ?? 0} /{' '}
+                      {selectedTest.mcqLimit ?? '-'}
                     </Text>
                   </Box>
-
                   {selectedTest.timeLimit && (
                     <Box>
                       <Text fontWeight="bold" color="gray.700">
@@ -828,7 +523,6 @@ const TestsList = () => {
                       <Text mt={1}>{selectedTest.timeLimit} minutes</Text>
                     </Box>
                   )}
-
                   {selectedTest.description && (
                     <Box gridColumn="1 / -1">
                       <Text fontWeight="bold" color="gray.700">
@@ -843,8 +537,118 @@ const TestsList = () => {
               )}
             </ModalBody>
             <ModalFooter borderTopWidth="1px" bg="gray.50">
-              <Button colorScheme="blue" onClick={onClose}>
+              <Button colorScheme="blue" onClick={onViewClose}>
                 Close
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        {/* Edit Modal */}
+        <Modal isOpen={isEditOpen} onClose={onEditClose} size="lg">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Edit Test</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Stack spacing={4}>
+                <FormControl>
+                  <FormLabel>Test Title</FormLabel>
+                  <Input
+                    value={editForm.testTitle || ''}
+                    onChange={(e) =>
+                      handleEditChange('testTitle', e.target.value)
+                    }
+                  />
+                </FormControl>
+                <SimpleGrid columns={2} spacing={4}>
+                  <FormControl>
+                    <FormLabel>Month</FormLabel>
+                    <Input
+                      value={editForm.month || ''}
+                      onChange={(e) =>
+                        handleEditChange('month', e.target.value)
+                      }
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>Academic Year</FormLabel>
+                    <Input
+                      value={editForm.academicYear || ''}
+                      onChange={(e) =>
+                        handleEditChange('academicYear', e.target.value)
+                      }
+                    />
+                  </FormControl>
+                </SimpleGrid>
+                <SimpleGrid columns={2} spacing={4}>
+                  <FormControl>
+                    <FormLabel>Mode</FormLabel>
+                    <Select
+                      value={editForm.testMode || 'regular'}
+                      onChange={(e) =>
+                        handleEditChange('testMode', e.target.value)
+                      }
+                    >
+                      <option value="regular">Regular</option>
+                      <option value="exam">Exam</option>
+                    </Select>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>MCQ Limit</FormLabel>
+                    <NumberInput
+                      min={1}
+                      value={editForm.mcqLimit ?? 0}
+                      onChange={(val) => handleEditChange('mcqLimit', val)}
+                    >
+                      <NumberInputField />
+                    </NumberInput>
+                  </FormControl>
+                </SimpleGrid>
+                {editForm.testMode === 'exam' && (
+                  <FormControl>
+                    <FormLabel>Time Limit (minutes)</FormLabel>
+                    <NumberInput
+                      min={1}
+                      value={editForm.timeLimit ?? ''}
+                      onChange={(val) => handleEditChange('timeLimit', val)}
+                    >
+                      <NumberInputField />
+                    </NumberInput>
+                  </FormControl>
+                )}
+                <FormControl>
+                  <FormLabel>Description</FormLabel>
+                  <Input
+                    value={editForm.description || ''}
+                    onChange={(e) =>
+                      handleEditChange('description', e.target.value)
+                    }
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Status</FormLabel>
+                  <Select
+                    value={editForm.status || 'draft'}
+                    onChange={(e) => handleEditChange('status', e.target.value)}
+                  >
+                    <option value="active">Active</option>
+                    <option value="draft">Draft</option>
+                    <option value="inactive">Inactive</option>
+                  </Select>
+                </FormControl>
+              </Stack>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={onEditClose}>
+                Cancel
+              </Button>
+              <Button
+                colorScheme="blue"
+                onClick={handleUpdateTest}
+                isLoading={editLoading}
+              >
+                Save
               </Button>
             </ModalFooter>
           </ModalContent>
@@ -852,6 +656,4 @@ const TestsList = () => {
       </VStack>
     </Box>
   );
-};
-
-export default TestsList;
+}

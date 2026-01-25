@@ -64,6 +64,7 @@ import {
 } from 'react-icons/fa';
 import TestsList from 'views/admin/test/TestsList';
 import McqView from 'views/admin/AddMCQ/McqView';
+import MCQManagement from 'views/admin/AddMCQ';
 
 const routes = [
   {
@@ -173,26 +174,6 @@ const routes = [
         path: '/chapter',
         component: <Chapter />,
       },
-
-      {
-        name: 'Add MCQ',
-        layout: '/admin',
-        path: '/mcq',
-        component: <MCQ />,
-      },
-      {
-        name: 'MCQ-List',
-        layout: '/admin',
-        path: '/mcq/mcq-list',
-        component: <MCQList />,
-      },
-      {
-        name: 'MCQ View',
-        layout: '/admin',
-        path: '/mcq/view/:mcqId',
-        component: <McqView />,
-        showInSidebar: false, // 👈 sidebar me nahi dikhana
-      },
     ],
   },
 
@@ -209,6 +190,20 @@ const routes = [
     path: '/test-list',
     icon: <Icon as={FaListUl} width="20px" height="20px" color="inherit" />, // new icon
     component: <TestsList />,
+  },
+  {
+    name: 'Add MCQ',
+    layout: '/admin',
+    path: '/mcq',
+    component: <MCQManagement />,
+    showInSidebar: false, // optional (sidebar me hide rakhna ho to)
+  },
+  {
+    name: 'View MCQs',
+    layout: '/admin',
+    path: '/mcqs',
+    component: <MCQList />,
+    showInSidebar: false, // sidebar me mat dikhao
   },
   {
     name: 'Video Lectures',
