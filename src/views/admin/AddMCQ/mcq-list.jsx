@@ -153,6 +153,16 @@ export default function MCQList() {
       pb="12"
       px={{ base: '4', md: '6', lg: '8' }}
     >
+      <Button
+        size="sm"
+        variant="outline"
+        colorScheme="blue"
+        mb={3} // 👈 thoda upar space mil jayega
+        alignSelf="flex-start"
+        onClick={() => navigate('/admin/test-list')}
+      >
+        ← Back to Tests
+      </Button>
       <Card
         bg={bgCard}
         shadow="2xl"
@@ -164,14 +174,6 @@ export default function MCQList() {
         mx="auto"
       >
         <CardHeader bg={headerBg} py={6} px={8}>
-          <Button
-            size="sm"
-            variant="outline"
-            colorScheme="blue"
-            onClick={() => navigate('/admin/test-list')}
-          >
-            ← Back to Tests
-          </Button>
           <HStack justify="space-between" align="center">
             <HStack spacing={3}>
               <Icon as={MdOutlineQuiz} boxSize={7} color={accentColor} />

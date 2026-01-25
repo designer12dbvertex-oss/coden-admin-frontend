@@ -47,7 +47,28 @@ import axios from 'axios';
 import Card from 'components/card/Card'; // adjust path if needed
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['link'],
+    [{ align: [] }],
+    ['clean'],
+  ],
+};
+
+const quillFormats = [
+  'header',
+  'bold',
+  'italic',
+  'underline',
+  'list',
+  'bullet',
+  'link',
+  'align',
+];
 
 export default function MCQManagement() {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
@@ -69,7 +90,7 @@ export default function MCQManagement() {
   const [mcqs, setMcqs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const navigate = useNavigate();
   const toast = useToast();
   const location = useLocation();
   const testIdFromList = location.state?.testId || null;
@@ -111,7 +132,6 @@ export default function MCQManagement() {
     topicId: '',
     chapterId: '',
     tagId: '',
-    mode: 'regular',
     questionText: '',
     questionFile: null,
     options: [
@@ -142,7 +162,6 @@ export default function MCQManagement() {
       topicId: mcq.topicId?._id || '',
       chapterId: mcq.chapterId?._id || '',
       tagId: mcq.tagId?._id || '',
-      mode: mcq.mode || 'regular',
       questionText: mcq.question?.text || '',
       questionFile: null,
       options: mcq.options.map((o) => ({ text: o.text || '', file: null })),
@@ -167,7 +186,6 @@ export default function MCQManagement() {
 
     data.append('chapterId', formData.chapterId);
     if (formData.tagId) data.append('tagId', formData.tagId);
-    data.append('mode', formData.mode);
     data.append('correctAnswer', formData.correctAnswer);
     data.append('difficulty', formData.difficulty);
     data.append('marks', formData.marks);
@@ -375,7 +393,7 @@ export default function MCQManagement() {
 
     // Optional / defaults
     if (formData.tagId) data.append('tagId', formData.tagId);
-    data.append('mode', formData.mode);
+
     data.append('correctAnswer', formData.correctAnswer);
     data.append('difficulty', formData.difficulty);
     data.append('marks', formData.marks);
@@ -443,12 +461,23 @@ export default function MCQManagement() {
         .includes(searchTerm.toLowerCase()) ||
       (m.chapterId?.name || '')
         .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (m.mode || '').toLowerCase().includes(searchTerm.toLowerCase()),
+        .includes(searchTerm.toLowerCase()),
   );
-
+  const handleViewMcqs = (testId) =>
+    navigate('/admin/mcqs', { state: { testId } });
   return (
     <Box pt={{ base: '130px', md: '80px' }} px="20px">
+      <Button
+        size="sm"
+        variant="outline"
+        colorScheme="blue"
+        mb={3} // 👈 thoda upar space mil jayega
+        alignSelf="flex-start"
+        onClick={() => navigate('/admin/test-list')}
+      >
+        ← Back to Tests
+      </Button>
+
       {/* CREATE FORM */}
       <Card mb="30px" p="25px">
         <Flex align="center" mb="25px">
@@ -459,6 +488,7 @@ export default function MCQManagement() {
             h="28px"
             me="12px"
           />
+
           <Text color={textColor} fontSize="22px" fontWeight="700">
             Create New MCQ
           </Text>
@@ -617,7 +647,6 @@ export default function MCQManagement() {
                 </FormControl>
               </GridItem>
             </Grid>
-
             <FormControl isRequired>
               <FormLabel fontSize="sm" fontWeight="700" color={secondaryColor}>
                 Chapter
@@ -639,53 +668,22 @@ export default function MCQManagement() {
               </Select>
             </FormControl>
 
-            {/* Mode, Difficulty, Tag */}
-            <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-              <GridItem>
-                <FormControl>
-                  <FormLabel
-                    fontSize="sm"
-                    fontWeight="700"
-                    color={secondaryColor}
-                  >
-                    Mode
-                  </FormLabel>
-                  <Select
-                    variant="filled"
-                    value={formData.mode}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, mode: e.target.value }))
-                    }
-                  >
-                    <option value="regular">Regular</option>
-                    <option value="exam">Exam</option>
-                  </Select>
-                </FormControl>
-              </GridItem>
-
-              <GridItem>
-                <FormControl>
-                  <FormLabel
-                    fontSize="sm"
-                    fontWeight="700"
-                    color={secondaryColor}
-                  >
-                    <Icon as={MdEqualizer} me="1" /> Difficulty
-                  </FormLabel>
-                  <Select
-                    variant="filled"
-                    value={formData.difficulty}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, difficulty: e.target.value }))
-                    }
-                  >
-                    <option value="easy">🟢 Easy</option>
-                    <option value="medium">🟡 Medium</option>
-                    <option value="hard">🔴 Hard</option>
-                  </Select>
-                </FormControl>
-              </GridItem>
-            </Grid>
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="700" color={secondaryColor}>
+                <Icon as={MdEqualizer} me="1" /> Difficulty
+              </FormLabel>
+              <Select
+                variant="filled"
+                value={formData.difficulty}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, difficulty: e.target.value }))
+                }
+              >
+                <option value="easy">🟢 Easy</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="hard">🔴 Hard</option>
+              </Select>
+            </FormControl>
 
             <FormControl>
               <FormLabel fontSize="sm" fontWeight="700" color={secondaryColor}>
@@ -815,12 +813,30 @@ export default function MCQManagement() {
               <FormLabel fontSize="sm" fontWeight="700" color={secondaryColor}>
                 Detailed Explanation / Solution
               </FormLabel>
+
               <Box
                 border="1px solid"
                 borderColor={optionBorderColor}
                 borderRadius="12px"
                 bg="white"
                 overflow="hidden"
+                sx={{
+                  '.ql-toolbar': {
+                    border: 'none',
+                    borderBottom: '1px solid',
+                    borderColor: optionBorderColor,
+                    background: '#f9fafb',
+                  },
+                  '.ql-container': {
+                    border: 'none',
+                    minHeight: '160px',
+                    fontSize: '14px',
+                  },
+                  '.ql-editor': {
+                    minHeight: '140px',
+                    padding: '12px',
+                  },
+                }}
               >
                 <ReactQuill
                   theme="snow"
@@ -828,8 +844,12 @@ export default function MCQManagement() {
                   onChange={(val) =>
                     setFormData((p) => ({ ...p, explanationText: val }))
                   }
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="Enter detailed explanation / solution..."
                 />
               </Box>
+
               <Button
                 as="label"
                 mt={2}
@@ -960,9 +980,7 @@ export default function MCQManagement() {
                         size="sm"
                         colorScheme="brand"
                         variant="outline"
-                        onClick={() =>
-                          window.location.assign(`/admin/mcq/view/${item._id}`)
-                        }
+                        onClick={() => handleViewMcqs(item._id || item.testId)}
                       >
                         View
                       </Button>
