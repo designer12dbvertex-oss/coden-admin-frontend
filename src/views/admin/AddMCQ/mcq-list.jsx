@@ -67,8 +67,12 @@ export default function MCQList({ mode = 'all' }) {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const testIdFromList = location.state?.testId || null;
+  // 🔧 CHANGE 1 — safer testId
+  const testIdFromList = useMemo(() => {
+    return location.state?.testId ?? null;
+  }, [location.state]);
 
+  // 🔧 CHANGE 2 — include mode + testId deps
   const fetchMcqsTestWise = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -84,12 +88,10 @@ export default function MCQList({ mode = 'all' }) {
         let finalGroups = [];
 
         if (mode === 'test') {
-          // sirf test MCQs
           finalGroups = data.filter((g) => g.testId !== null);
         }
 
         if (mode === 'manual') {
-          // sirf manual MCQs
           const manualGroup = data.find((g) => g.testId === null);
           finalGroups = manualGroup
             ? [
@@ -104,7 +106,6 @@ export default function MCQList({ mode = 'all' }) {
         }
 
         if (mode === 'all') {
-          // fallback: dono dikhao (future use)
           const testGroups = data.filter((g) => g.testId !== null);
           const manualGroup = data.find((g) => g.testId === null);
 
@@ -138,11 +139,15 @@ export default function MCQList({ mode = 'all' }) {
     } finally {
       setLoading(false);
     }
-  }, [baseUrl, axiosConfig, testIdFromList]);
+  }, [baseUrl, axiosConfig, testIdFromList, mode]);
 
+  // 🔧 CHANGE 3 — refetch on route change
   useEffect(() => {
+    setExpandedTestId(null);
+    setExpandedChapterKey(null);
+    setTestsWithMcqs([]);
     fetchMcqsTestWise();
-  }, [fetchMcqsTestWise]);
+  }, [location.key, fetchMcqsTestWise]);
 
   const getDifficultyColor = (diff) => {
     if (diff === 'easy') return 'green';
