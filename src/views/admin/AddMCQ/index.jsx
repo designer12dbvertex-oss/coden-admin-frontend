@@ -78,7 +78,7 @@ function normaliseMcqList(res) {
   return Array.isArray(raw) ? raw : [];
 }
 
-export default function MCQManagement() {
+export default function MCQManagement({ mode = 'test' }) {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const secondaryColor = useColorModeValue('gray.600', 'gray.400');
   const listBg = useColorModeValue('white', 'navy.800');
@@ -391,7 +391,7 @@ export default function MCQManagement() {
   };
 
   const handleCreate = async () => {
-    if (!formData.testId) {
+    if (mode === 'test' && !formData.testId) {
       toast({
         title: 'Test is required to create MCQ',
         description: 'Please select a test from the dropdown.',
@@ -400,6 +400,7 @@ export default function MCQManagement() {
       });
       return;
     }
+
     if (!formData.chapterId) {
       toast({ title: 'Chapter is required', status: 'warning' });
       return;
@@ -408,7 +409,10 @@ export default function MCQManagement() {
     setLoading(true);
     const data = new FormData();
 
-    data.append('testId', formData.testId);
+    if (mode === 'test') {
+      data.append('testId', formData.testId);
+    }
+
     // Required hierarchy
     data.append('courseId', formData.courseId);
     data.append('subjectId', formData.subjectId);
@@ -480,15 +484,18 @@ export default function MCQManagement() {
     }
   };
 
-  const filteredMCQs = mcqs.filter(
-    (m) =>
-      (m.question?.text || '')
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (m.chapterId?.name || '')
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()),
-  );
+  const filteredMCQs = mcqs
+    .filter((m) => (mode === 'manual' ? !m.testId : !!m.testId))
+    .filter(
+      (m) =>
+        (m.question?.text || '')
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (m.chapterId?.name || '')
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()),
+    );
+
   const handleViewMcqs = (testId) =>
     navigate('/admin/mcqs', { state: { testId } });
   return (
@@ -515,38 +522,48 @@ export default function MCQManagement() {
             me="12px"
           />
 
-          <Text color={textColor} fontSize="22px" fontWeight="700">
-            Create New MCQ
-          </Text>
+          <HStack>
+            <Text color={textColor} fontSize="22px" fontWeight="700">
+              Create New MCQ
+            </Text>
+
+            {mode === 'manual' && (
+              <Badge colorScheme="purple" variant="solid">
+                Manual Mode
+              </Badge>
+            )}
+          </HStack>
         </Flex>
 
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={10}>
           {/* LEFT – Metadata & Question */}
           <VStack align="stretch" spacing={6}>
-            <FormControl isRequired>
-              <FormLabel
-                fontSize="sm"
-                fontWeight="700"
-                color={secondaryColor}
-              >
-                <Icon as={MdOutlineQuiz} me="1" /> Test
-              </FormLabel>
-              <Select
-                variant="filled"
-                placeholder="Select Test"
-                value={formData.testId}
-                isDisabled={isEditMode}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, testId: e.target.value }))
-                }
-              >
-                {tests.map((t) => (
-                  <option key={t._id} value={t._id}>
-                    {t.testTitle || t.title || t.name || t._id}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
+            {mode === 'test' && (
+              <FormControl isRequired>
+                <FormLabel
+                  fontSize="sm"
+                  fontWeight="700"
+                  color={secondaryColor}
+                >
+                  <Icon as={MdOutlineQuiz} me="1" /> Test
+                </FormLabel>
+                <Select
+                  variant="filled"
+                  placeholder="Select Test"
+                  value={formData.testId}
+                  isDisabled={isEditMode}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, testId: e.target.value }))
+                  }
+                >
+                  {tests.map((t) => (
+                    <option key={t._id} value={t._id}>
+                      {t.testTitle || t.title || t.name || t._id}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
 
             {/* Course → Subject → SubSubject → Topic → Chapter */}
             <Grid templateColumns="repeat(2, 1fr)" gap={4}>
@@ -963,8 +980,9 @@ export default function MCQManagement() {
           gap={4}
         >
           <Text fontSize="22px" fontWeight="700" color={textColor}>
-            MCQ Repository
+            {mode === 'manual' ? 'Manual MCQs' : 'Test MCQs'}
           </Text>
+
           <InputGroup maxW="350px">
             <InputLeftElement children={<MdSearch color="gray.400" />} />
             <Input

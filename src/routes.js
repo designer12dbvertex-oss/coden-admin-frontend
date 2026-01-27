@@ -174,6 +174,18 @@ const routes = [
         path: '/chapter',
         component: <Chapter />,
       },
+      {
+        name: 'Add Manual MCQ',
+        layout: '/admin',
+        path: '/mcq-manual',
+        component: <MCQManagement mode="manual" />,
+      },
+      {
+        name: 'Manual MCQs List',
+        layout: '/admin',
+        path: '/mcqs-manual',
+        component: <MCQList mode="manual" />,
+      },
     ],
   },
 
@@ -185,7 +197,7 @@ const routes = [
     component: <TestManagement />,
   },
   {
-    name: 'Test',
+    name: 'Test-List',
     layout: '/admin',
     path: '/test-list',
     icon: <Icon as={FaListUl} width="20px" height="20px" color="inherit" />, // new icon
@@ -195,16 +207,17 @@ const routes = [
     name: 'Add MCQ',
     layout: '/admin',
     path: '/mcq',
-    component: <MCQManagement />,
+    component: <MCQManagement mode="test" />,
     showInSidebar: false, // optional (sidebar me hide rakhna ho to)
   },
+
   {
-    name: 'View MCQs',
+    name: 'Test MCQs List',
     layout: '/admin',
-    path: '/mcqs',
-    component: <MCQList />,
-    showInSidebar: false, // sidebar me mat dikhao
+    path: '/mcqs-test',
+    component: <MCQList mode="test" />,
   },
+
   {
     name: 'Video Lectures',
     layout: '/admin',
