@@ -69,6 +69,7 @@ export default function TestsList() {
   const [pagination, setPagination] = useState({ total: 0, pages: 0 });
   const [editForm, setEditForm] = useState({});
   const [editLoading, setEditLoading] = useState(false);
+  const [coursesMap, setCoursesMap] = useState({});
 
   const {
     isOpen: isViewOpen,
@@ -124,6 +125,28 @@ export default function TestsList() {
       isMounted = false;
     };
   }, [baseUrl, axiosConfig, filters, toast]);
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await axios.get(
+          `${baseUrl}/api/admin/courses`,
+          axiosConfig,
+        );
+
+        const list = res.data?.data || res.data?.courses || [];
+        const map = {};
+        list.forEach((c) => {
+          map[c._id] = c.name;
+        });
+
+        setCoursesMap(map);
+      } catch (err) {
+        console.error('fetchCourses error', err);
+      }
+    };
+
+    fetchCourses();
+  }, [baseUrl, axiosConfig]);
 
   const handleDeleteTest = async (testId) => {
     if (!window.confirm('Are you sure you want to delete this test?')) return;
@@ -253,8 +276,24 @@ export default function TestsList() {
     }
   };
 
-  const handleAddMcq = (testId) =>
-    navigate('/admin/mcq', { state: { testId } });
+  const handleAddMcq = (test) => {
+    const added = Number(test.totalQuestions || 0);
+    const limit = Number(test.mcqLimit || 0);
+
+    if (added >= limit) {
+      toast({
+        title: 'MCQ Limit Reached',
+        description: `Is test me already ${added} MCQs hain. Limit ${limit} hai.`,
+        status: 'warning',
+        duration: 4000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    navigate('/admin/mcq', { state: { testId: test._id } });
+  };
+
   const handleViewMcqs = (testId) =>
     navigate('/admin/mcqs', { state: { testId } });
 
@@ -346,7 +385,8 @@ export default function TestsList() {
                       {tests.map((test) => (
                         <Tr key={test._id} _hover={{ bg: 'gray.50' }}>
                           <Td fontWeight="medium">{test.testTitle}</Td>
-                          <Td>{test.courseId?.name || '-'}</Td>
+                          <Td>{coursesMap[test.courseId] || '-'}</Td>
+
                           <Td>
                             <Tag
                               colorScheme={
@@ -358,7 +398,8 @@ export default function TestsList() {
                             </Tag>
                           </Td>
                           <Td>
-                            {test.totalQuestions ?? 0} / {test.mcqLimit ?? '-'}
+                            {Number(test.totalQuestions || 0)} /{' '}
+                            {Number(test.mcqLimit || 0)}
                           </Td>
                           <Td>
                             <Badge
@@ -400,10 +441,15 @@ export default function TestsList() {
                                 size="sm"
                                 variant="outline"
                                 colorScheme="blue"
-                                onClick={() => handleAddMcq(test._id)}
+                                onClick={() => handleAddMcq(test)}
+                                isDisabled={
+                                  Number(test.totalQuestions || 0) >=
+                                  Number(test.mcqLimit || 0)
+                                }
                               >
                                 Add MCQ
                               </Button>
+
                               <IconButton
                                 icon={<EditIcon />}
                                 size="sm"
@@ -479,7 +525,9 @@ export default function TestsList() {
                     <Text fontWeight="bold" color="gray.700">
                       Course
                     </Text>
-                    <Text mt={1}>{selectedTest.courseId?.name || '-'}</Text>
+                    <Text mt={1}>
+                      {coursesMap[selectedTest.courseId] || '-'}
+                    </Text>
                   </Box>
                   <Box>
                     <Text fontWeight="bold" color="gray.700">
