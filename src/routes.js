@@ -215,6 +215,7 @@ const routes = [
     name: 'Test MCQs List',
     layout: '/admin',
     path: '/mcqs-test-list',
+    icon: <Icon as={FaListUl} width="20px" height="20px" color="inherit" />, // new icon
     component: <MCQList mode="test" />,
   },
 
