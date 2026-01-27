@@ -214,7 +214,7 @@ const routes = [
   {
     name: 'Test MCQs List',
     layout: '/admin',
-    path: '/mcqs-test',
+    path: '/mcqs-test-list',
     component: <MCQList mode="test" />,
   },
 

@@ -295,7 +295,7 @@ export default function TestsList() {
   };
 
   const handleViewMcqs = (testId) =>
-    navigate('/admin/mcqs', { state: { testId } });
+    navigate('/admin/mcqs-test-list', { state: { testId } });
 
   return (
     <Box p={6} bg="gray.50" minH="100vh">

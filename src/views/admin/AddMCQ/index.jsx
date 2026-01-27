@@ -497,7 +497,7 @@ export default function MCQManagement({ mode = 'test' }) {
     );
 
   const handleViewMcqs = (testId) =>
-    navigate('/admin/mcqs', { state: { testId } });
+    navigate('/admin/mcqs-test-list', { state: { testId } });
   return (
     <Box pt={{ base: '130px', md: '80px' }} px="20px">
       <Button
