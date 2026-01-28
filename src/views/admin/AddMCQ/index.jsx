@@ -1054,7 +1054,7 @@ export default function MCQManagement({ mode = 'test' }) {
                         variant="outline"
                         onClick={() => handleViewMcqs(item.testId?._id)}
                       >
-                        Viewsssssss
+                        View
                       </Button>
                     </Box>
                     <Box flex="1" textAlign="center">
