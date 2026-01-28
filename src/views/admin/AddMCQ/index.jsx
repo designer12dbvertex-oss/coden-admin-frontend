@@ -497,7 +497,7 @@ export default function MCQManagement({ mode = 'test' }) {
     );
 
   const handleViewMcqs = (testId) =>
-    navigate('/admin/mcqs-test-list', { state: { testId } });
+    navigate('/admin/mcqs-manual', { state: { testId } });
   return (
     <Box pt={{ base: '130px', md: '80px' }} px="20px">
       <Button
@@ -1052,9 +1052,9 @@ export default function MCQManagement({ mode = 'test' }) {
                         size="sm"
                         colorScheme="brand"
                         variant="outline"
-                        onClick={() => handleViewMcqs(item._id || item.testId)}
+                        onClick={() => handleViewMcqs(item.testId?._id)}
                       >
-                        View
+                        Viewsssssss
                       </Button>
                     </Box>
                     <Box flex="1" textAlign="center">
