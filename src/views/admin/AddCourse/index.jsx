@@ -39,6 +39,7 @@ export default function CourseManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [publishingId, setPublishingId] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   // Form States
   const [courseName, setCourseName] = useState('');
@@ -98,6 +99,8 @@ export default function CourseManagement() {
         status: 'error',
         duration: 3000,
       });
+    } finally {
+      setInitialLoading(false); // 🔥 Ye line important hai
     }
   };
 
@@ -184,7 +187,7 @@ export default function CourseManagement() {
     <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
       {/* ADD SECTION - Year Input Added */}
       {/* ADD SECTION - Only show if no course exists */}
-      {courses.length === 0 && (
+      {!initialLoading && courses.length === 0 && (
         <Card mb="20px" p="20px">
           <Text color={textColor} fontSize="22px" fontWeight="700" mb="20px">
             Course Management
