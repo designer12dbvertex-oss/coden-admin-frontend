@@ -116,6 +116,12 @@ export default function MCQManagement({ mode = 'test' }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testIdFromList]);
+  useEffect(() => {
+    if (location.state?.editMcq) {
+      handleEdit(location.state.editMcq);
+    }
+    // eslint-disable-next-line
+  }, [location.state]);
 
   const rawBaseUrl = process.env.REACT_APP_BASE_URL || 'http://localhost:4000';
   const baseUrl = rawBaseUrl.endsWith('/')
@@ -184,8 +190,8 @@ export default function MCQManagement({ mode = 'test' }) {
 
     loadSubjects(mcq.courseId?._id);
     loadSubSubjects(mcq.subjectId?._id);
-    loadTopics(mcq.subSubjectId?._id);
-    loadChapters(mcq.topicId?._id);
+    loadChapters(mcq.subSubjectId?._id);
+    loadTopics(mcq.chapterId?._id);
   };
   const handleUpdate = async () => {
     if (!editingMCQ?._id) return;
@@ -194,6 +200,8 @@ export default function MCQManagement({ mode = 'test' }) {
     const data = new FormData();
 
     data.append('chapterId', formData.chapterId);
+    data.append('topicId', formData.topicId);
+
     if (formData.tagId) data.append('tagId', formData.tagId);
     data.append('correctAnswer', formData.correctAnswer);
     data.append('difficulty', formData.difficulty);
@@ -315,8 +323,8 @@ export default function MCQManagement({ mode = 'test' }) {
   const loadSubSubjects = async (subjectId) => {
     if (!subjectId) {
       setSubSubjects([]);
-      setTopics([]);
       setChapters([]);
+      setTopics([]);
       return;
     }
     try {
@@ -325,52 +333,48 @@ export default function MCQManagement({ mode = 'test' }) {
         { headers },
       );
       setSubSubjects(res.data.data || []);
-      setTopics([]);
       setChapters([]);
+      setTopics([]);
     } catch (err) {
       toast({ title: 'Sub-Subjects load failed', status: 'error' });
     }
   };
 
-  const loadTopics = async (subSubjectId) => {
-    setTopics([]);
+  // Load Chapters by SubSubjectId
+  const loadChapters = async (subSubjectId) => {
     setChapters([]);
+    setTopics([]);
 
     if (!subSubjectId) return;
 
     try {
       const res = await axios.get(
-        `${baseUrl}/api/admin/topics/sub-subject/${subSubjectId}`,
+        `${baseUrl}/api/admin/chapters/sub-subject/${subSubjectId}`,
+        { headers },
+      );
+
+      setChapters(res.data.data || []);
+      setTopics([]);
+    } catch (err) {
+      toast({ title: 'Chapters load failed', status: 'error' });
+    }
+  };
+
+  // Load Topics by ChapterId
+  const loadTopics = async (chapterId) => {
+    setTopics([]);
+
+    if (!chapterId) return;
+
+    try {
+      const res = await axios.get(
+        `${baseUrl}/api/admin/topics/chapter/${chapterId}`,
         { headers },
       );
 
       setTopics(res.data.data || []);
-      setChapters([]);
     } catch (err) {
       toast({ title: 'Topics load failed', status: 'error' });
-    }
-  };
-
-  const loadChapters = async (topicId) => {
-    setChapters([]);
-
-    if (!topicId) return;
-
-    try {
-      // 🔥 correct backend route
-      const res = await axios.get(
-        `${baseUrl}/api/admin/chapters/sub-subject/${formData.subSubjectId}`,
-        { headers },
-      );
-
-      // 🔥 frontend side topic filter (safe + production ready)
-      const filtered = (res.data.data || []).filter(
-        (c) => String(c.topicId) === String(topicId),
-      );
-
-      setChapters(filtered);
-    } catch (err) {
-      toast({ title: 'Chapters load failed', status: 'error' });
     }
   };
 
@@ -418,6 +422,7 @@ export default function MCQManagement({ mode = 'test' }) {
     data.append('subjectId', formData.subjectId);
     data.append('subSubjectId', formData.subSubjectId);
     data.append('chapterId', formData.chapterId);
+    data.append('topicId', formData.topicId);
 
     // Optional / defaults
     if (formData.tagId) data.append('tagId', formData.tagId);
@@ -587,8 +592,8 @@ export default function MCQManagement({ mode = 'test' }) {
                         courseId: val,
                         subjectId: '',
                         subSubjectId: '',
-                        topicId: '',
                         chapterId: '',
+                        topicId: '',
                       }));
                       loadSubjects(val);
                     }}
@@ -622,8 +627,8 @@ export default function MCQManagement({ mode = 'test' }) {
                         ...p,
                         subjectId: val,
                         subSubjectId: '',
-                        topicId: '',
                         chapterId: '',
+                        topicId: '',
                       }));
                       loadSubSubjects(val);
                     }}
@@ -657,16 +662,16 @@ export default function MCQManagement({ mode = 'test' }) {
                       const val = e.target.value;
 
                       // 🔥 clear old data first
-                      setTopics([]);
                       setChapters([]);
+                      setTopics([]);
 
                       setFormData((p) => ({
                         ...p,
                         subSubjectId: val,
-                        topicId: '',
                         chapterId: '',
+                        topicId: '',
                       }));
-                      loadTopics(val);
+                      loadChapters(val);
                     }}
                   >
                     {subSubjects.map((ss) => (
@@ -685,30 +690,30 @@ export default function MCQManagement({ mode = 'test' }) {
                     fontWeight="700"
                     color={secondaryColor}
                   >
-                    Topic
+                    Chapter
                   </FormLabel>
                   <Select
                     variant="filled"
-                    placeholder="Select Topic"
+                    placeholder="Select Chapter"
                     isDisabled={!formData.subSubjectId}
-                    value={formData.topicId}
+                    value={formData.chapterId}
                     onChange={(e) => {
                       const val = e.target.value;
 
                       // 🔥 clear old data first
-                      setChapters([]);
+                      setTopics([]);
 
                       setFormData((p) => ({
                         ...p,
-                        topicId: val,
-                        chapterId: '',
+                        chapterId: val,
+                        topicId: '',
                       }));
-                      loadChapters(val);
+                      loadTopics(val);
                     }}
                   >
-                    {topics.map((t) => (
-                      <option key={t._id} value={t._id}>
-                        {t.name}
+                    {chapters.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
                       </option>
                     ))}
                   </Select>
@@ -717,20 +722,20 @@ export default function MCQManagement({ mode = 'test' }) {
             </Grid>
             <FormControl isRequired>
               <FormLabel fontSize="sm" fontWeight="700" color={secondaryColor}>
-                Chapter
+                Topic
               </FormLabel>
               <Select
                 variant="filled"
-                placeholder="Select Chapter"
-                isDisabled={!formData.topicId}
-                value={formData.chapterId}
+                placeholder="Select Topic"
+                isDisabled={!formData.chapterId}
+                value={formData.topicId}
                 onChange={(e) =>
-                  setFormData((p) => ({ ...p, chapterId: e.target.value }))
+                  setFormData((p) => ({ ...p, topicId: e.target.value }))
                 }
               >
-                {chapters.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
+                {topics.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name}
                   </option>
                 ))}
               </Select>

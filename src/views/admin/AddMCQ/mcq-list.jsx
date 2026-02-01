@@ -174,22 +174,23 @@ export default function MCQList({ mode = 'all' }) {
   };
 
   // Helper function to group MCQs by Subject -> SubSubject -> Topic -> Chapter
+  // Subject → SubSubject → Chapter → Topic
   const groupByHierarchy = useMemo(
     () => (mcqList) => {
       return mcqList.reduce((acc, mcq) => {
         const subject = mcq.subjectId?.name || 'Uncategorized';
         const subSubject = mcq.subSubjectId?.name || 'General';
-        const topic = mcq.topicId?.name || 'Miscellaneous';
         const chapter = mcq.chapterId?.name || 'No Chapter';
+        const topic = mcq.topicId?.name || 'Miscellaneous';
 
         if (!acc[subject]) acc[subject] = {};
         if (!acc[subject][subSubject]) acc[subject][subSubject] = {};
-        if (!acc[subject][subSubject][topic])
-          acc[subject][subSubject][topic] = {};
-        if (!acc[subject][subSubject][topic][chapter])
-          acc[subject][subSubject][topic][chapter] = [];
+        if (!acc[subject][subSubject][chapter])
+          acc[subject][subSubject][chapter] = {};
+        if (!acc[subject][subSubject][chapter][topic])
+          acc[subject][subSubject][chapter][topic] = [];
 
-        acc[subject][subSubject][topic][chapter].push(mcq);
+        acc[subject][subSubject][chapter][topic].push(mcq);
         return acc;
       }, {});
     },
@@ -398,8 +399,8 @@ export default function MCQList({ mode = 'all' }) {
                                   <Thead bg={tableBg}>
                                     <Tr>
                                       <Th>Sub Subject</Th>
-                                      <Th>Topic</Th>
                                       <Th>Chapter</Th>
+                                      <Th>Topic</Th>
                                       <Th>Tags</Th>
                                       <Th>Total Questions</Th>
                                       <Th>Action</Th>
@@ -407,12 +408,12 @@ export default function MCQList({ mode = 'all' }) {
                                   </Thead>
                                   <Tbody>
                                     {Object.entries(subSubjects).flatMap(
-                                      ([subSubject, topics]) =>
-                                        Object.entries(topics).flatMap(
-                                          ([topic, chapters]) =>
-                                            Object.entries(chapters).map(
-                                              ([chapter, items]) => {
-                                                const chapterKey = `${subject}-${subSubject}-${topic}-${chapter}`;
+                                      ([subSubject, chapters]) =>
+                                        Object.entries(chapters).flatMap(
+                                          ([chapter, topics]) =>
+                                            Object.entries(topics).map(
+                                              ([topic, items]) => {
+                                                const chapterKey = `${subject}-${subSubject}-${chapter}-${topic}`;
                                                 const tags = Array.from(
                                                   new Set(
                                                     items.flatMap(
@@ -420,6 +421,7 @@ export default function MCQList({ mode = 'all' }) {
                                                     ),
                                                   ),
                                                 );
+
                                                 return (
                                                   <React.Fragment
                                                     key={chapterKey}
@@ -430,8 +432,13 @@ export default function MCQList({ mode = 'all' }) {
                                                       <Td fontWeight="medium">
                                                         {subSubject}
                                                       </Td>
-                                                      <Td>{topic}</Td>
+
+                                                      {/* ✅ Chapter first */}
                                                       <Td>{chapter}</Td>
+
+                                                      {/* ✅ Topic after Chapter */}
+                                                      <Td>{topic}</Td>
+
                                                       <Td>
                                                         <Wrap>
                                                           {tags.length > 0 ? (
@@ -462,6 +469,7 @@ export default function MCQList({ mode = 'all' }) {
                                                           )}
                                                         </Wrap>
                                                       </Td>
+
                                                       <Td>
                                                         <Badge
                                                           colorScheme="purple"
@@ -471,6 +479,7 @@ export default function MCQList({ mode = 'all' }) {
                                                           {items.length}
                                                         </Badge>
                                                       </Td>
+
                                                       <Td>
                                                         <Button
                                                           size="sm"
@@ -527,6 +536,7 @@ export default function MCQList({ mode = 'all' }) {
                                                                   </Th>
                                                                   <Th>Tags</Th>
                                                                   <Th>View</Th>
+                                                                  <Th>Edit</Th>
                                                                 </Tr>
                                                               </Thead>
                                                               <Tbody>
@@ -552,6 +562,7 @@ export default function MCQList({ mode = 'all' }) {
                                                                             '—'}
                                                                         </Text>
                                                                       </Td>
+
                                                                       <Td
                                                                         color="green.600"
                                                                         fontWeight="semibold"
@@ -564,6 +575,7 @@ export default function MCQList({ mode = 'all' }) {
                                                                           ?.text ||
                                                                           '—'}
                                                                       </Td>
+
                                                                       <Td>
                                                                         <Badge
                                                                           colorScheme={getDifficultyColor(
@@ -576,6 +588,7 @@ export default function MCQList({ mode = 'all' }) {
                                                                           }
                                                                         </Badge>
                                                                       </Td>
+
                                                                       <Td>
                                                                         <Wrap>
                                                                           {(
@@ -607,6 +620,7 @@ export default function MCQList({ mode = 'all' }) {
                                                                           )}
                                                                         </Wrap>
                                                                       </Td>
+
                                                                       <Td>
                                                                         <Button
                                                                           size="sm"
@@ -619,6 +633,29 @@ export default function MCQList({ mode = 'all' }) {
                                                                           }
                                                                         >
                                                                           View
+                                                                        </Button>
+                                                                      </Td>
+
+                                                                      <Td>
+                                                                        <Button
+                                                                          size="sm"
+                                                                          colorScheme="orange"
+                                                                          borderRadius="full"
+                                                                          onClick={() =>
+                                                                            navigate(
+                                                                              '/admin/mcq-manual',
+                                                                              {
+                                                                                state:
+                                                                                  {
+                                                                                    editMcq:
+                                                                                      mcq,
+                                                                                    mode: 'edit',
+                                                                                  },
+                                                                              },
+                                                                            )
+                                                                          }
+                                                                        >
+                                                                          Edit
                                                                         </Button>
                                                                       </Td>
                                                                     </Tr>
