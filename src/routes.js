@@ -162,17 +162,18 @@ const routes = [
         path: '/subsubject',
         component: <SubSubject />,
       },
-      {
-        name: 'Add Topic',
-        layout: '/admin',
-        path: '/topic',
-        component: <Topic />,
-      },
+
       {
         name: 'Add Chapter',
         layout: '/admin',
         path: '/chapter',
         component: <Chapter />,
+      },
+      {
+        name: 'Add Topic',
+        layout: '/admin',
+        path: '/topic',
+        component: <Topic />,
       },
       {
         name: 'Add Manual MCQ',
