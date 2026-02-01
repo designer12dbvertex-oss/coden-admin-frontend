@@ -38,9 +38,10 @@ import { useDisclosure } from '@chakra-ui/react';
 import { MdEdit } from 'react-icons/md';
 
 export default function TopicManagement() {
-  // Data States
+  // Data States (Subject → SubSubject → Chapter → Topic)
   const [subjects, setSubjects] = useState([]);
   const [subSubjects, setSubSubjects] = useState([]);
+  const [chapters, setChapters] = useState([]);
   const [topics, setTopics] = useState([]);
 
   // Table/UI States
@@ -53,6 +54,7 @@ export default function TopicManagement() {
   const [formData, setFormData] = useState({
     subjectId: '',
     subSubjectId: '',
+    chapterId: '',
     name: '',
     description: '',
     order: 0,
@@ -86,8 +88,10 @@ export default function TopicManagement() {
       ...formData,
       subjectId: sId,
       subSubjectId: '',
+      chapterId: '',
     });
     setSubSubjects([]);
+    setChapters([]);
     if (!sId) return;
 
     try {
@@ -103,11 +107,27 @@ export default function TopicManagement() {
 
   // 3. Hierarchy Logic: Handle Sub-Subject Change
   const handleSubSubjectChange = async (ssId) => {
-    setFormData({ ...formData, subSubjectId: ssId });
+    setFormData({ ...formData, subSubjectId: ssId, chapterId: '' });
+    setChapters([]);
     if (!ssId) return;
+
+    try {
+      const res = await axios.get(
+        `${baseUrl}api/admin/chapters?subSubjectId=${ssId}`,
+        { headers },
+      );
+      setChapters(res.data.data || []);
+    } catch (err) {
+      toast({ title: 'Chapter load error', status: 'error' });
+    }
   };
 
-  // 4. Fetch All Topics for Table
+  // 4. Hierarchy Logic: Handle Chapter Change
+  const handleChapterChange = (chId) => {
+    setFormData({ ...formData, chapterId: chId });
+  };
+
+  // 5. Fetch All Topics for Table
   const fetchAllTopics = async () => {
     try {
       const res = await axios.get(`${baseUrl}api/admin/topics`, { headers });
@@ -119,11 +139,11 @@ export default function TopicManagement() {
     }
   };
 
-  // 5. Create Topic (Backend-aligned)
+  // 6. Create Topic (Backend-aligned with chapterId)
   const handleCreate = async () => {
-    if (!formData.subSubjectId || !formData.name) {
+    if (!formData.chapterId || !formData.name) {
       return toast({
-        title: 'Sub-Subject and Topic Name required',
+        title: 'Chapter and Topic Name required',
         status: 'warning',
       });
     }
@@ -133,7 +153,7 @@ export default function TopicManagement() {
       await axios.post(
         `${baseUrl}api/admin/topics`,
         {
-          subSubjectId: formData.subSubjectId,
+          chapterId: formData.chapterId,
           name: formData.name,
           description: formData.description,
           order: formData.order,
@@ -152,11 +172,16 @@ export default function TopicManagement() {
 
       fetchAllTopics();
     } catch (err) {
-      toast({ title: 'Failed to add topic', status: 'error' });
+      toast({
+        title: err.response?.data?.message || 'Failed to add topic',
+        status: 'error',
+      });
     } finally {
       setLoading(false);
     }
   };
+
+  // 7. Update Topic
   const handleUpdate = async () => {
     try {
       await axios.patch(
@@ -165,7 +190,7 @@ export default function TopicManagement() {
           name: editData.name,
           description: editData.description,
           order: editData.order,
-          subSubjectId: editData.subSubjectId?._id || editData.subSubjectId,
+          chapterId: editData.chapterId?._id || editData.chapterId,
         },
         { headers },
       );
@@ -178,7 +203,7 @@ export default function TopicManagement() {
     }
   };
 
-  // 6. Delete Topic
+  // 8. Delete Topic
   const handleDelete = async (id) => {
     if (window.confirm('Delete this topic?')) {
       try {
@@ -191,11 +216,17 @@ export default function TopicManagement() {
     }
   };
 
-  // 7. Search logic (Backend-aligned)
+  // 9. Search logic (Topic name, Chapter, SubSubject, Subject)
   const filteredTopics = topics.filter(
     (t) =>
       t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.subSubjectId?.name?.toLowerCase().includes(searchTerm.toLowerCase()),
+      t.chapterId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.chapterId?.subSubjectId?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      t.chapterId?.subSubjectId?.subjectId?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -209,6 +240,7 @@ export default function TopicManagement() {
           </Text>
         </Flex>
 
+        {/* Subject → SubSubject → Chapter Dropdowns */}
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing="15px" mb="15px">
           <FormControl>
             <FormLabel fontSize="sm" fontWeight="700">
@@ -235,6 +267,7 @@ export default function TopicManagement() {
               placeholder="Select Sub-Subject"
               value={formData.subSubjectId}
               onChange={(e) => handleSubSubjectChange(e.target.value)}
+              isDisabled={!formData.subjectId}
             >
               {subSubjects.map((ss) => (
                 <option key={ss._id} value={ss._id}>
@@ -243,12 +276,31 @@ export default function TopicManagement() {
               ))}
             </Select>
           </FormControl>
+
+          <FormControl>
+            <FormLabel fontSize="sm" fontWeight="700">
+              3. Chapter
+            </FormLabel>
+            <Select
+              placeholder="Select Chapter"
+              value={formData.chapterId}
+              onChange={(e) => handleChapterChange(e.target.value)}
+              isDisabled={!formData.subSubjectId}
+            >
+              {chapters.map((ch) => (
+                <option key={ch._id} value={ch._id}>
+                  {ch.name}
+                </option>
+              ))}
+            </Select>
+          </FormControl>
         </SimpleGrid>
 
+        {/* Topic Details */}
         <Flex gap="15px" wrap="wrap" align="flex-end">
-          <FormControl width={{ base: '100%', md: '40%' }}>
+          <FormControl width={{ base: '100%', md: '35%' }}>
             <FormLabel fontSize="sm" fontWeight="700">
-              3. Topic Name
+              4. Topic Name
             </FormLabel>
             <Input
               value={formData.name}
@@ -256,10 +308,11 @@ export default function TopicManagement() {
                 setFormData({ ...formData, name: e.target.value })
               }
               placeholder="Ex: Muscles of Mastication"
+              isDisabled={!formData.chapterId}
             />
           </FormControl>
 
-          <FormControl width={{ base: '100%', md: '10%' }}>
+          {/* <FormControl width={{ base: '100%', md: '10%' }}>
             <FormLabel fontSize="sm" fontWeight="700">
               Order
             </FormLabel>
@@ -267,14 +320,18 @@ export default function TopicManagement() {
               type="number"
               value={formData.order}
               onChange={(e) =>
-                setFormData({ ...formData, order: e.target.value })
+                setFormData({
+                  ...formData,
+                  order: parseInt(e.target.value) || 0,
+                })
               }
+              isDisabled={!formData.chapterId}
             />
-          </FormControl>
+          </FormControl> */}
 
           <FormControl flex="1">
             <FormLabel fontSize="sm" fontWeight="700">
-              Topic Description
+              Description
             </FormLabel>
             <Input
               value={formData.description}
@@ -285,6 +342,7 @@ export default function TopicManagement() {
                 })
               }
               placeholder="Details about this topic..."
+              isDisabled={!formData.chapterId}
             />
           </FormControl>
 
@@ -293,6 +351,7 @@ export default function TopicManagement() {
             px="40px"
             onClick={handleCreate}
             isLoading={loading}
+            isDisabled={!formData.chapterId || !formData.name}
             leftIcon={<MdTopic />}
           >
             Save Topic
@@ -304,12 +363,12 @@ export default function TopicManagement() {
       <Card p="20px">
         <Flex justify="space-between" align="center" mb="20px">
           <Text color={textColor} fontSize="18px" fontWeight="700">
-            All Topics
+            All Topics ({filteredTopics.length})
           </Text>
           <InputGroup maxW="300px">
             <InputLeftElement children={<MdSearch color="gray.300" />} />
             <Input
-              placeholder="Search topic or sub-subject..."
+              placeholder="Search topic, chapter..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -320,8 +379,8 @@ export default function TopicManagement() {
           <Table variant="simple" color="gray.500">
             <Thead bg={useColorModeValue('gray.50', 'navy.800')}>
               <Tr>
-                <Th>Order</Th>
                 <Th>Topic Name</Th>
+                <Th>Chapter</Th>
                 <Th>Sub-Subject</Th>
                 <Th>Subject</Th>
                 <Th textAlign="right">Actions</Th>
@@ -330,21 +389,28 @@ export default function TopicManagement() {
             <Tbody>
               {filteredTopics.map((item) => (
                 <Tr key={item._id}>
-                  <Td>{item.order}</Td>
                   <Td fontWeight="700" color={textColor}>
                     {item.name}
+                  </Td>
+
+                  {/* CHAPTER NAME */}
+                  <Td>
+                    <Badge colorScheme="cyan" variant="subtle">
+                      {item.chapterId?.name || 'N/A'}
+                    </Badge>
                   </Td>
 
                   {/* SUB-SUBJECT NAME */}
                   <Td>
                     <Badge colorScheme="purple" variant="subtle">
-                      {item.subSubjectId?.name || 'N/A'}
+                      {item.chapterId?.subSubjectId?.name || 'N/A'}
                     </Badge>
                   </Td>
-                  {/* ✅ SUBJECT NAME */}
+
+                  {/* SUBJECT NAME */}
                   <Td>
                     <Badge colorScheme="blue" variant="subtle">
-                      {item.subSubjectId?.subjectId?.name || 'N/A'}
+                      {item.chapterId?.subSubjectId?.subjectId?.name || 'N/A'}
                     </Badge>
                   </Td>
 
@@ -357,6 +423,7 @@ export default function TopicManagement() {
                         setEditData(item);
                         onOpen();
                       }}
+                      aria-label="Edit topic"
                     />
 
                     <Button
@@ -373,6 +440,7 @@ export default function TopicManagement() {
               ))}
             </Tbody>
           </Table>
+
           {/* EDIT MODAL */}
           <Modal isOpen={isOpen} onClose={onClose}>
             <ModalOverlay />
@@ -403,20 +471,6 @@ export default function TopicManagement() {
                           setEditData({
                             ...editData,
                             description: e.target.value,
-                          })
-                        }
-                      />
-                    </FormControl>
-
-                    <FormControl>
-                      <FormLabel>Order</FormLabel>
-                      <Input
-                        type="number"
-                        value={editData.order}
-                        onChange={(e) =>
-                          setEditData({
-                            ...editData,
-                            order: e.target.value,
                           })
                         }
                       />

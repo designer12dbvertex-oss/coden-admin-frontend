@@ -715,6 +715,8 @@ import { MdEdit, MdDelete, MdSearch } from 'react-icons/md';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Card from 'components/card/Card';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 export default function ChapterManagement() {
   const [courses, setCourses] = useState([]); // ✅ ADD
@@ -1052,19 +1054,21 @@ export default function ChapterManagement() {
           </FormControl>
 
           {/* DESCRIPTION ✅ */}
-          <FormControl width={{ base: '100%', md: '20%' }}>
+          <FormControl width="100%">
             <FormLabel fontSize="sm" fontWeight="700">
               Description
             </FormLabel>
-            <Input
+
+            <ReactQuill
+              theme="snow"
               value={formData.description}
-              onChange={(e) =>
+              onChange={(value) =>
                 setFormData({
                   ...formData,
-                  description: e.target.value,
+                  description: value,
                 })
               }
-              placeholder="Chapter description..."
+              style={{ background: 'white' }}
             />
           </FormControl>
 
