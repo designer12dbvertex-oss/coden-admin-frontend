@@ -193,31 +193,74 @@ const routes = [
   {
     name: 'Test',
     layout: '/admin',
-    path: '/test',
-    icon: <Icon as={FaFlask} width="20px" height="20px" color="inherit" />, // new icon
-    component: <TestManagement />,
+    path: '/test', // parent ko real route bana do
+    icon: <Icon as={FaFlask} width="20px" height="20px" color="inherit" />,
+    component: <TestManagement />, // 👈 yahi important hai
+    collapse: true,
+    items: [
+      {
+        name: 'Create Test',
+        layout: '/admin',
+        path: '/test',
+        component: <TestsList />,
+      },
+      {
+        name: 'Test List',
+        layout: '/admin',
+        path: '/test-list',
+        component: <TestsList />,
+      },
+      {
+        name: 'Test MCQs List',
+        layout: '/admin',
+        path: '/mcqs-test-list',
+        component: <MCQList mode="exam" />,
+      },
+    ],
   },
   {
-    name: 'Test-List',
+    name: 'Q-Test',
     layout: '/admin',
-    path: '/test-list',
-    icon: <Icon as={FaListUl} width="20px" height="20px" color="inherit" />, // new icon
-    component: <TestsList />,
+    path: '/q-test', // parent route
+    icon: <Icon as={FaFlask} width="20px" height="20px" color="inherit" />,
+    component: <TestManagement />, // Q-Test create page
+    collapse: true,
+    items: [
+      {
+        name: 'Create Q-Test',
+        layout: '/admin',
+        path: '/q-test',
+        component: <TestManagement />, // ⚠️ yaha pe TestManagement hi hona chahiye
+      },
+      {
+        name: 'Q-Test List',
+        layout: '/admin',
+        path: '/q-test-list',
+        component: <TestsList />,
+      },
+      {
+        name: 'Q-Test MCQs List',
+        layout: '/admin',
+        path: '/mcqs-q-test-list',
+        component: <MCQList mode="regular" />,
+      },
+    ],
   },
+
+  // {
+  //   name: 'Add MCQ',
+  //   layout: '/admin',
+  //   path: '/mcq',
+  //   component: <MCQManagement mode="test" />,
+  //   showInSidebar: false, // optional (sidebar me hide rakhna ho to)
+  // },
+
   {
     name: 'Add MCQ',
     layout: '/admin',
-    path: '/mcq',
-    component: <MCQManagement mode="test" />,
-    showInSidebar: false, // optional (sidebar me hide rakhna ho to)
-  },
-
-  {
-    name: 'Test MCQs List',
-    layout: '/admin',
-    path: '/mcqs-test-list',
-    icon: <Icon as={FaListUl} width="20px" height="20px" color="inherit" />, // new icon
-    component: <MCQList mode="test" />,
+    path: '/mcq/:mode?',
+    component: <MCQManagement />,
+    showInSidebar: false,
   },
 
   {

@@ -14,11 +14,12 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function CreateTest() {
   const toast = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [loading, setLoading] = useState(false);
   const [fetchingCourses, setFetchingCourses] = useState(false);
@@ -36,12 +37,16 @@ export default function CreateTest() {
     [token],
   );
 
+  const defaultMode = location.pathname.includes('/q-test')
+    ? 'regular'
+    : 'exam';
+
   const [formData, setFormData] = useState({
     month: '',
     academicYear: '',
     testTitle: '',
     courseId: '',
-    testMode: 'regular',
+    testMode: defaultMode,
     mcqLimit: '',
     timeLimit: '',
     description: '',
@@ -189,7 +194,11 @@ export default function CreateTest() {
         description: '',
       });
 
-      navigate('/admin/test-list');
+      if (formData.testMode === 'exam') {
+        navigate('/admin/test-list');
+      } else {
+        navigate('/admin/q-test-list');
+      }
     } catch (err) {
       console.error('create test error', err);
       toast({
@@ -280,17 +289,6 @@ export default function CreateTest() {
                 ))}
               </Select>
             )}
-          </FormControl>
-
-          <FormControl isRequired>
-            <FormLabel>Mode</FormLabel>
-            <Select
-              value={formData.testMode}
-              onChange={(e) => handleInputChange('testMode', e.target.value)}
-            >
-              <option value="regular">Regular Mode</option>
-              <option value="exam">Exam Mode</option>
-            </Select>
           </FormControl>
 
           <FormControl isRequired>

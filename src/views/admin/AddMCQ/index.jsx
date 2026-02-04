@@ -48,7 +48,8 @@ import axios from 'axios';
 import Card from 'components/card/Card'; // adjust path if needed
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+
 const quillModules = {
   toolbar: [
     [{ header: [1, 2, 3, false] }],
@@ -78,7 +79,7 @@ function normaliseMcqList(res) {
   return Array.isArray(raw) ? raw : [];
 }
 
-export default function MCQManagement({ mode = 'test' }) {
+export default function MCQManagement() {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const secondaryColor = useColorModeValue('gray.600', 'gray.400');
   const listBg = useColorModeValue('white', 'navy.800');
@@ -99,6 +100,8 @@ export default function MCQManagement({ mode = 'test' }) {
   const [mcqs, setMcqs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
+  const { mode } = useParams();
+  const finalMode = mode || 'exam';
   const navigate = useNavigate();
   const toast = useToast();
   const location = useLocation();
@@ -395,7 +398,7 @@ export default function MCQManagement({ mode = 'test' }) {
   };
 
   const handleCreate = async () => {
-    if (mode === 'test' && !formData.testId) {
+    if (finalMode !== 'manual' && !formData.testId) {
       toast({
         title: 'Test is required to create MCQ',
         description: 'Please select a test from the dropdown.',
@@ -413,7 +416,7 @@ export default function MCQManagement({ mode = 'test' }) {
     setLoading(true);
     const data = new FormData();
 
-    if (mode === 'test') {
+    if (finalMode !== 'manual') {
       data.append('testId', formData.testId);
     }
 
@@ -490,7 +493,27 @@ export default function MCQManagement({ mode = 'test' }) {
   };
 
   const filteredMCQs = mcqs
-    .filter((m) => (mode === 'manual' ? !m.testId : !!m.testId))
+    .filter((m) =>
+      /**
+       * STRICT MCQ FILTERING BY TYPE/MODE
+       *
+       * Manual: m.testId == null (no test association)
+       * Exam: m.testId exists AND testMode === 'exam'
+       * Regular: m.testId exists AND testMode === 'regular'
+       *
+       * ⚠️ CRITICAL RULE: Each type is completely isolated
+       * - Manual MCQs NEVER appear in exam or regular listings
+       * - Exam MCQs NEVER appear in manual or regular listings
+       * - Regular MCQs NEVER appear in manual or exam listings
+       */
+      finalMode === 'manual'
+        ? m.testId == null
+        : finalMode === 'exam'
+          ? m.testId && m.testId.testMode === 'exam'
+          : finalMode === 'regular'
+            ? m.testId && m.testId.testMode === 'regular'
+            : true,
+    )
     .filter(
       (m) =>
         (m.question?.text || '')
@@ -543,7 +566,7 @@ export default function MCQManagement({ mode = 'test' }) {
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={10}>
           {/* LEFT – Metadata & Question */}
           <VStack align="stretch" spacing={6}>
-            {mode === 'test' && (
+            {finalMode !== 'manual' && (
               <FormControl isRequired>
                 <FormLabel
                   fontSize="sm"
@@ -985,7 +1008,11 @@ export default function MCQManagement({ mode = 'test' }) {
           gap={4}
         >
           <Text fontSize="22px" fontWeight="700" color={textColor}>
-            {mode === 'manual' ? 'Manual MCQs' : 'Test MCQs'}
+            {finalMode === 'manual'
+              ? 'Manual MCQs'
+              : finalMode === 'regular'
+                ? 'Q-Test MCQs'
+                : 'Exam MCQs'}
           </Text>
 
           <InputGroup maxW="350px">

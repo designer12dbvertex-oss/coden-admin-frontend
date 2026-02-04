@@ -40,11 +40,18 @@ import {
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon, ViewIcon, SearchIcon } from '@chakra-ui/icons';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function TestsList() {
   const toast = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { pathname } = location;
+
+  const isQTestListPage = pathname.startsWith('/admin/q-test-list');
+  const isTestListPage = pathname.startsWith('/admin/test-list');
+
+  const fixedMode = isQTestListPage ? 'regular' : 'exam';
 
   const baseUrlRaw = process.env.REACT_APP_BASE_URL || 'http://localhost:4000';
   const baseUrl = baseUrlRaw.endsWith('/')
@@ -62,10 +69,11 @@ export default function TestsList() {
   const [selectedTest, setSelectedTest] = useState(null);
   const [filters, setFilters] = useState({
     status: '',
-    testMode: '',
+    testMode: fixedMode,
     page: 1,
     limit: 10,
   });
+
   const [pagination, setPagination] = useState({ total: 0, pages: 0 });
   const [editForm, setEditForm] = useState({});
   const [editLoading, setEditLoading] = useState(false);
@@ -147,6 +155,13 @@ export default function TestsList() {
 
     fetchCourses();
   }, [baseUrl, axiosConfig]);
+  useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      testMode: fixedMode,
+      page: 1,
+    }));
+  }, [fixedMode]);
 
   const handleDeleteTest = async (testId) => {
     if (!window.confirm('Are you sure you want to delete this test?')) return;
@@ -193,7 +208,7 @@ export default function TestsList() {
       testTitle: test.testTitle || '',
       month: test.month || '',
       academicYear: test.academicYear || '',
-      testMode: test.testMode || 'regular',
+      testMode: fixedMode,
       mcqLimit: test.mcqLimit ?? 0,
       timeLimit: test.timeLimit ?? '',
       description: test.description || '',
@@ -294,8 +309,15 @@ export default function TestsList() {
     navigate('/admin/mcq', { state: { testId: test._id } });
   };
 
-  const handleViewMcqs = (testId) =>
-    navigate('/admin/mcqs-test-list', { state: { testId } });
+  const handleViewMcqs = (testId) => {
+    const targetPath = isQTestListPage
+      ? '/admin/mcqs-q-test-list'
+      : '/admin/mcqs-test-list';
+
+    navigate(targetPath, {
+      state: { testId },
+    });
+  };
 
   return (
     <Box p={6} bg="gray.50" minH="100vh">
@@ -320,21 +342,6 @@ export default function TestsList() {
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="draft">Draft</option>
-            </Select>
-
-            <Select
-              placeholder="All Modes"
-              value={filters.testMode}
-              onChange={(e) =>
-                setFilters({ ...filters, testMode: e.target.value, page: 1 })
-              }
-              width={{ base: 'full', sm: '160px' }}
-              bg="white"
-              shadow="sm"
-            >
-              <option value="">All Modes</option>
-              <option value="regular">Regular</option>
-              <option value="exam">Exam</option>
             </Select>
 
             <IconButton
@@ -632,16 +639,9 @@ export default function TestsList() {
                 <SimpleGrid columns={2} spacing={4}>
                   <FormControl>
                     <FormLabel>Mode</FormLabel>
-                    <Select
-                      value={editForm.testMode || 'regular'}
-                      onChange={(e) =>
-                        handleEditChange('testMode', e.target.value)
-                      }
-                    >
-                      <option value="regular">Regular</option>
-                      <option value="exam">Exam</option>
-                    </Select>
+                    <Input value={fixedMode} isReadOnly />
                   </FormControl>
+
                   <FormControl>
                     <FormLabel>MCQ Limit</FormLabel>
                     <NumberInput

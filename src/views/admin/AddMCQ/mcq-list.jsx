@@ -67,6 +67,7 @@ export default function MCQList({ mode = 'all' }) {
 
   const location = useLocation();
   const navigate = useNavigate();
+
   // 🔧 CHANGE 1 — safer testId
   const testIdFromList = useMemo(() => {
     return location.state?.testId ?? null;
@@ -77,54 +78,42 @@ export default function MCQList({ mode = 'all' }) {
     setLoading(true);
     setError('');
     try {
-      const url = testIdFromList
-        ? `${baseUrl}/api/admin/mcqs?testId=${testIdFromList}`
-        : `${baseUrl}/api/admin/mcqs`;
+      let url = `${baseUrl}/api/admin/mcqs`;
 
+      /**
+       * STRICT FILTERING LOGIC FOR MCQ LISTING
+       *
+       * Mode 'manual': testId=null → Only manual MCQs
+       * Mode 'exam': testMode=exam → Only exam-mode test MCQs
+       * Mode 'regular': testMode=regular → Only Q-Test regular-mode MCQs
+       * testIdFromList: ?testId={id} → Only specific test's MCQs
+       *
+       * ⚠️ CRITICAL: Different MCQ types must NEVER mix
+       */
+
+      if (mode === 'manual') {
+        // Manual MCQs only (no test association)
+        url += `?testId=null`;
+      } else if (testIdFromList) {
+        // Specific test's MCQs only
+        url += `?testId=${testIdFromList}`;
+      } else if (mode === 'exam') {
+        // Exam mode tests only - NO manual MCQs, NO regular mode MCQs
+        url += `?testMode=exam`;
+      } else if (mode === 'regular') {
+        // Q-Test (regular mode) only - NO manual MCQs, NO exam mode MCQs
+        url += `?testMode=regular`;
+      }
+
+      console.log('Fetching MCQ URL:', url);
       const res = await axios.get(url, axiosConfig);
       const data = res.data?.data ?? [];
 
       if (res.data?.format === 'test-wise-grouped' && Array.isArray(data)) {
-        let finalGroups = [];
+        setTestsWithMcqs(data);
 
-        if (mode === 'test') {
-          finalGroups = data.filter((g) => g.testId !== null);
-        }
-
-        if (mode === 'manual') {
-          const manualGroup = data.find((g) => g.testId === null);
-          finalGroups = manualGroup
-            ? [
-                {
-                  testId: 'manual',
-                  testName: 'Manual MCQs',
-                  totalMCQs: manualGroup.totalMCQs,
-                  mcqList: manualGroup.mcqList,
-                },
-              ]
-            : [];
-        }
-
-        if (mode === 'all') {
-          const testGroups = data.filter((g) => g.testId !== null);
-          const manualGroup = data.find((g) => g.testId === null);
-
-          finalGroups.push(...testGroups);
-
-          if (manualGroup && manualGroup.totalMCQs > 0) {
-            finalGroups.push({
-              testId: 'manual',
-              testName: 'Manual MCQs',
-              totalMCQs: manualGroup.totalMCQs,
-              mcqList: manualGroup.mcqList,
-            });
-          }
-        }
-
-        setTestsWithMcqs(finalGroups);
-
-        if (finalGroups.length === 1) {
-          setExpandedTestId(finalGroups[0].testId);
+        if (data.length === 1) {
+          setExpandedTestId(data[0].testId ?? 'manual');
         }
       } else {
         setTestsWithMcqs([]);
@@ -211,7 +200,11 @@ export default function MCQList({ mode = 'all' }) {
         colorScheme="blue"
         mb={4}
         alignSelf="flex-start"
-        onClick={() => navigate('/admin/test-list')}
+        onClick={() =>
+          navigate(
+            mode === 'regular' ? '/admin/q-test-list' : '/admin/test-list',
+          )
+        }
       >
         ← Back to Tests
       </Button>
@@ -233,9 +226,9 @@ export default function MCQList({ mode = 'all' }) {
               <Heading size="lg" color={accentColor}>
                 {mode === 'manual'
                   ? 'Manual MCQ Repository'
-                  : mode === 'test'
-                    ? 'Test MCQ Repository'
-                    : 'MCQ Repository'}
+                  : mode === 'regular'
+                    ? 'Q-Test MCQ Repository'
+                    : 'Exam Test MCQ Repository'}
               </Heading>
             </HStack>
             <Badge fontSize="md" colorScheme="purple" px={4} py={1}>
@@ -296,14 +289,20 @@ export default function MCQList({ mode = 'all' }) {
                 size="sm"
                 variant="outline"
                 colorScheme="blue"
-                onClick={() => navigate('/admin/test-list')}
+                onClick={() =>
+                  navigate(
+                    mode === 'regular'
+                      ? '/admin/q-test-list'
+                      : '/admin/test-list',
+                  )
+                }
               >
                 Back to Tests
               </Button>
             </Flex>
           ) : (
             testsWithMcqs.map((testGroup) => {
-              const testKey = testGroup.testId ?? 'unassigned';
+              const testKey = testGroup.testId ?? 'manual';
               return (
                 <Box key={testKey} mb={10}>
                   {/* Test section header */}
@@ -336,7 +335,8 @@ export default function MCQList({ mode = 'all' }) {
                               {testGroup.testName}
                             </Heading>
 
-                            {testGroup.testId === 'manual' && (
+                            {(testGroup.testId === null ||
+                              testKey === 'manual') && (
                               <Badge colorScheme="purple" variant="solid">
                                 Manual
                               </Badge>
