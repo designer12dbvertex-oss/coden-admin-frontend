@@ -298,27 +298,58 @@ export default function MCQManagement({ mode = 'test' }) {
   }, []);
 
   // Cascade fetches
+  // const loadSubjects = async (courseId) => {
+  //   if (!courseId) {
+  //     setSubjects([]);
+  //     setSubSubjects([]);
+  //     setTopics([]);
+  //     setChapters([]);
+  //     return;
+  //   }
+  //   try {
+  //     const res = await axios.get(
+  //       `${baseUrl}/api/admin/subjects?courseId=${courseId}`,
+  //       { headers },
+  //     );
+  //     setSubjects(res.data.data || []);
+  //     setSubSubjects([]);
+  //     setTopics([]);
+  //     setChapters([]);
+  //   } catch (err) {
+  //     toast({ title: 'Subjects load failed', status: 'error' });
+  //   }
+  // };
   const loadSubjects = async (courseId) => {
-    if (!courseId) {
-      setSubjects([]);
-      setSubSubjects([]);
-      setTopics([]);
-      setChapters([]);
-      return;
-    }
-    try {
-      const res = await axios.get(
-        `${baseUrl}/api/admin/subjects?courseId=${courseId}`,
-        { headers },
-      );
-      setSubjects(res.data.data || []);
-      setSubSubjects([]);
-      setTopics([]);
-      setChapters([]);
-    } catch (err) {
-      toast({ title: 'Subjects load failed', status: 'error' });
-    }
-  };
+  if (!courseId) {
+    setSubjects([]);
+    return;
+  }
+  try {
+    const res = await axios.get(
+      `${baseUrl}/api/admin/subjects?courseId=${courseId}`,
+      { headers }
+    );
+    
+    // Debugging ke liye log zaroor check karein
+    console.log("Subjects API Response:", res.data);
+
+    // Agar data property ke andar hai toh wo le, warna pura res.data le
+    const subjectsData = res.data.data || res.data || [];
+    setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
+    
+    // Purane states reset karein
+    setSubSubjects([]);
+    setTopics([]);
+    setChapters([]);
+  } catch (err) {
+    console.error("Subject fetch error:", err);
+    toast({ 
+      title: 'Subjects load failed', 
+      description: err.response?.data?.message || 'Check network tab',
+      status: 'error' 
+    });
+  }
+};
 
   const loadSubSubjects = async (subjectId) => {
     if (!subjectId) {
