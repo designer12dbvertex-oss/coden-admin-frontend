@@ -730,6 +730,7 @@ export default function ChapterManagement() {
 
   // Image State
   const [chapterImage, setChapterImage] = useState(null);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
 
   // Form State (Backend-aligned)
   const [formData, setFormData] = useState({
@@ -787,38 +788,135 @@ export default function ChapterManagement() {
 
     fetchData();
   }, [token]);
+  
 
+
+  useEffect(() => {
+  // Agar page refresh hua aur formData me courseId hai, toh subjects fetch karo
+  if (formData.courseId) {
+    fetchSubjectsByCourse(formData.courseId);
+  }
+}, [formData.courseId]); // 🟢 Iska matlab: jab bhi courseId badle (ya refresh pe set ho), ye chalao.
+
+  // const handleCourseChange = async (courseId) => {
+  //   setFormData({
+  //     ...formData,
+  //     courseId,
+  //     subjectId: '',
+  //     subSubjectId: '',
+  //   });
+
+  //   setSubjects([]);
+  //   setSubSubjects([]);
+
+  //   if (!courseId) return;
+
+  //   try {
+  //     const res = await axios.get(
+  //       `${baseUrl}api/admin/subjects?courseId=${courseId}`,
+  //       { headers },
+  //     );
+  //     setSubjects(res.data.data || []);
+  //   } catch (err) {
+  //     toast({ title: 'Subject load error', status: 'error' });
+  //   }
+  // };
+
+  //  const handleCourseChange = async (courseId) => {
+  //   // 1. Reset dependent fields immediately
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     courseId,
+  //     subjectId: '',
+  //     subSubjectId: '',
+  //   }));
+
+  //   setSubjects([]);
+  //   setSubSubjects([]);
+
+  //   if (!courseId) return;
+
+  //   try {
+  //     const res = await axios.get(
+  //       `${baseUrl}api/admin/subjects?courseId=${courseId}`,
+  //       { headers },
+  //     );
+
+  //     console.log("Subject API Raw Response:", res.data); // 🟢 Debugging line
+
+  //     // Check if data exists in res.data.data or just res.data
+  //     const subjectList = res.data.data || res.data || [];
+      
+  //     if (Array.isArray(subjectList)) {
+  //       setSubjects(subjectList);
+  //       console.log("Subjects set to state:", subjectList);
+  //     } else {
+  //       console.error("Subjects data is not an array:", subjectList);
+  //       setSubjects([]);
+  //     }
+  //   } catch (err) {
+  //     console.error("Subject Load Error:", err);
+  //     toast({ title: 'Subject load error', status: 'error' });
+  //   }
+  // };
   const handleCourseChange = async (courseId) => {
-    setFormData({
-      ...formData,
-      courseId,
-      subjectId: '',
-      subSubjectId: '',
-    });
+  setFormData((prev) => ({
+    ...prev,
+    courseId: courseId,
+    subjectId: '', // Subject reset karein
+    subSubjectId: '', // Sub-subject reset karein
+  }));
 
+  if (!courseId) {
     setSubjects([]);
-    setSubSubjects([]);
+    return;
+  }
 
-    if (!courseId) return;
+  setLoadingSubjects(true); // 🟢 Loading shuru
+  try {
+    const res = await axios.get(
+      `${baseUrl}api/admin/subjects?courseId=${courseId}`,
+      { headers },
+    );
 
-    try {
-      const res = await axios.get(
-        `${baseUrl}api/admin/subjects?courseId=${courseId}`,
-        { headers },
-      );
-      setSubjects(res.data.data || []);
-    } catch (err) {
-      toast({ title: 'Subject load error', status: 'error' });
-    }
-  };
+    const subjectList = res.data.data || res.data || [];
+    setSubjects(Array.isArray(subjectList) ? subjectList : []);
+  } catch (err) {
+    console.error("Subject load error:", err);
+    toast({ title: 'Error loading subjects', status: 'error' });
+  } finally {
+    setLoadingSubjects(false); // 🟢 Loading khatam
+  }
+};
 
   // 🔹 Load Sub-Subjects when Subject changes
+  // const handleSubjectChange = async (subjectId) => {
+  //   setFormData({
+  //     ...formData,
+  //     subjectId,
+  //     subSubjectId: '',
+  //   });
+
+  //   setSubSubjects([]);
+
+  //   if (!subjectId) return;
+
+  //   try {
+  //     const res = await axios.get(
+  //       `${baseUrl}api/admin/sub-subjects?subjectId=${subjectId}`,
+  //       { headers },
+  //     );
+  //     setSubSubjects(res.data.data || []);
+  //   } catch (err) {
+  //     toast({ title: 'Sub-Subject load error', status: 'error' });
+  //   }
+  // };
   const handleSubjectChange = async (subjectId) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       subjectId,
       subSubjectId: '',
-    });
+    }));
 
     setSubSubjects([]);
 
@@ -829,11 +927,32 @@ export default function ChapterManagement() {
         `${baseUrl}api/admin/sub-subjects?subjectId=${subjectId}`,
         { headers },
       );
-      setSubSubjects(res.data.data || []);
+      
+      const subSubjectList = res.data.data || res.data || [];
+      setSubSubjects(Array.isArray(subSubjectList) ? subSubjectList : []);
     } catch (err) {
       toast({ title: 'Sub-Subject load error', status: 'error' });
     }
   };
+  const fetchSubjectsByCourse = async (courseId) => {
+  if (!courseId) {
+    setSubjects([]);
+    return;
+  }
+  setLoadingSubjects(true);
+  try {
+    const res = await axios.get(
+      `${baseUrl}api/admin/subjects?courseId=${courseId}`,
+      { headers }
+    );
+    const subjectList = res.data.data || res.data || [];
+    setSubjects(Array.isArray(subjectList) ? subjectList : []);
+  } catch (err) {
+    console.error("Error fetching subjects:", err);
+  } finally {
+    setLoadingSubjects(false);
+  }
+};
 
   // 🔹 Load Topics when Sub-Subject changes
   const handleSubSubjectChange = (ssId) => {
@@ -999,7 +1118,7 @@ export default function ChapterManagement() {
           </FormControl>
 
           {/* SUBJECT */}
-          <FormControl width={{ base: '100%', md: '20%' }}>
+          {/* <FormControl width={{ base: '100%', md: '20%' }}>
             <FormLabel fontSize="sm" fontWeight="700">
               Subject
             </FormLabel>
@@ -1015,7 +1134,23 @@ export default function ChapterManagement() {
                 </option>
               ))}
             </Select>
-          </FormControl>
+          </FormControl> */}
+  {/* SUBJECT DROPDOWN */}
+<FormControl width={{ base: '100%', md: '20%' }}>
+  <FormLabel fontSize="sm" fontWeight="700">Subject</FormLabel>
+<Select
+  placeholder={loadingSubjects ? "Loading..." : "Select Subject"}
+  value={formData.subjectId}
+  onChange={(e) => handleSubjectChange(e.target.value)}
+  isDisabled={!formData.courseId || loadingSubjects} // Jab load ho raha ho tab bhi disabled rahe
+>
+  {subjects.map((s) => (
+    <option key={s._id} value={s._id}>
+      {s.name}
+    </option>
+  ))}
+</Select>
+</FormControl>
 
           {/* SUB-SUBJECT */}
           <FormControl width={{ base: '100%', md: '20%' }}>
