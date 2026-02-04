@@ -50,6 +50,10 @@ import MCQ from 'views/admin/AddMCQ';
 import Video from 'views/admin/Video';
 import Tags from 'views/admin/Tags';
 import Topic from 'views/admin/topic.jsx';
+import AddFaculty from 'views/admin/faculty';
+// import FacultyList from "views/admin/listfaculty"
+import FacultyList from 'views/admin/listfaculty/index';
+import PromoManagement from "views/admin/promoCode/index"
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
 import {
@@ -264,11 +268,32 @@ const routes = [
   },
 
   {
-    name: 'Video Lectures',
+    name: 'Video Lectures',  
     layout: '/admin',
     path: '/video',
     icon: <Icon as={FaVideo} width="20px" height="20px" color="inherit" />, // new icon
     component: <Video />,
+  },
+   {
+    name: 'AddFaculty',  
+    layout: '/admin',
+    path: '/faculty',
+    icon: <Icon as={FaVideo} width="20px" height="20px" color="inherit" />, // new icon
+    component: <AddFaculty/>,
+  },
+     {
+    name: 'List-Faculty',  
+    layout: '/admin',
+    path: '/list-faculty',
+    icon: <Icon as={FaVideo} width="20px" height="20px" color="inherit" />, // new icon
+    component: <FacultyList/>,
+  },
+     {
+    name: 'Promo',  
+    layout: '/admin',
+    path: '/PromoCode',
+    icon: <Icon as={FaVideo} width="20px" height="20px" color="inherit" />, // new icon
+    component: <PromoManagement/>,
   },
   // {
   //   name: 'QBank $ Practice',
