@@ -179,18 +179,18 @@ const routes = [
         path: '/topic',
         component: <Topic />,
       },
-      {
-        name: 'Add Manual MCQ',
-        layout: '/admin',
-        path: '/mcq-manual',
-        component: <MCQManagement mode="manual" />,
-      },
-      {
-        name: 'Manual MCQs List',
-        layout: '/admin',
-        path: '/mcqs-manual',
-        component: <MCQList mode="manual" />,
-      },
+      // {
+      //   name: 'Add Manual MCQ',
+      //   layout: '/admin',
+      //   path: '/mcq-manual',
+      //   component: <MCQManagement mode="manual" />,
+      // },
+      // {
+      //   name: 'Manual MCQs List',
+      //   layout: '/admin',
+      //   path: '/mcqs-manual',
+      //   component: <MCQList mode="manual" />,
+      // },
     ],
   },
 

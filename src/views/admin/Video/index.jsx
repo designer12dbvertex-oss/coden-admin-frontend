@@ -1344,8 +1344,8 @@ export default function VideoManagement() {
 
   // Fetch only courses on mount. Videos are fetched only after topic selection.
   const fetchCourses = React.useCallback(async () => {
-    console.log('BASE URL:', baseUrl);
-    console.log('Calling:', `${baseUrl}api/admin/courses`);
+    // console.log('BASE URL:', baseUrl);
+    // console.log('Calling:', `${baseUrl}api/admin/courses`);
 
     const id = ++coursesReqRef.current;
     setCoursesLoading(true);
