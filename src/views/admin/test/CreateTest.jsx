@@ -16,7 +16,7 @@ import {
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function CreateTest() {
+export default function CreateTest({ mode }) {
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,9 +37,7 @@ export default function CreateTest() {
     [token],
   );
 
-  const defaultMode = location.pathname.includes('/q-test')
-    ? 'regular'
-    : 'exam';
+  const defaultMode = mode || 'exam';
 
   const [formData, setFormData] = useState({
     month: '',
@@ -188,7 +186,7 @@ export default function CreateTest() {
         academicYear: '',
         testTitle: '',
         courseId: '',
-        testMode: 'regular',
+        testMode: defaultMode,
         mcqLimit: '',
         timeLimit: '',
         description: '',

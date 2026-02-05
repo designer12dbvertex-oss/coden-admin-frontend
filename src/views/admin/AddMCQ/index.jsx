@@ -101,7 +101,8 @@ export default function MCQManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const { mode } = useParams();
-  const finalMode = mode || 'exam';
+  const finalMode = mode || 'manual';
+
   const navigate = useNavigate();
   const toast = useToast();
   const location = useLocation();
@@ -288,7 +289,13 @@ export default function MCQManagement() {
         setCourses(courseRes.data.data || courseRes.data || []);
         setTags(tagRes.data.data || tagRes.data || []);
         setMcqs(normaliseMcqList(mcqRes));
-        setTests(testsRes.data?.tests || []);
+        const allTests = testsRes.data?.tests || [];
+
+        if (finalMode === 'manual') {
+          setTests([]);
+        } else {
+          setTests(allTests.filter((t) => t.testMode === finalMode));
+        }
       } catch (err) {
         toast({
           title: 'Initial data load failed',
@@ -323,36 +330,36 @@ export default function MCQManagement() {
   //   }
   // };
   const loadSubjects = async (courseId) => {
-  if (!courseId) {
-    setSubjects([]);
-    return;
-  }
-  try {
-    const res = await axios.get(
-      `${baseUrl}/api/admin/subjects?courseId=${courseId}`,
-      { headers }
-    );
-    
-    // Debugging ke liye log zaroor check karein
-    console.log("Subjects API Response:", res.data);
+    if (!courseId) {
+      setSubjects([]);
+      return;
+    }
+    try {
+      const res = await axios.get(
+        `${baseUrl}/api/admin/subjects?courseId=${courseId}`,
+        { headers },
+      );
 
-    // Agar data property ke andar hai toh wo le, warna pura res.data le
-    const subjectsData = res.data.data || res.data || [];
-    setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
-    
-    // Purane states reset karein
-    setSubSubjects([]);
-    setTopics([]);
-    setChapters([]);
-  } catch (err) {
-    console.error("Subject fetch error:", err);
-    toast({ 
-      title: 'Subjects load failed', 
-      description: err.response?.data?.message || 'Check network tab',
-      status: 'error' 
-    });
-  }
-};
+      // Debugging ke liye log zaroor check karein
+      console.log('Subjects API Response:', res.data);
+
+      // Agar data property ke andar hai toh wo le, warna pura res.data le
+      const subjectsData = res.data.data || res.data || [];
+      setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
+
+      // Purane states reset karein
+      setSubSubjects([]);
+      setTopics([]);
+      setChapters([]);
+    } catch (err) {
+      console.error('Subject fetch error:', err);
+      toast({
+        title: 'Subjects load failed',
+        description: err.response?.data?.message || 'Check network tab',
+        status: 'error',
+      });
+    }
+  };
 
   const loadSubSubjects = async (subjectId) => {
     if (!subjectId) {
@@ -555,8 +562,16 @@ export default function MCQManagement() {
           .includes(searchTerm.toLowerCase()),
     );
 
-  const handleViewMcqs = (testId) =>
-    navigate('/admin/mcqs-manual', { state: { testId } });
+  const handleViewMcqs = (testId) => {
+    if (finalMode === 'regular') {
+      navigate('/admin/mcqs-q-test-list', { state: { testId } });
+    } else if (finalMode === 'exam') {
+      navigate('/admin/mcqs-test-list', { state: { testId } });
+    } else {
+      navigate('/admin/mcqs-manual');
+    }
+  };
+
   return (
     <Box pt={{ base: '130px', md: '80px' }} px="20px">
       <Button
@@ -565,7 +580,15 @@ export default function MCQManagement() {
         colorScheme="blue"
         mb={3} // 👈 thoda upar space mil jayega
         alignSelf="flex-start"
-        onClick={() => navigate('/admin/test-list')}
+        onClick={() => {
+          if (finalMode === 'regular') {
+            navigate('/admin/q-test-list');
+          } else if (finalMode === 'exam') {
+            navigate('/admin/test-list');
+          } else {
+            navigate('/admin/mcqs-manual');
+          }
+        }}
       >
         ← Back to Tests
       </Button>

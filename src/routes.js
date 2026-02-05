@@ -53,7 +53,7 @@ import Topic from 'views/admin/topic.jsx';
 import AddFaculty from 'views/admin/faculty';
 // import FacultyList from "views/admin/listfaculty"
 import FacultyList from 'views/admin/listfaculty/index';
-import PromoManagement from "views/admin/promoCode/index"
+import PromoManagement from 'views/admin/promoCode/index';
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
 import {
@@ -197,16 +197,14 @@ const routes = [
   {
     name: 'Test',
     layout: '/admin',
-    path: '/test', // parent ko real route bana do
     icon: <Icon as={FaFlask} width="20px" height="20px" color="inherit" />,
-    component: <TestManagement />, // 👈 yahi important hai
     collapse: true,
     items: [
       {
         name: 'Create Test',
         layout: '/admin',
-        path: '/test',
-        component: <TestsList />,
+        path: '/create-test',
+        component: <TestManagement />,
       },
       {
         name: 'Test List',
@@ -225,22 +223,20 @@ const routes = [
   {
     name: 'Q-Test',
     layout: '/admin',
-    path: '/q-test', // parent route
     icon: <Icon as={FaFlask} width="20px" height="20px" color="inherit" />,
-    component: <TestManagement />, // Q-Test create page
     collapse: true,
     items: [
       {
         name: 'Create Q-Test',
         layout: '/admin',
-        path: '/q-test',
-        component: <TestManagement />, // ⚠️ yaha pe TestManagement hi hona chahiye
+        path: '/create-q-test',
+        component: <TestManagement mode="regular" />,
       },
       {
         name: 'Q-Test List',
         layout: '/admin',
         path: '/q-test-list',
-        component: <TestsList />,
+        component: <TestsList mode="regular" />,
       },
       {
         name: 'Q-Test MCQs List',
@@ -268,32 +264,32 @@ const routes = [
   },
 
   {
-    name: 'Video Lectures',  
+    name: 'Video Lectures',
     layout: '/admin',
     path: '/video',
     icon: <Icon as={FaVideo} width="20px" height="20px" color="inherit" />, // new icon
     component: <Video />,
   },
-   {
-    name: 'AddFaculty',  
+  {
+    name: 'AddFaculty',
     layout: '/admin',
     path: '/faculty',
     icon: <Icon as={FaVideo} width="20px" height="20px" color="inherit" />, // new icon
-    component: <AddFaculty/>,
+    component: <AddFaculty />,
   },
-     {
-    name: 'List-Faculty',  
+  {
+    name: 'List-Faculty',
     layout: '/admin',
     path: '/list-faculty',
     icon: <Icon as={FaVideo} width="20px" height="20px" color="inherit" />, // new icon
-    component: <FacultyList/>,
+    component: <FacultyList />,
   },
-     {
-    name: 'Promo',  
+  {
+    name: 'Promo',
     layout: '/admin',
     path: '/PromoCode',
     icon: <Icon as={FaVideo} width="20px" height="20px" color="inherit" />, // new icon
-    component: <PromoManagement/>,
+    component: <PromoManagement />,
   },
   // {
   //   name: 'QBank $ Practice',

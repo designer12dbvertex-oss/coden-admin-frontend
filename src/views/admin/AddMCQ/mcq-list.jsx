@@ -200,11 +200,15 @@ export default function MCQList({ mode = 'all' }) {
         colorScheme="blue"
         mb={4}
         alignSelf="flex-start"
-        onClick={() =>
-          navigate(
-            mode === 'regular' ? '/admin/q-test-list' : '/admin/test-list',
-          )
-        }
+        onClick={() => {
+          if (mode === 'regular') {
+            navigate('/admin/q-test-list');
+          } else if (mode === 'exam') {
+            navigate('/admin/test-list');
+          } else {
+            navigate('/admin/dashboard'); // ya manual route
+          }
+        }}
       >
         ← Back to Tests
       </Button>
@@ -643,7 +647,7 @@ export default function MCQList({ mode = 'all' }) {
                                                                           borderRadius="full"
                                                                           onClick={() =>
                                                                             navigate(
-                                                                              '/admin/mcq-manual',
+                                                                              `/admin/mcq/${mcq.testMode || 'manual'}`,
                                                                               {
                                                                                 state:
                                                                                   {

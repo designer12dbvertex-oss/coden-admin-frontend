@@ -306,7 +306,9 @@ export default function TestsList() {
       return;
     }
 
-    navigate('/admin/mcq', { state: { testId: test._id } });
+    navigate(`/admin/mcq/${test.testMode}`, {
+      state: { testId: test._id },
+    });
   };
 
   const handleViewMcqs = (testId) => {
