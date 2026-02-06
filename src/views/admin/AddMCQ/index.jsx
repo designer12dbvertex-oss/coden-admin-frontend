@@ -107,6 +107,44 @@ export default function MCQManagement() {
   const toast = useToast();
   const location = useLocation();
   const testIdFromList = location.state?.testId || null;
+  const [selectedTestDetails, setSelectedTestDetails] = useState(null);
+
+  useEffect(() => {
+    const fetchSelectedTest = async () => {
+      if (!testIdFromList) return;
+
+      try {
+        const res = await axios.get(
+          `${baseUrl}/api/admin/tests/${testIdFromList}`,
+          { headers },
+        );
+
+        const testData = res.data?.data;
+        setSelectedTestDetails(testData);
+
+        if (finalMode === 'regular') {
+          setFormData((prev) => ({
+            ...prev,
+            testId: testIdFromList,
+            courseId: testData.courseId?._id || '',
+            subjectId: testData.subjectId || '',
+            subSubjectId: testData.subSubjectId || '',
+            chapterId: testData.chapterId || '',
+          }));
+
+          // 🔥 Only load topics (NO subjects/subsubjects)
+          loadTopics(testData.chapterId);
+        }
+      } catch (err) {
+        toast({
+          title: 'Failed to load test details',
+          status: 'error',
+        });
+      }
+    };
+
+    fetchSelectedTest();
+  }, [testIdFromList]);
 
   useEffect(() => {
     if (testIdFromList) {
@@ -202,8 +240,13 @@ export default function MCQManagement() {
 
     setLoading(true);
     const data = new FormData();
+    data.append(
+      'chapterId',
+      finalMode === 'regular'
+        ? selectedTestDetails?.chapterId
+        : formData.chapterId,
+    );
 
-    data.append('chapterId', formData.chapterId);
     data.append('topicId', formData.topicId);
 
     if (formData.tagId) data.append('tagId', formData.tagId);
@@ -446,7 +489,7 @@ export default function MCQManagement() {
       return;
     }
 
-    if (!formData.chapterId) {
+    if (finalMode !== 'regular' && !formData.chapterId) {
       toast({ title: 'Chapter is required', status: 'warning' });
       return;
     }
@@ -500,10 +543,25 @@ export default function MCQManagement() {
       });
 
       toast({ title: 'MCQ created successfully', status: 'success' });
-      setFormData({
-        ...initialFormState,
-        testId: testIdFromList || formData.testId,
-      });
+      if (finalMode === 'regular') {
+        setFormData({
+          ...initialFormState,
+          testId: testIdFromList,
+          courseId: selectedTestDetails?.courseId?._id || '',
+          subjectId: selectedTestDetails?.subjectId || '',
+          subSubjectId: selectedTestDetails?.subSubjectId || '',
+          chapterId: selectedTestDetails?.chapterId || '',
+        });
+
+        // 🔥 reload topics so dropdown stays active
+        loadTopics(selectedTestDetails?.chapterId);
+      } else {
+        setFormData({
+          ...initialFormState,
+          testId: testIdFromList || formData.testId,
+        });
+      }
+
       const res = await axios.get(`${baseUrl}/api/admin/mcqs`, { headers });
       setMcqs(normaliseMcqList(res));
     } catch (err) {
@@ -648,155 +706,156 @@ export default function MCQManagement() {
             )}
 
             {/* Course → Subject → SubSubject → Topic → Chapter */}
-            <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-              <GridItem colSpan={{ base: 2, md: 1 }}>
-                <FormControl isRequired>
-                  <FormLabel
-                    fontSize="sm"
-                    fontWeight="700"
-                    color={secondaryColor}
-                  >
-                    <Icon as={MdLayers} me="1" /> Course
-                  </FormLabel>
-                  <Select
-                    variant="filled"
-                    placeholder="Select Course"
-                    value={formData.courseId}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData((p) => ({
-                        ...p,
-                        courseId: val,
-                        subjectId: '',
-                        subSubjectId: '',
-                        chapterId: '',
-                        topicId: '',
-                      }));
-                      loadSubjects(val);
-                    }}
-                  >
-                    {courses.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name || c.title}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-              </GridItem>
+            {finalMode !== 'regular' && (
+              <>
+                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                  <GridItem colSpan={{ base: 2, md: 1 }}>
+                    <FormControl isRequired>
+                      <FormLabel fontSize="sm" fontWeight="700">
+                        Course
+                      </FormLabel>
+                      <Select
+                        variant="filled"
+                        placeholder="Select Course"
+                        value={formData.courseId}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData((p) => ({
+                            ...p,
+                            courseId: val,
+                            subjectId: '',
+                            subSubjectId: '',
+                            chapterId: '',
+                            topicId: '',
+                          }));
+                          loadSubjects(val);
+                        }}
+                      >
+                        {courses.map((c) => (
+                          <option key={c._id} value={c._id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </GridItem>
 
-              <GridItem colSpan={{ base: 2, md: 1 }}>
-                <FormControl isRequired>
-                  <FormLabel
-                    fontSize="sm"
-                    fontWeight="700"
-                    color={secondaryColor}
-                  >
-                    Subject
-                  </FormLabel>
-                  <Select
-                    variant="filled"
-                    placeholder="Select Subject"
-                    isDisabled={!formData.courseId}
-                    value={formData.subjectId}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData((p) => ({
-                        ...p,
-                        subjectId: val,
-                        subSubjectId: '',
-                        chapterId: '',
-                        topicId: '',
-                      }));
-                      loadSubSubjects(val);
-                    }}
-                  >
-                    {subjects.map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-              </GridItem>
-            </Grid>
+                  <GridItem colSpan={{ base: 2, md: 1 }}>
+                    <FormControl isRequired>
+                      <FormLabel
+                        fontSize="sm"
+                        fontWeight="700"
+                        color={secondaryColor}
+                      >
+                        Subject
+                      </FormLabel>
+                      <Select
+                        variant="filled"
+                        placeholder="Select Subject"
+                        isDisabled={!formData.courseId}
+                        value={formData.subjectId}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData((p) => ({
+                            ...p,
+                            subjectId: val,
+                            subSubjectId: '',
+                            chapterId: '',
+                            topicId: '',
+                          }));
+                          loadSubSubjects(val);
+                        }}
+                      >
+                        {subjects.map((s) => (
+                          <option key={s._id} value={s._id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </GridItem>
+                </Grid>
 
-            <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-              <GridItem>
-                <FormControl isRequired>
-                  <FormLabel
-                    fontSize="sm"
-                    fontWeight="700"
-                    color={secondaryColor}
-                  >
-                    Sub-Subject
-                  </FormLabel>
-                  <Select
-                    variant="filled"
-                    placeholder="Select Sub-Subject"
-                    isDisabled={!formData.subjectId}
-                    value={formData.subSubjectId}
-                    onChange={(e) => {
-                      const val = e.target.value;
+                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                  <GridItem>
+                    <FormControl isRequired>
+                      <FormLabel
+                        fontSize="sm"
+                        fontWeight="700"
+                        color={secondaryColor}
+                      >
+                        Sub-Subject
+                      </FormLabel>
+                      <Select
+                        variant="filled"
+                        placeholder="Select Sub-Subject"
+                        isDisabled={!formData.subjectId}
+                        value={formData.subSubjectId}
+                        onChange={(e) => {
+                          const val = e.target.value;
 
-                      // 🔥 clear old data first
-                      setChapters([]);
-                      setTopics([]);
+                          // 🔥 clear old data first
+                          setChapters([]);
+                          setTopics([]);
 
-                      setFormData((p) => ({
-                        ...p,
-                        subSubjectId: val,
-                        chapterId: '',
-                        topicId: '',
-                      }));
-                      loadChapters(val);
-                    }}
-                  >
-                    {subSubjects.map((ss) => (
-                      <option key={ss._id} value={ss._id}>
-                        {ss.name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-              </GridItem>
+                          setFormData((p) => ({
+                            ...p,
+                            subSubjectId: val,
+                            chapterId: '',
+                            topicId: '',
+                          }));
+                          loadChapters(val);
+                        }}
+                      >
+                        {subSubjects.map((ss) => (
+                          <option key={ss._id} value={ss._id}>
+                            {ss.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </GridItem>
 
-              <GridItem>
-                <FormControl isRequired>
-                  <FormLabel
-                    fontSize="sm"
-                    fontWeight="700"
-                    color={secondaryColor}
-                  >
-                    Chapter
-                  </FormLabel>
-                  <Select
-                    variant="filled"
-                    placeholder="Select Chapter"
-                    isDisabled={!formData.subSubjectId}
-                    value={formData.chapterId}
-                    onChange={(e) => {
-                      const val = e.target.value;
+                  <GridItem>
+                    <FormControl isRequired>
+                      <FormLabel
+                        fontSize="sm"
+                        fontWeight="700"
+                        color={secondaryColor}
+                      >
+                        Chapter
+                      </FormLabel>
+                      <Select
+                        variant="filled"
+                        placeholder="Select Chapter"
+                        isDisabled={!formData.subSubjectId}
+                        value={formData.chapterId}
+                        onChange={(e) => {
+                          const val = e.target.value;
 
-                      // 🔥 clear old data first
-                      setTopics([]);
+                          // 🔥 clear old data first
+                          setTopics([]);
 
-                      setFormData((p) => ({
-                        ...p,
-                        chapterId: val,
-                        topicId: '',
-                      }));
-                      loadTopics(val);
-                    }}
-                  >
-                    {chapters.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-              </GridItem>
-            </Grid>
+                          setFormData((p) => ({
+                            ...p,
+                            chapterId: val,
+                            topicId: '',
+                          }));
+                          loadTopics(val);
+                        }}
+                      >
+                        {chapters.map((c) => (
+                          <option key={c._id} value={c._id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </GridItem>
+                </Grid>
+              </>
+            )}
+
             <FormControl isRequired>
               <FormLabel fontSize="sm" fontWeight="700" color={secondaryColor}>
                 Topic

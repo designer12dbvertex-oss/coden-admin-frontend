@@ -24,6 +24,14 @@ export default function CreateTest({ mode }) {
   const [loading, setLoading] = useState(false);
   const [fetchingCourses, setFetchingCourses] = useState(false);
   const [courses, setCourses] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [subSubjects, setSubSubjects] = useState([]);
+  const [chapters, setChapters] = useState([]);
+
+  const [fetchingSubjects, setFetchingSubjects] = useState(false);
+  const [fetchingSubSubjects, setFetchingSubSubjects] = useState(false);
+  const [fetchingChapters, setFetchingChapters] = useState(false);
+
   const [errorCourses, setErrorCourses] = useState('');
 
   const baseUrlRaw = process.env.REACT_APP_BASE_URL || 'http://localhost:4000';
@@ -37,13 +45,18 @@ export default function CreateTest({ mode }) {
     [token],
   );
 
-  const defaultMode = mode || 'exam';
+  const queryParams = new URLSearchParams(location.search);
+  const queryMode = queryParams.get('mode');
+  const defaultMode = queryMode || mode || 'exam';
 
   const [formData, setFormData] = useState({
     month: '',
     academicYear: '',
     testTitle: '',
     courseId: '',
+    subjectId: '',
+    subSubjectId: '',
+    chapterId: '',
     testMode: defaultMode,
     mcqLimit: '',
     timeLimit: '',
@@ -70,6 +83,16 @@ export default function CreateTest({ mode }) {
     const year = currentYear - 5 + i;
     return `${year}-${year + 1}`;
   });
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const queryMode = queryParams.get('mode');
+    const updatedMode = queryMode || mode || 'exam';
+
+    setFormData((prev) => ({
+      ...prev,
+      testMode: updatedMode,
+    }));
+  }, [location.search, mode]);
 
   useEffect(() => {
     let isMounted = true;
@@ -108,6 +131,32 @@ export default function CreateTest({ mode }) {
     };
   }, [baseUrl, axiosConfig, toast]);
 
+  useEffect(() => {
+    if (!formData.courseId || formData.testMode !== 'regular') return;
+
+    const fetchFilters = async () => {
+      try {
+        const res = await axios.get(
+          `${baseUrl}/api/admin/tests/filters/${formData.courseId}`,
+          axiosConfig,
+        );
+
+        const data = res.data?.data;
+
+        setSubjects(data?.subjects || []);
+        setSubSubjects(data?.subSubjects || []);
+        setChapters(data?.chapters || []);
+      } catch (err) {
+        console.error('Filters fetch error:', err);
+        setSubjects([]);
+        setSubSubjects([]);
+        setChapters([]);
+      }
+    };
+
+    fetchFilters();
+  }, [formData.courseId, formData.testMode]);
+
   const handleInputChange = (field, value) =>
     setFormData((p) => ({ ...p, [field]: value }));
   const handleCourseChange = (courseId) =>
@@ -132,6 +181,21 @@ export default function CreateTest({ mode }) {
       return;
     }
     if (!formData.mcqLimit || parseInt(formData.mcqLimit, 10) < 1) {
+      if (formData.testMode === 'regular') {
+        if (
+          !formData.subjectId ||
+          !formData.subSubjectId ||
+          !formData.chapterId
+        ) {
+          toast({
+            title: 'Missing Fields',
+            description: 'Please select Subject, Sub-Subject and Chapter',
+            status: 'error',
+          });
+          return;
+        }
+      }
+
       toast({
         title: 'Invalid MCQ Limit',
         description: 'MCQ Limit must be at least 1',
@@ -159,6 +223,11 @@ export default function CreateTest({ mode }) {
         testTitle: formData.testTitle,
         testMode: formData.testMode,
         courseId: formData.courseId,
+        subjectId: formData.testMode === 'regular' ? formData.subjectId : null,
+        subSubjectId:
+          formData.testMode === 'regular' ? formData.subSubjectId : null,
+        chapterId: formData.testMode === 'regular' ? formData.chapterId : null,
+
         mcqLimit: parseInt(formData.mcqLimit, 10),
         timeLimit:
           formData.testMode === 'exam'
@@ -186,6 +255,9 @@ export default function CreateTest({ mode }) {
         academicYear: '',
         testTitle: '',
         courseId: '',
+        subjectId: '',
+        subSubjectId: '',
+        chapterId: '',
         testMode: defaultMode,
         mcqLimit: '',
         timeLimit: '',
@@ -288,6 +360,72 @@ export default function CreateTest({ mode }) {
               </Select>
             )}
           </FormControl>
+          {formData.testMode === 'regular' && (
+            <>
+              <FormControl isRequired>
+                <FormLabel>Subject</FormLabel>
+                <Select
+                  value={formData.subjectId}
+                  onChange={(e) =>
+                    handleInputChange('subjectId', e.target.value)
+                  }
+                  placeholder="Select Subject"
+                >
+                  {subjects.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel>Sub-Subject</FormLabel>
+                <Select
+                  value={formData.subSubjectId}
+                  onChange={(e) =>
+                    handleInputChange('subSubjectId', e.target.value)
+                  }
+                  placeholder="Select Sub-Subject"
+                >
+                  {subSubjects
+                    .filter(
+                      (ss) =>
+                        String(ss.subjectId) === String(formData.subjectId),
+                    )
+
+                    .map((ss) => (
+                      <option key={ss._id} value={ss._id}>
+                        {ss.name}
+                      </option>
+                    ))}
+                </Select>
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel>Chapter</FormLabel>
+                <Select
+                  value={formData.chapterId}
+                  onChange={(e) =>
+                    handleInputChange('chapterId', e.target.value)
+                  }
+                  placeholder="Select Chapter"
+                >
+                  {chapters
+                    .filter(
+                      (c) =>
+                        String(c.subSubjectId) ===
+                        String(formData.subSubjectId),
+                    )
+                    .map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                </Select>
+              </FormControl>
+            </>
+          )}
 
           <FormControl isRequired>
             <FormLabel>MCQ Limit</FormLabel>
