@@ -36,6 +36,8 @@ import axios from 'axios';
 import Card from 'components/card/Card';
 import { useDisclosure } from '@chakra-ui/react';
 import { MdEdit } from 'react-icons/md';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 export default function TopicManagement() {
   // Data States (Subject → SubSubject → Chapter → Topic)
@@ -65,6 +67,16 @@ export default function TopicManagement() {
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
+
+  const modules = {
+    toolbar: [
+      [{ header: [1, 2, false] }],
+      ['bold', 'italic', 'underline'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['link'],
+      ['clean'],
+    ],
+  };
 
   // 1. Fetch Initial Data (Subjects)
   useEffect(() => {
@@ -333,16 +345,18 @@ export default function TopicManagement() {
             <FormLabel fontSize="sm" fontWeight="700">
               Description
             </FormLabel>
-            <Input
+
+            <ReactQuill
+              theme="snow"
               value={formData.description}
-              onChange={(e) =>
+              onChange={(value) =>
                 setFormData({
                   ...formData,
-                  description: e.target.value,
+                  description: value,
                 })
               }
-              placeholder="Details about this topic..."
-              isDisabled={!formData.chapterId}
+              modules={modules}
+              style={{ height: '150px', marginBottom: '40px' }}
             />
           </FormControl>
 
@@ -421,6 +435,7 @@ export default function TopicManagement() {
                       mr="2"
                       onClick={() => {
                         setEditData(item);
+
                         onOpen();
                       }}
                       aria-label="Edit topic"
@@ -462,17 +477,20 @@ export default function TopicManagement() {
                         }
                       />
                     </FormControl>
-
                     <FormControl>
                       <FormLabel>Description</FormLabel>
-                      <Input
+
+                      <ReactQuill
+                        theme="snow"
                         value={editData.description || ''}
-                        onChange={(e) =>
+                        onChange={(value) =>
                           setEditData({
                             ...editData,
-                            description: e.target.value,
+                            description: value,
                           })
                         }
+                        modules={modules}
+                        style={{ height: '150px', marginBottom: '40px' }}
                       />
                     </FormControl>
                   </Flex>
