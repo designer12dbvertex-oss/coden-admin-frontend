@@ -29,19 +29,22 @@ import {
   InputLeftElement,
 } from '@chakra-ui/react';
 import { MdEdit, MdDelete, MdSearch } from 'react-icons/md';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Card from 'components/card/Card';
+import { Switch } from '@chakra-ui/react';
 
 export default function CourseManagement() {
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
+  const [publishingId, setPublishingId] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
 
   // Form States
   const [courseName, setCourseName] = useState('');
-  const [editData, setEditData] = useState({ id: '', name: '' });
+  const [courseYear, setCourseYear] = useState(''); // Naya State Year ke liye
+  const [editData, setEditData] = useState({ id: '', name: '', year: '' });
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const textColor = useColorModeValue('secondaryGray.900', 'white');
@@ -50,12 +53,39 @@ export default function CourseManagement() {
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
 
-  const getHeaders = useCallback(() => ({
+  const getHeaders = () => ({
     headers: { Authorization: `Bearer ${token}` },
-  }), [token]);
+  });
+  const handleTogglePublish = async (course) => {
+    try {
+      setPublishingId(course._id);
+
+      const url = course.isPublished
+        ? `${baseUrl}api/admin/courses/${course._id}/unpublish`
+        : `${baseUrl}api/admin/courses/${course._id}/publish`;
+
+      await axios.patch(url, {}, getHeaders());
+
+      toast({
+        title: `Course ${
+          course.isPublished ? 'Unpublished' : 'Published'
+        } successfully`,
+        status: 'success',
+      });
+
+      fetchCourses();
+    } catch (err) {
+      toast({
+        title: 'Failed to update publish status',
+        status: 'error',
+      });
+    } finally {
+      setPublishingId(null);
+    }
+  };
 
   // 1. Fetch All Courses
-  const fetchCourses = useCallback(async () => {
+  const fetchCourses = async () => {
     try {
       const response = await axios.get(
         `${baseUrl}api/admin/courses`,
@@ -70,24 +100,24 @@ export default function CourseManagement() {
         duration: 3000,
       });
     } finally {
-      setInitialLoading(false);
+      setInitialLoading(false); // 🔥 Ye line important hai
     }
-  }, [baseUrl, getHeaders, toast]);
+  };
 
   useEffect(() => {
     fetchCourses();
-  }, [fetchCourses]);
+  }, []);
 
   // 2. Search Filter
   const filteredCourses = courses.filter((c) =>
     c.name?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  // 3. Add Course
+  // 3. Add Course (Ab Year bhi bhejega)
   const handleAddCourse = async () => {
-    if (!courseName) {
+    if (!courseName || !courseYear) {
       return toast({
-        title: 'Please enter course name',
+        title: 'Please enter name and year',
         status: 'warning',
         duration: 2000,
       });
@@ -96,7 +126,7 @@ export default function CourseManagement() {
     try {
       await axios.post(
         `${baseUrl}api/admin/courses`,
-        { name: courseName },
+        { name: courseName, year: courseYear },
         getHeaders(),
       );
       toast({
@@ -105,6 +135,7 @@ export default function CourseManagement() {
         duration: 2000,
       });
       setCourseName('');
+      setCourseYear('');
       fetchCourses();
     } catch (err) {
       toast({
@@ -118,7 +149,7 @@ export default function CourseManagement() {
 
   // 4. Update Logic
   const openEditModal = (course) => {
-    setEditData({ id: course._id, name: course.name || '' });
+    setEditData({ id: course._id, name: course.name, year: course.year || '' });
     onOpen();
   };
 
@@ -126,7 +157,7 @@ export default function CourseManagement() {
     try {
       await axios.patch(
         `${baseUrl}api/admin/courses/${editData.id}`,
-        { name: editData.name },
+        { name: editData.name, year: editData.year },
         getHeaders(),
       );
       toast({ title: 'Course Updated Successfully!', status: 'success' });
@@ -154,6 +185,7 @@ export default function CourseManagement() {
 
   return (
     <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+      {/* ADD SECTION - Year Input Added */}
       {/* ADD SECTION - Only show if no course exists */}
       {!initialLoading && courses.length === 0 && (
         <Card mb="20px" p="20px">
@@ -175,6 +207,15 @@ export default function CourseManagement() {
               />
             </FormControl>
 
+            <FormControl>
+              <FormLabel>Year</FormLabel>
+              <Input
+                value={courseYear}
+                onChange={(e) => setCourseYear(e.target.value)}
+                placeholder="Ex: 2026"
+              />
+            </FormControl>
+
             <Button
               colorScheme="blue"
               onClick={handleAddCourse}
@@ -187,7 +228,7 @@ export default function CourseManagement() {
         </Card>
       )}
 
-      {/* SEARCH & TABLE SECTION */}
+      {/* SEARCH & TABLE SECTION - Year Column Added */}
       <Card p="20px">
         <Flex
           direction={{ base: 'column', md: 'row' }}
@@ -217,7 +258,9 @@ export default function CourseManagement() {
               <Tr>
                 <Th>S.No</Th>
                 <Th>Course Name</Th>
+                <Th>Year</Th>
                 <Th>Status</Th>
+                <Th>Published</Th>
                 <Th>Action</Th>
               </Tr>
             </Thead>
@@ -228,6 +271,7 @@ export default function CourseManagement() {
                   <Td fontWeight="600" color="blue.500">
                     {c.name}
                   </Td>
+                  <Td>{c.year || 'N/A'}</Td>
                   <Td>
                     <Text
                       fontSize="sm"
@@ -238,8 +282,19 @@ export default function CourseManagement() {
                     </Text>
                   </Td>
                   <Td>
+                    <Switch
+                      isChecked={c.isPublished}
+                      isDisabled={
+                        publishingId === c._id || c.status !== 'active'
+                      }
+                      onChange={() => handleTogglePublish(c)}
+                      colorScheme="green"
+                      size="lg"
+                    />
+                  </Td>
+
+                  <Td>
                     <IconButton
-                      aria-label="Edit Course"
                       icon={<MdEdit />}
                       colorScheme="green"
                       onClick={() => openEditModal(c)}
@@ -247,7 +302,6 @@ export default function CourseManagement() {
                       size="sm"
                     />
                     <IconButton
-                      aria-label="Delete Course"
                       icon={<MdDelete />}
                       colorScheme="red"
                       onClick={() => handleDelete(c._id)}
@@ -258,7 +312,7 @@ export default function CourseManagement() {
               ))}
               {filteredCourses.length === 0 && (
                 <Tr>
-                  <Td colSpan={4} textAlign="center" py="4">
+                  <Td colSpan={5} textAlign="center" py="4">
                     No matching courses found
                   </Td>
                 </Tr>
@@ -268,7 +322,7 @@ export default function CourseManagement() {
         </Box>
       </Card>
 
-      {/* UPDATE MODAL */}
+      {/* UPDATE MODAL - Year Field Added */}
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
@@ -282,6 +336,15 @@ export default function CourseManagement() {
                   value={editData.name}
                   onChange={(e) =>
                     setEditData({ ...editData, name: e.target.value })
+                  }
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Year</FormLabel>
+                <Input
+                  value={editData.year}
+                  onChange={(e) =>
+                    setEditData({ ...editData, year: e.target.value })
                   }
                 />
               </FormControl>
