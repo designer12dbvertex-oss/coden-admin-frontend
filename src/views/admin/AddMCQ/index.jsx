@@ -1527,7 +1527,8 @@ export default function MCQManagement() {
   const headers = { Authorization: `Bearer ${token}` };
 
   const initialFormState = {
-    testId: '',
+    // testId: '',
+    testId: [],
     courseId: '',
     subjectId: '',
     subSubjectId: '',
@@ -1703,7 +1704,7 @@ export default function MCQManagement() {
         if (finalMode === 'regular') {
           setFormData((prev) => ({
             ...prev,
-            testId: testIdFromList,
+             testId: [testIdFromList],
             courseId: testData.courseId?._id || '',
             subjectId: testData.subjectId || '',
             subSubjectId: testData.subSubjectId || '',
@@ -1716,19 +1717,57 @@ export default function MCQManagement() {
     fetchSelectedTest();
   }, [testIdFromList]);
 
-  const handleEdit = (mcq) => {
+  // const handleEdit = (mcq) => {
+  //   setIsEditMode(true);
+  //   setEditingMCQ(mcq);
+  //   const tid = mcq.testId?._id || mcq.testId || '';
+
+  //   setFormData({
+  //     testId: tid,
+  //     courseId: mcq.courseId?._id || '',
+  //     subjectId: mcq.subjectId?._id || '',
+  //     subSubjectId: mcq.subSubjectId?._id || '',
+  //     topicId: mcq.topicId?._id || '',
+  //     chapterId: mcq.chapterId?._id || '',
+  //     tagId: mcq.tagId?._id || '',
+  //     questionText: mcq.question?.text || '',
+  //     questionFile: null,
+  //     options: mcq.options.map((o) => ({ text: o.text || '', file: null })),
+  //     correctAnswer: mcq.correctAnswer || 0,
+  //     explanationText: mcq.explanation?.text || '',
+  //     explanationFile: null,
+  //     difficulty: mcq.difficulty || 'medium',
+  //     marks: mcq.marks || 4,
+  //     negativeMarks: mcq.negativeMarks || 1,
+  //   });
+
+  //   loadSubjects(mcq.courseId?._id);
+  //   loadSubSubjects(mcq.subjectId?._id);
+  //   loadChapters(mcq.subSubjectId?._id);
+  //   loadTopics(mcq.chapterId?._id);
+  // };
+const handleEdit = (mcq) => {
     setIsEditMode(true);
     setEditingMCQ(mcq);
-    const tid = mcq.testId?._id || mcq.testId || '';
+
+    // 1. Check karein ki testId array hai ya single object, aur IDs nikal kar array banayein
+    let testIdsArray = [];
+    if (Array.isArray(mcq.testId)) {
+      // Agar backend se array aa raha hai
+      testIdsArray = mcq.testId.map(t => (typeof t === 'object' ? t._id : t));
+    } else if (mcq.testId) {
+      // Agar single testId hai (purana data)
+      testIdsArray = [typeof mcq.testId === 'object' ? mcq.testId._id : mcq.testId];
+    }
 
     setFormData({
-      testId: tid,
-      courseId: mcq.courseId?._id || '',
-      subjectId: mcq.subjectId?._id || '',
-      subSubjectId: mcq.subSubjectId?._id || '',
-      topicId: mcq.topicId?._id || '',
-      chapterId: mcq.chapterId?._id || '',
-      tagId: mcq.tagId?._id || '',
+      testId: testIdsArray, // Ab ye hamesha array rahega
+      courseId: mcq.courseId?._id || mcq.courseId || '',
+      subjectId: mcq.subjectId?._id || mcq.subjectId || '',
+      subSubjectId: mcq.subSubjectId?._id || mcq.subSubjectId || '',
+      topicId: mcq.topicId?._id || mcq.topicId || '',
+      chapterId: mcq.chapterId?._id || mcq.chapterId || '',
+      tagId: mcq.tagId?._id || mcq.tagId || '',
       questionText: mcq.question?.text || '',
       questionFile: null,
       options: mcq.options.map((o) => ({ text: o.text || '', file: null })),
@@ -1740,41 +1779,123 @@ export default function MCQManagement() {
       negativeMarks: mcq.negativeMarks || 1,
     });
 
-    loadSubjects(mcq.courseId?._id);
-    loadSubSubjects(mcq.subjectId?._id);
-    loadChapters(mcq.subSubjectId?._id);
-    loadTopics(mcq.chapterId?._id);
+    // Dropdowns load karne ke liye IDs ka use karein
+    const cId = mcq.courseId?._id || mcq.courseId;
+    const sId = mcq.subjectId?._id || mcq.subjectId;
+    const ssId = mcq.subSubjectId?._id || mcq.subSubjectId;
+    const chapId = mcq.chapterId?._id || mcq.chapterId;
+
+    if (cId) loadSubjects(cId);
+    if (sId) loadSubSubjects(sId);
+    if (ssId) loadChapters(ssId);
+    if (chapId) loadTopics(chapId);
   };
+  // const handleUpdate = async () => {
+  //   if (!editingMCQ?._id) return;
+  //   setLoading(true);
+  //   const data = new FormData();
+  //   data.append('chapterId', finalMode === 'regular' ? selectedTestDetails?.chapterId : formData.chapterId);
+  //   data.append('topicId', formData.topicId);
+  //   if (formData.tagId) data.append('tagId', formData.tagId);
+  //   data.append('correctAnswer', formData.correctAnswer);
+  //   data.append('difficulty', formData.difficulty);
+  //   data.append('marks', formData.marks);
+  //   data.append('negativeMarks', formData.negativeMarks);
+  //   data.append('question', JSON.stringify({ text: formData.questionText, replaceImages: !!formData.questionFile }));
+  //   data.append('explanation', JSON.stringify({ text: formData.explanationText, replaceImages: !!formData.explanationFile }));
+  //   data.append('options', JSON.stringify(formData.options.map((o) => ({ text: o.text, replaceImage: !!o.file }))));
+  //   if (formData.questionFile) data.append('questionImages', formData.questionFile);
+  //   if (formData.explanationFile) data.append('explanationImages', formData.explanationFile);
+  //   formData.options.forEach((opt, i) => { if (opt.file) data.append(`optionImage_${i}`, opt.file); });
 
-  const handleUpdate = async () => {
-    if (!editingMCQ?._id) return;
-    setLoading(true);
-    const data = new FormData();
-    data.append('chapterId', finalMode === 'regular' ? selectedTestDetails?.chapterId : formData.chapterId);
-    data.append('topicId', formData.topicId);
-    if (formData.tagId) data.append('tagId', formData.tagId);
-    data.append('correctAnswer', formData.correctAnswer);
-    data.append('difficulty', formData.difficulty);
-    data.append('marks', formData.marks);
-    data.append('negativeMarks', formData.negativeMarks);
-    data.append('question', JSON.stringify({ text: formData.questionText, replaceImages: !!formData.questionFile }));
-    data.append('explanation', JSON.stringify({ text: formData.explanationText, replaceImages: !!formData.explanationFile }));
-    data.append('options', JSON.stringify(formData.options.map((o) => ({ text: o.text, replaceImage: !!o.file }))));
-    if (formData.questionFile) data.append('questionImages', formData.questionFile);
-    if (formData.explanationFile) data.append('explanationImages', formData.explanationFile);
-    formData.options.forEach((opt, i) => { if (opt.file) data.append(`optionImage_${i}`, opt.file); });
+  //   try {
+  //     await axios.put(`${baseUrl}/api/admin/mcqs/${editingMCQ._id}`, data, { headers: { ...headers, 'Content-Type': 'multipart/form-data' } });
+  //     toast({ title: 'MCQ updated successfully', status: 'success' });
+  //     setIsEditMode(false);
+  //     setEditingMCQ(null);
+  //     setFormData({ ...initialFormState, testId: formData.testId || testIdFromList || '' });
+  //     const res = await axios.get(`${baseUrl}/api/admin/mcqs`, { headers });
+  //     setMcqs(normaliseMcqList(res));
+  //   } catch (err) { toast({ title: 'Update failed', status: 'error' }); } finally { setLoading(false); }
+  // };
+const handleUpdate = async () => {
+  if (!editingMCQ?._id) return;
+  setLoading(true);
+  const data = new FormData();
 
-    try {
-      await axios.put(`${baseUrl}/api/admin/mcqs/${editingMCQ._id}`, data, { headers: { ...headers, 'Content-Type': 'multipart/form-data' } });
-      toast({ title: 'MCQ updated successfully', status: 'success' });
-      setIsEditMode(false);
-      setEditingMCQ(null);
-      setFormData({ ...initialFormState, testId: formData.testId || testIdFromList || '' });
-      const res = await axios.get(`${baseUrl}/api/admin/mcqs`, { headers });
-      setMcqs(normaliseMcqList(res));
-    } catch (err) { toast({ title: 'Update failed', status: 'error' }); } finally { setLoading(false); }
-  };
+  // 🔥 NAYA BADLAV: Multiple Test IDs ko loop karke append karna
+  // Isse backend ko [id1, id2] ke roop mein data milega
+  if (Array.isArray(formData.testId) && formData.testId.length > 0) {
+    formData.testId.forEach((id) => {
+      data.append('testId', id);
+    });
+  } else {
+    // Agar koi test select nahi hai toh empty bhejne ke liye (optional depend on backend)
+    data.append('testId', ''); 
+  }
 
+  // Baki dropdown fields (Course, Subject etc.) bhi update ke liye bhejni chahiye
+  data.append('courseId', formData.courseId);
+  data.append('subjectId', formData.subjectId);
+  data.append('subSubjectId', formData.subSubjectId);
+  data.append('chapterId', finalMode === 'regular' ? (selectedTestDetails?.chapterId || formData.chapterId) : formData.chapterId);
+  data.append('topicId', formData.topicId);
+
+  if (formData.tagId) data.append('tagId', formData.tagId);
+  
+  data.append('correctAnswer', formData.correctAnswer);
+  data.append('difficulty', formData.difficulty);
+  data.append('marks', formData.marks);
+  data.append('negativeMarks', formData.negativeMarks);
+
+  // Question, Explanation aur Options (JSON stringified)
+  data.append('question', JSON.stringify({ 
+    text: formData.questionText, 
+    replaceImages: !!formData.questionFile 
+  }));
+  data.append('explanation', JSON.stringify({ 
+    text: formData.explanationText, 
+    replaceImages: !!formData.explanationFile 
+  }));
+  data.append('options', JSON.stringify(formData.options.map((o) => ({ 
+    text: o.text, 
+    replaceImage: !!o.file 
+  }))));
+
+  // Files handling
+  if (formData.questionFile) data.append('questionImages', formData.questionFile);
+  if (formData.explanationFile) data.append('explanationImages', formData.explanationFile);
+  formData.options.forEach((opt, i) => { 
+    if (opt.file) data.append(`optionImage_${i}`, opt.file); 
+  });
+
+  try {
+    await axios.put(`${baseUrl}/api/admin/mcqs/${editingMCQ._id}`, data, { 
+      headers: { ...headers, 'Content-Type': 'multipart/form-data' } 
+    });
+    
+    toast({ title: 'MCQ updated successfully', status: 'success' });
+    
+    // Reset state
+    setIsEditMode(false);
+    setEditingMCQ(null);
+    
+    // Reset form: testId ko wapas empty array [] karein
+    setFormData({ 
+      ...initialFormState, 
+      testId: [] 
+    });
+
+    // Refresh list
+    const res = await axios.get(`${baseUrl}/api/admin/mcqs`, { headers });
+    setMcqs(normaliseMcqList(res));
+  } catch (err) { 
+    console.error(err);
+    toast({ title: 'Update failed', status: 'error' }); 
+  } finally { 
+    setLoading(false); 
+  }
+};
   const handleCreate = async () => {
     if (finalMode !== 'manual' && !formData.testId) {
       toast({ title: 'Test is required', status: 'warning' });
@@ -1782,7 +1903,10 @@ export default function MCQManagement() {
     }
     setLoading(true);
     const data = new FormData();
-    if (finalMode !== 'manual') data.append('testId', formData.testId);
+    // if (finalMode !== 'manual') data.append('testId', formData.testId);
+    formData.testId.forEach((id) => {
+  data.append('testId', id); 
+});
     data.append('courseId', formData.courseId);
     data.append('subjectId', formData.subjectId);
     data.append('subSubjectId', formData.subSubjectId);
@@ -1839,15 +1963,43 @@ export default function MCQManagement() {
     });
   };
 
-  const filteredMCQs = mcqs.filter((m) =>
-    finalMode === 'manual' ? m.testId == null : 
-    finalMode === 'exam' ? m.testId?.testMode === 'exam' : 
-    finalMode === 'regular' ? m.testId?.testMode === 'regular' : true
-  ).filter((m) => 
+  // const filteredMCQs = mcqs.filter((m) =>
+  //   finalMode === 'manual' ? m.testId == null : 
+  //   finalMode === 'exam' ? m.testId?.testMode === 'exam' : 
+  //   finalMode === 'regular' ? m.testId?.testMode === 'regular' : true
+  // ).filter((m) => 
+  //   (m.question?.text || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+  //   (m.chapterId?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+  // );
+const filteredMCQs = mcqs.filter((m) => {
+    // 1. Manual Mode Check
+    if (finalMode === 'manual') {
+      // Agar testId null hai, ya empty array hai, toh wo manual hai
+      return !m.testId || (Array.isArray(m.testId) && m.testId.length === 0);
+    }
+
+    // 2. Mode Check (Exam or Regular)
+    // Hum ek helper function banate hain jo check karega ki MCQ ke kisi bhi test ka mode match karta hai ya nahi
+    const checkMode = (targetMode) => {
+      if (Array.isArray(m.testId)) {
+        // Agar array hai (Naya format)
+        return m.testId.some((t) => (t?.testMode || t) === targetMode);
+      } else if (m.testId && typeof m.testId === 'object') {
+        // Agar single object hai (Purana format)
+        return m.testId.testMode === targetMode;
+      }
+      return false;
+    };
+
+    if (finalMode === 'exam') return checkMode('exam');
+    if (finalMode === 'regular') return checkMode('regular');
+
+    return true;
+  }).filter((m) => 
+    // Search filter
     (m.question?.text || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
     (m.chapterId?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
-
   return (
     <Box pt={{ base: '130px', md: '80px' }} px="20px">
       <Button
@@ -1894,7 +2046,7 @@ export default function MCQManagement() {
               </Box>
             )}
 
-            {finalMode !== 'manual' && (
+            {/* {finalMode !== 'manual' && (
               <FormControl isRequired>
                 <FormLabel fontSize="sm" fontWeight="700" color={secondaryColor}>
                   <Icon as={MdOutlineQuiz} me="1" /> Test
@@ -1903,7 +2055,85 @@ export default function MCQManagement() {
                   {tests.map((t) => <option key={t._id} value={t._id}>{t.testTitle || t.name || t._id}</option>)}
                 </Select>
               </FormControl>
-            )}
+            )} */}
+            {/* 🔥 Multiple Test Selection */}
+{finalMode !== 'manual' && (
+  <FormControl isRequired>
+    <FormLabel fontSize="sm" fontWeight="700" color={secondaryColor}>
+      <Icon as={MdOutlineQuiz} me="1" /> Select Tests (Multiple)
+    </FormLabel>
+    <Box 
+      maxH="150px" 
+      overflowY="auto" 
+      p="3" 
+      bg={inputBg} 
+      borderRadius="md" 
+      border="1px solid" 
+      borderColor={optionBorderColor}
+    >
+      {/* <VStack align="start" spacing={1}>
+        {tests.map((t) => (
+          <HStack key={t._id}>
+            <input 
+              type="checkbox"
+              checked={formData.testId.includes(t._id)}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setFormData(prev => ({
+                  ...prev,
+                  testId: checked 
+                    ? [...prev.testId, t._id] 
+                    : prev.testId.filter(id => id !== t._id)
+                }));
+              }}
+            />
+            <Text fontSize="sm">{t.testTitle || t.name}</Text>
+          </HStack>
+        ))}
+      </VStack> */}
+      {/* 🔥 Select Tests Checkbox Logic */}
+<VStack align="start" spacing={1}>
+  {tests.map((t) => (
+    <HStack key={t._id}>
+      <input 
+        type="checkbox"
+        // checked={formData.testId.includes(t._id)}
+        checked={(formData.testId || []).includes(t._id)}
+        onChange={async (e) => {
+          const checked = e.target.checked;
+          const newTestIds = checked 
+            ? [...formData.testId, t._id] 
+            : formData.testId.filter(id => id !== t._id);
+          
+          setFormData(prev => ({ ...prev, testId: newTestIds }));
+
+          // Agar pehla test select hua hai, toh uski details se chapter load karein
+          if (checked && newTestIds.length === 1) {
+            try {
+              const res = await axios.get(`${baseUrl}/api/admin/tests/${t._id}`, { headers });
+              const testData = res.data?.data;
+              if (testData) {
+                setFormData(prev => ({
+                  ...prev,
+                  courseId: testData.courseId?._id || testData.courseId || '',
+                  subjectId: testData.subjectId || '',
+                  subSubjectId: testData.subSubjectId || '',
+                  chapterId: testData.chapterId || '',
+                }));
+                // 🔥 Yahan topics load honge
+                if (testData.chapterId) loadTopics(testData.chapterId);
+              }
+            } catch (err) { console.error("Test load error", err); }
+          }
+        }}
+      />
+      <Text fontSize="sm">{t.testTitle || t.name}</Text>
+    </HStack>
+  ))}
+</VStack>
+    </Box>
+  </FormControl>
+)}
 
             {finalMode !== 'regular' && (
               <>
