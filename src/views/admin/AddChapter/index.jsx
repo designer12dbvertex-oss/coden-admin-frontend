@@ -712,7 +712,7 @@ import {
   Switch,
 } from '@chakra-ui/react';
 import { MdEdit, MdDelete, MdSearch } from 'react-icons/md';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect ,useMemo } from 'react';
 import axios from 'axios';
 import Card from 'components/card/Card';
 import ReactQuill from 'react-quill-new';
@@ -747,6 +747,21 @@ export default function ChapterManagement() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const toast = useToast();
+
+  const modules = useMemo(() => ({
+  toolbar: [
+    [{ header: [1, 2, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['link', 'image'], 
+    ['clean'],
+  ],
+}), []);
+
+const formats = [
+  'header', 'bold', 'italic', 'underline', 'strike', 
+  'list', 'bullet', 'link', 'image'
+];
 
   const baseUrl = process.env.REACT_APP_BASE_URL;
   const token = localStorage.getItem('token');
@@ -1111,16 +1126,22 @@ export default function ChapterManagement() {
             </FormLabel>
 
             <ReactQuill
-              key={formData.courseId + formData.subjectId + formData.name}
+              // key={formData.courseId + formData.subjectId + formData.name}
+              // theme="snow"
+              // value={formData.description}
+              // onChange={(value) =>
+              //   setFormData({
+              //     ...formData,
+              //     description: value,
+              //   })
+              // }
+              // style={{ background: 'white' }}
               theme="snow"
-              value={formData.description}
-              onChange={(value) =>
-                setFormData({
-                  ...formData,
-                  description: value,
-                })
-              }
-              style={{ background: 'white' }}
+  value={formData.description}
+  onChange={(value) => setFormData({ ...formData, description: value })}
+  modules={modules} // Ye add kiya
+  formats={formats} // Ye add kiya
+  style={{ background: 'white', minHeight: '150px' }}
             />
           </FormControl>
 
@@ -1270,6 +1291,17 @@ export default function ChapterManagement() {
                     }
                   />
                 </FormControl>
+                <FormControl>
+  <FormLabel>Description</FormLabel>
+  <ReactQuill
+    theme="snow"
+    value={editData.description}
+    onChange={(val) => setEditData({ ...editData, description: val })}
+    modules={modules}
+    formats={formats}
+    style={{ background: 'white' }}
+  />
+</FormControl>
 
                 <FormControl>
                   <FormLabel>Update Image</FormLabel>

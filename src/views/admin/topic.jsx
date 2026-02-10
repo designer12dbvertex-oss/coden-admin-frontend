@@ -31,7 +31,7 @@ import {
   IconButton,
 } from '@chakra-ui/react';
 import { MdDelete, MdSearch, MdTopic, MdAccountTree } from 'react-icons/md';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useMemo  } from 'react';
 import axios from 'axios';
 import Card from 'components/card/Card';
 import { useDisclosure } from '@chakra-ui/react';
@@ -40,6 +40,9 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
 export default function TopicManagement() {
+
+
+  
   // Data States (Subject → SubSubject → Chapter → Topic)
   const [subjects, setSubjects] = useState([]);
   const [subSubjects, setSubSubjects] = useState([]);
@@ -73,7 +76,7 @@ export default function TopicManagement() {
       [{ header: [1, 2, false] }],
       ['bold', 'italic', 'underline'],
       [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link'],
+      ['link' ,'image'],
       ['clean'],
     ],
   };
@@ -357,6 +360,7 @@ export default function TopicManagement() {
               }
               modules={modules}
               style={{ height: '150px', marginBottom: '40px' }}
+              // style={{ height: '250px', marginBottom: '40px' }}
             />
           </FormControl>
 
