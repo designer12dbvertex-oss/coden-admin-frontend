@@ -99,59 +99,63 @@ export default function Dashboard(props) {
     }
     return activeNavbar;
   };
- const getRoutes = (routes) => {
-  let allRoutes = [];
+  const getRoutes = (routes) => {
+    let allRoutes = [];
 
-  routes.forEach((route, key) => {
-    if (route.layout === '/admin') {
-      allRoutes.push(
-        <Route path={`${route.path}`} element={route.component} key={key} />
-      );
-    }
-    if (route.collapse) {
-      allRoutes = allRoutes.concat(getRoutes(route.items));
-    }
-  });
+    routes.forEach((route, key) => {
+      if (route.layout === '/admin') {
+        allRoutes.push(
+          <Route path={`${route.path}`} element={route.component} key={key} />,
+        );
+      }
+      if (route.collapse) {
+        allRoutes = allRoutes.concat(getRoutes(route.items));
+      }
+    });
 
-  // Add custom routes outside the loop
-//   allRoutes.push(
-//     <Route path="/viewOrder/:orderId" element={<ViewOrder />} key="viewOrder" />
-//   );
-// 	allRoutes.push(
-// 		<Route path="/directOrder/:user_id" element={<UserDirectOrder />} key="UserDirectOrder" />
-// 	);
-// 	allRoutes.push(
-// 		// <Route path="/bidding_Order/:user_id" element={<UserBiddingOrder />} key="UserBiddingOrder" />
-// 	);
-// 	allRoutes.push(
-// 		<Route path="/emergency_Order/:user_id" element={<UserEmergencyOrder />} key="UserEmergencyOrder" />
-// 	);
-//   allRoutes.push(
-//     <Route path="/details/:service_provider_id" element={<ViewServiceProvider />} key="viewServiceProvider" />
-//   );
-// 	allRoutes.push(
-//     <Route path="/UserDetails/:user_id" element={<ViewUser />} key="viewUser" />
-//   );
-// 	allRoutes.push(
-//     <Route path="/Dispute/UserDetails/:user_id" element={<ViewDisputeUser />} key="viewDisputeUser" />
-//   );
-//   allRoutes.push(
-//     <Route path="/biddingOrder/:orderId" element={<ViewBiddingOrder />} key="viewBiddingOrder" />
-//   );
-// 	allRoutes.push(
-//     <Route path="/emergencyOrder/:orderId" element={<ViewEmergencyOrder />} key="viewEmergencyOrder" />
-//   );
-// 	allRoutes.push(
-//     <Route path="/createServiceProvider" element={<ViewCreateServiceProvider />} key="viewCreateServiceProvider" />
-//   );
-// allRoutes.push(
-//     <Route path="/createSubadmin" element={<ViewCreateSubadmin />} key="ViewCreateSubadmin" />
-//   );
-	allRoutes.push(
-    <Route path="/addBanner" element={<ViewAddBanner />} key="ViewCreateBanner" />
-  );
-  return allRoutes;
-};
+    // Add custom routes outside the loop
+    //   allRoutes.push(
+    //     <Route path="/viewOrder/:orderId" element={<ViewOrder />} key="viewOrder" />
+    //   );
+    // 	allRoutes.push(
+    // 		<Route path="/directOrder/:user_id" element={<UserDirectOrder />} key="UserDirectOrder" />
+    // 	);
+    // 	allRoutes.push(
+    // 		// <Route path="/bidding_Order/:user_id" element={<UserBiddingOrder />} key="UserBiddingOrder" />
+    // 	);
+    // 	allRoutes.push(
+    // 		<Route path="/emergency_Order/:user_id" element={<UserEmergencyOrder />} key="UserEmergencyOrder" />
+    // 	);
+    //   allRoutes.push(
+    //     <Route path="/details/:service_provider_id" element={<ViewServiceProvider />} key="viewServiceProvider" />
+    //   );
+    // 	allRoutes.push(
+    //     <Route path="/UserDetails/:user_id" element={<ViewUser />} key="viewUser" />
+    //   );
+    // 	allRoutes.push(
+    //     <Route path="/Dispute/UserDetails/:user_id" element={<ViewDisputeUser />} key="viewDisputeUser" />
+    //   );
+    //   allRoutes.push(
+    //     <Route path="/biddingOrder/:orderId" element={<ViewBiddingOrder />} key="viewBiddingOrder" />
+    //   );
+    // 	allRoutes.push(
+    //     <Route path="/emergencyOrder/:orderId" element={<ViewEmergencyOrder />} key="viewEmergencyOrder" />
+    //   );
+    // 	allRoutes.push(
+    //     <Route path="/createServiceProvider" element={<ViewCreateServiceProvider />} key="viewCreateServiceProvider" />
+    //   );
+    // allRoutes.push(
+    //     <Route path="/createSubadmin" element={<ViewCreateSubadmin />} key="ViewCreateSubadmin" />
+    //   );
+    allRoutes.push(
+      <Route
+        path="/addBanner"
+        element={<ViewAddBanner />}
+        key="ViewCreateBanner"
+      />,
+    );
+    return allRoutes;
+  };
   document.documentElement.dir = 'ltr';
   const { onOpen } = useDisclosure();
   document.documentElement.dir = 'ltr';
