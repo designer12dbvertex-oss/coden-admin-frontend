@@ -31,18 +31,16 @@ import {
   IconButton,
 } from '@chakra-ui/react';
 import { MdDelete, MdSearch, MdTopic, MdAccountTree } from 'react-icons/md';
-import React, { useState, useEffect,useMemo  } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import Card from 'components/card/Card';
 import { useDisclosure } from '@chakra-ui/react';
 import { MdEdit } from 'react-icons/md';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { MdContentCopy } from 'react-icons/md';
 
 export default function TopicManagement() {
-
-
-  
   // Data States (Subject → SubSubject → Chapter → Topic)
   const [subjects, setSubjects] = useState([]);
   const [subSubjects, setSubSubjects] = useState([]);
@@ -76,7 +74,7 @@ export default function TopicManagement() {
       [{ header: [1, 2, false] }],
       ['bold', 'italic', 'underline'],
       [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link' ,'image'],
+      ['link', 'image'],
       ['clean'],
     ],
   };
@@ -229,6 +227,15 @@ export default function TopicManagement() {
         toast({ title: 'Delete failed', status: 'error' });
       }
     }
+  };
+  const handleCopy = (id) => {
+    navigator.clipboard.writeText(id);
+    toast({
+      title: 'Topic ID copied!',
+      status: 'success',
+      duration: 1500,
+      isClosable: true,
+    });
   };
 
   // 9. Search logic (Topic name, Chapter, SubSubject, Subject)
@@ -397,6 +404,7 @@ export default function TopicManagement() {
           <Table variant="simple" color="gray.500">
             <Thead bg={useColorModeValue('gray.50', 'navy.800')}>
               <Tr>
+                <Th>Topic ID</Th>
                 <Th>Topic Name</Th>
                 <Th>Chapter</Th>
                 <Th>Sub-Subject</Th>
@@ -407,6 +415,21 @@ export default function TopicManagement() {
             <Tbody>
               {filteredTopics.map((item) => (
                 <Tr key={item._id}>
+                  <Td>
+                    <Flex align="center" gap="2">
+                      <Text fontSize="sm" color="gray.500">
+                        {item._id.slice(-6)}
+                      </Text>
+
+                      <IconButton
+                        size="xs"
+                        icon={<MdContentCopy />}
+                        aria-label="Copy ID"
+                        variant="ghost"
+                        onClick={() => handleCopy(item._id)}
+                      />
+                    </Flex>
+                  </Td>
                   <Td fontWeight="700" color={textColor}>
                     {item.name}
                   </Td>
