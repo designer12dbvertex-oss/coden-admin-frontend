@@ -47,6 +47,12 @@ export default function TestsList() {
   const navigate = useNavigate();
   const location = useLocation();
   const { pathname } = location;
+  useEffect(() => {
+    if (location.state?.refresh) {
+      setRefreshTrigger((p) => p + 1);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   const isQTestListPage = pathname.startsWith('/admin/q-test-list');
   const isTestListPage = pathname.startsWith('/admin/test-list');
@@ -65,6 +71,8 @@ export default function TestsList() {
   );
 
   const [tests, setTests] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const [loading, setLoading] = useState(true);
   const [selectedTest, setSelectedTest] = useState(null);
   const [filters, setFilters] = useState({
@@ -132,7 +140,7 @@ export default function TestsList() {
     return () => {
       isMounted = false;
     };
-  }, [baseUrl, axiosConfig, filters, toast]);
+  }, [baseUrl, axiosConfig, filters, toast, refreshTrigger]);
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -173,7 +181,11 @@ export default function TestsList() {
         status: 'success',
       });
       // refresh
-      setFilters((p) => ({ ...p })); // re-trigger effect (or you can call fetch via other pattern)
+      setFilters((p) => ({
+        ...p,
+        page: 1,
+      }));
+      // re-trigger effect (or you can call fetch via other pattern)
     } catch (err) {
       console.error('delete test error', err);
       toast({
@@ -278,7 +290,10 @@ export default function TestsList() {
       });
       onEditClose();
       // refresh list
-      setFilters((p) => ({ ...p }));
+      setFilters((p) => ({
+        ...p,
+        page: 1,
+      }));
     } catch (err) {
       console.error('update test error', err);
       toast({

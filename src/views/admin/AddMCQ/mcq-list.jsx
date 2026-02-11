@@ -31,9 +31,12 @@ import {
   Button,
   Wrap,
   WrapItem,
+  Input,
 } from '@chakra-ui/react';
 import { MdCheckCircle, MdSchool, MdOutlineQuiz } from 'react-icons/md';
 import axios from 'axios';
+import DOMPurify from 'dompurify';
+
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function MCQList({ mode = 'all' }) {
@@ -64,6 +67,8 @@ export default function MCQList({ mode = 'all' }) {
   const [selectedMcq, setSelectedMcq] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
+  const [mcqIdInput, setMcqIdInput] = useState('');
+  const [addingMcq, setAddingMcq] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -161,6 +166,48 @@ export default function MCQList({ mode = 'all' }) {
     setSelectedMcq(null);
     setIsModalOpen(false);
   };
+  const handleDeleteMcq = async (mcqId) => {
+    if (!window.confirm('Are you sure you want to delete this MCQ?')) return;
+
+    try {
+      await axios.delete(`${baseUrl}/api/admin/mcqs/${mcqId}`, axiosConfig);
+
+      fetchMcqsTestWise(); // refresh list
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to delete MCQ');
+    }
+  };
+
+  const handleAddMcqToTest = async () => {
+    if (!mcqIdInput.trim() || !testIdFromList) {
+      alert('Invalid MCQ ID');
+      return;
+    }
+
+    if (!/^[0-9a-fA-F]{24}$/.test(mcqIdInput)) {
+      alert('Invalid Mongo ID format');
+      return;
+    }
+
+    try {
+      setAddingMcq(true);
+
+      await axios.put(
+        `${baseUrl}/api/admin/tests/${testIdFromList}/add-mcq`,
+        { mcqId: mcqIdInput },
+        axiosConfig,
+      );
+
+      setMcqIdInput('');
+      fetchMcqsTestWise(); // refresh list
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to add MCQ');
+    } finally {
+      setAddingMcq(false);
+    }
+  };
 
   // Helper function to group MCQs by Subject -> SubSubject -> Topic -> Chapter
   // Subject → SubSubject → Chapter → Topic
@@ -202,9 +249,9 @@ export default function MCQList({ mode = 'all' }) {
         alignSelf="flex-start"
         onClick={() => {
           if (mode === 'regular') {
-            navigate('/admin/q-test-list');
+            navigate('/admin/q-test-list', { state: { refresh: true } });
           } else if (mode === 'exam') {
-            navigate('/admin/test-list');
+            navigate('/admin/test-list', { state: { refresh: true } });
           } else {
             navigate('/admin/dashboard'); // ya manual route
           }
@@ -234,9 +281,29 @@ export default function MCQList({ mode = 'all' }) {
                     ? 'Q-Test MCQ Repository'
                     : 'Exam Test MCQ Repository'}
               </Heading>
+              {testIdFromList && (
+                <Flex mt={4} gap={3}>
+                  <Input
+                    placeholder="Enter MCQ ID"
+                    value={mcqIdInput}
+                    onChange={(e) => setMcqIdInput(e.target.value)}
+                    bg="white"
+                  />
+                  <Button
+                    colorScheme="green"
+                    isLoading={addingMcq}
+                    onClick={handleAddMcqToTest}
+                  >
+                    Add
+                  </Button>
+                </Flex>
+              )}
             </HStack>
             <Badge fontSize="md" colorScheme="purple" px={4} py={1}>
-              {testsWithMcqs.reduce((sum, test) => sum + test.totalMCQs, 0)}{' '}
+              {testsWithMcqs.reduce(
+                (sum, test) => sum + (test.totalMCQs || 0),
+                0,
+              )}
               Questions
             </Badge>
           </HStack>
@@ -336,8 +403,8 @@ export default function MCQList({ mode = 'all' }) {
                         <VStack align="start" spacing={0}>
                           <HStack>
                             <Heading size="md" color={accentColor}>
-                              {testGroup.testName}
-                            </Heading>
+  {testGroup.testName || testGroup.test?.name || 'Manual MCQs'}
+</Heading>
 
                             {(testGroup.testId === null ||
                               testKey === 'manual') && (
@@ -540,6 +607,9 @@ export default function MCQList({ mode = 'all' }) {
                                                                   </Th>
                                                                   <Th>Tags</Th>
                                                                   <Th>View</Th>
+                                                                  <Th>
+                                                                    Delete
+                                                                  </Th>
                                                                   <Th>Edit</Th>
                                                                 </Tr>
                                                               </Thead>
@@ -637,6 +707,21 @@ export default function MCQList({ mode = 'all' }) {
                                                                           }
                                                                         >
                                                                           View
+                                                                        </Button>
+                                                                      </Td>
+
+                                                                      <Td>
+                                                                        <Button
+                                                                          size="sm"
+                                                                          colorScheme="red"
+                                                                          borderRadius="full"
+                                                                          onClick={() =>
+                                                                            handleDeleteMcq(
+                                                                              mcq._id,
+                                                                            )
+                                                                          }
+                                                                        >
+                                                                          Delete
                                                                         </Button>
                                                                       </Td>
 
@@ -779,7 +864,9 @@ export default function MCQList({ mode = 'all' }) {
                     {selectedMcq.explanation?.text && (
                       <Box
                         dangerouslySetInnerHTML={{
-                          __html: selectedMcq.explanation.text,
+                          __html: DOMPurify.sanitize(
+                            selectedMcq.explanation.text,
+                          ),
                         }}
                       />
                     )}
