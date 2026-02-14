@@ -281,7 +281,11 @@ export default function Dashboard(props) {
     routes.forEach((route, key) => {
       if (route.layout === '/admin') {
         allRoutes.push(
-          <Route path={route.path} element={route.component} key={key} />,
+          <Route
+            path={route.path.substring(1)} // remove leading slash
+            element={route.component}
+            key={key}
+          />,
         );
       }
 
