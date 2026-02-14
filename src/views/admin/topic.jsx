@@ -93,7 +93,7 @@ export default function TopicManagement() {
     };
     fetchSubjects();
     fetchAllTopics(); // Initial table load
-  }, []);
+  }, [baseUrl]);
 
   // 2. Hierarchy Logic: Handle Subject Change
   const handleSubjectChange = async (sId) => {
@@ -228,8 +228,10 @@ export default function TopicManagement() {
       }
     }
   };
-  const handleCopy = (id) => {
-    navigator.clipboard.writeText(id);
+  const handleCopy = (value) => {
+    if (!value) return;
+
+    navigator.clipboard.writeText(value);
     toast({
       title: 'Topic ID copied!',
       status: 'success',
@@ -241,7 +243,8 @@ export default function TopicManagement() {
   // 9. Search logic (Topic name, Chapter, SubSubject, Subject)
   const filteredTopics = topics.filter(
     (t) =>
-      t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.codonId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.chapterId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.chapterId?.subSubjectId?.name
         ?.toLowerCase()
@@ -417,19 +420,20 @@ export default function TopicManagement() {
                 <Tr key={item._id}>
                   <Td>
                     <Flex align="center" gap="2">
-                      <Text fontSize="sm" color="gray.500">
-                        {item._id.slice(-6)}
+                      <Text fontSize="sm" fontWeight="600" color="gray.600">
+                        {item.codonId || 'N/A'}
                       </Text>
 
                       <IconButton
                         size="xs"
                         icon={<MdContentCopy />}
-                        aria-label="Copy ID"
+                        aria-label="Copy Topic ID"
                         variant="ghost"
-                        onClick={() => handleCopy(item._id)}
+                        onClick={() => handleCopy(item.codonId)}
                       />
                     </Flex>
                   </Td>
+
                   <Td fontWeight="700" color={textColor}>
                     {item.name}
                   </Td>

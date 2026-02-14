@@ -467,20 +467,17 @@ export default function MCQManagement() {
       toast({ title: 'Topics load failed', status: 'error' });
     }
   };
+
   const handleTopicAutoFill = async (rawId) => {
-    const id = rawId?.trim();
-
-    if (!id || id.length < 10) return; // basic validation
-
     try {
       setAutoFillLoading(true);
 
-      // 1️⃣ Fetch topic with populated hierarchy
-      const res = await axios.get(`${baseUrl}/api/admin/topics/${id}`, {
+      const res = await axios.get(`${baseUrl}/api/admin/topics/code/${rawId}`, {
         headers,
       });
 
-      const topic = res.data?.data;
+      const topic = res.data.data;
+
       if (!topic) throw new Error('Topic not found');
 
       const chapter = topic.chapterId;
@@ -488,17 +485,11 @@ export default function MCQManagement() {
       const subject = subSubject?.subjectId;
       const course = subject?.courseId;
 
-      if (!chapter || !subSubject || !subject || !course) {
-        throw new Error('Incomplete topic hierarchy');
-      }
-
-      // 2️⃣ Load dropdown data in sequence (IMPORTANT)
       await loadSubjects(course._id);
       await loadSubSubjects(subject._id);
       await loadChapters(subSubject._id);
       await loadTopics(chapter._id);
 
-      // 3️⃣ After everything loaded → set form values
       setFormData((prev) => ({
         ...prev,
         courseId: course._id,
@@ -507,19 +498,8 @@ export default function MCQManagement() {
         chapterId: chapter._id,
         topicId: topic._id,
       }));
-
-      toast({
-        title: 'Hierarchy Auto Filled',
-        status: 'success',
-        duration: 1500,
-      });
     } catch (err) {
       console.error(err);
-      toast({
-        title: 'Invalid Topic ID',
-        description: 'Topic not found or hierarchy missing',
-        status: 'error',
-      });
     } finally {
       setAutoFillLoading(false);
     }
@@ -801,11 +781,10 @@ export default function MCQManagement() {
                       clearTimeout(debounceRef.current);
                     }
 
-                    // Mongo ObjectId length = 24
-                    if (value.length === 24) {
+                    if (value.length >= 6) {
                       debounceRef.current = setTimeout(() => {
                         handleTopicAutoFill(value);
-                      }, 400); // 400ms delay
+                      }, 500);
                     }
                   }}
                   isDisabled={autoFillLoading}
@@ -1292,8 +1271,8 @@ export default function MCQManagement() {
                     {/* MCQ ID */}
                     <Box flex="2">
                       <HStack spacing={2}>
-                        <Text fontSize="xs" fontWeight="600" color="gray.500">
-                          {item._id.slice(-6)} {/* Short ID */}
+                        <Text fontSize="xs" fontWeight="700" >
+                          {item.codonId || item._id.slice(-6)}
                         </Text>
 
                         <IconButton
@@ -1301,7 +1280,7 @@ export default function MCQManagement() {
                           variant="ghost"
                           icon={<MdContentCopy />}
                           aria-label="Copy MCQ ID"
-                          onClick={() => handleCopyId(item._id)}
+                          onClick={() => handleCopyId(item.codonId || item._id)}
                         />
                       </HStack>
                     </Box>

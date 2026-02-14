@@ -185,17 +185,12 @@ export default function MCQList({ mode = 'all' }) {
       return;
     }
 
-    if (!/^[0-9a-fA-F]{24}$/.test(mcqIdInput)) {
-      alert('Invalid Mongo ID format');
-      return;
-    }
-
     try {
       setAddingMcq(true);
 
-      await axios.put(
-        `${baseUrl}/api/admin/tests/${testIdFromList}/add-mcq`,
-        { mcqId: mcqIdInput },
+      await axios.post(
+        `${baseUrl}/api/admin/tests/${testIdFromList}/add-mcq-by-codon`,
+        { codonId: mcqIdInput.trim() },
         axiosConfig,
       );
 
@@ -403,8 +398,10 @@ export default function MCQList({ mode = 'all' }) {
                         <VStack align="start" spacing={0}>
                           <HStack>
                             <Heading size="md" color={accentColor}>
-  {testGroup.testName || testGroup.test?.name || 'Manual MCQs'}
-</Heading>
+                              {testGroup.testName ||
+                                testGroup.test?.name ||
+                                'Manual MCQs'}
+                            </Heading>
 
                             {(testGroup.testId === null ||
                               testKey === 'manual') && (
