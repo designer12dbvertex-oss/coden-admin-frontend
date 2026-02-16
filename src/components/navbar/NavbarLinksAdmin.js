@@ -22,7 +22,7 @@ import routes from 'routes';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const baseUrl = process.env.REACT_APP_BASE_URL;
+const baseUrl = process.env.REACT_APP_BASE_URL.replace(/\/+$/, '');
 
 export default function HeaderLinks(props) {
   const { secondary } = props;
@@ -55,31 +55,31 @@ export default function HeaderLinks(props) {
     setAdminName(user.full_name || 'Admin');
 
     // Fetch notifications
-    const fetchNotifications = async () => {
-      setIsLoading(true);
-      try {
-        const response = await axios.get(`${baseUrl}notifications`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-        setNotifications(response.data || []);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-        setNotifications([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    // const fetchNotifications = async () => {
+    //   setIsLoading(true);
+    //   try {
+    //     const response = await axios.get(`${baseUrl}/notifications`, {
+    //       headers: {
+    //         Authorization: `Bearer ${localStorage.getItem('token')}`,
+    //       },
+    //     });
+    //     setNotifications(response.data || []);
+    //   } catch (error) {
+    //     console.error('Error fetching notifications:', error);
+    //     setNotifications([]);
+    //   } finally {
+    //     setIsLoading(false);
+    //   }
+    // };
 
-    fetchNotifications();
+    // fetchNotifications();
   }, []);
 
   // Handle logout
   const handleLogout = async () => {
     try {
       await axios.get(
-        `${baseUrl}api/user/logoutUser`,
+        `${baseUrl}/api/admin/logout`,
         {},
         {
           headers: {

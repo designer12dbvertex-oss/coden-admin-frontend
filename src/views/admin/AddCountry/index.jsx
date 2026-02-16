@@ -214,7 +214,7 @@ export default function CountryManagement() {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const toast = useToast();
 
-  const baseUrl = process.env.REACT_APP_BASE_URL;
+  const baseUrl = process.env.REACT_APP_BASE_URL.replace(/\/+$/, '');
   const token = localStorage.getItem('token');
 
   // Helper for Headers
@@ -225,11 +225,14 @@ export default function CountryManagement() {
   // 1. Fetch Countries (Backend uses /api/location/country)
   const fetchCountries = async () => {
     try {
-      const response = await axios.get(`${baseUrl}api/location/country`, getHeaders());
+      const response = await axios.get(
+        `${baseUrl}/api/location/country`,
+        getHeaders(),
+      );
       // Aapka controller response.status(200).json({ success: true, data: countries }) bhej raha hai
       setCountries(response.data.data || []);
     } catch (err) {
-      console.error("Fetch Error:", err);
+      console.error('Fetch Error:', err);
       toast({ title: 'Fetch Failed', status: 'error', duration: 2000 });
     }
   };
@@ -248,7 +251,11 @@ export default function CountryManagement() {
     if (!countryName) return toast({ title: 'Enter Name', status: 'warning' });
     setLoading(true);
     try {
-      await axios.post(`${baseUrl}api/location/country`, { name: countryName }, getHeaders());
+      await axios.post(
+        `${baseUrl}/api/location/country`,
+        { name: countryName },
+        getHeaders(),
+      );
       toast({ title: 'Added!', status: 'success' });
       setCountryName('');
       fetchCountries();
@@ -267,9 +274,10 @@ export default function CountryManagement() {
 
   const handleUpdate = async () => {
     try {
-      await axios.put(`${baseUrl}api/location/country/${editData.id}`,
+      await axios.put(
+        `${baseUrl}/api/location/country/${editData.id}`,
         { name: editData.name },
-        getHeaders()
+        getHeaders(),
       );
       toast({ title: 'Updated!', status: 'success' });
       onClose();
@@ -281,9 +289,12 @@ export default function CountryManagement() {
 
   // 4. Delete Country
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this country?")) {
+    if (window.confirm('Are you sure you want to delete this country?')) {
       try {
-        await axios.delete(`${baseUrl}api/location/country/${id}`, getHeaders());
+        await axios.delete(
+          `${baseUrl}/api/location/country/${id}`,
+          getHeaders(),
+        );
         toast({ title: 'Deleted!', status: 'success' });
         fetchCountries();
       } catch (err) {
@@ -309,15 +320,15 @@ export default function CountryManagement() {
             <Input
               value={countryName}
               onChange={(e) => setCountryName(e.target.value)}
-              placeholder='Ex: India'
+              placeholder="Ex: India"
             />
           </FormControl>
           <Button
-            colorScheme='blue'
+            colorScheme="blue"
             onClick={handleAddCountry}
             isLoading={loading}
-            w={{base:'100%', md:'auto'}}
-            px='40px'
+            w={{ base: '100%', md: 'auto' }}
+            px="40px"
           >
             Add
           </Button>
@@ -325,9 +336,17 @@ export default function CountryManagement() {
       </Card>
 
       {/* SEARCH & TABLE SECTION */}
-      <Card p='20px'>
-        <Flex direction={{ base: 'column', md: 'row' }} justify='space-between' align={{ md: 'center' }} mb='20px' gap='10px'>
-          <Text color={textColor} fontSize='18px' fontWeight='700'>All Countries</Text>
+      <Card p="20px">
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          justify="space-between"
+          align={{ md: 'center' }}
+          mb="20px"
+          gap="10px"
+        >
+          <Text color={textColor} fontSize="18px" fontWeight="700">
+            All Countries
+          </Text>
 
           <InputGroup maxW={{ md: '300px' }}>
             <InputLeftElement pointerEvents="none">
@@ -361,16 +380,16 @@ export default function CountryManagement() {
                     <Td>
                       <IconButton
                         icon={<MdEdit />}
-                        colorScheme='green'
+                        colorScheme="green"
                         onClick={() => openEditModal(c)}
-                        mr='2'
-                        size='sm'
+                        mr="2"
+                        size="sm"
                       />
                       <IconButton
                         icon={<MdDelete />}
-                        colorScheme='red'
+                        colorScheme="red"
                         onClick={() => handleDelete(c._id)}
-                        size='sm'
+                        size="sm"
                       />
                     </Td>
                   </Tr>
