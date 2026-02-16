@@ -21,6 +21,7 @@ import { MdOutlineRemoveRedEye } from 'react-icons/md';
 import { RiEyeCloseLine } from 'react-icons/ri';
 
 const baseUrl = process.env.REACT_APP_BASE_URL;
+console.log(baseUrl);
 
 function SignIn() {
   const textColor = useColorModeValue('navy.700', 'white');
